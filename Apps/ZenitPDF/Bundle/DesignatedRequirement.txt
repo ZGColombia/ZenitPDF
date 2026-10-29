@@ -1,0 +1,1 @@
+identifier "com.zenitgroup.zenitpdf" and certificate root = H"b7f1c6d4d2d03e6d724351a79725b3bc378ede39"

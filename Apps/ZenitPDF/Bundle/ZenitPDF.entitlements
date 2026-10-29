@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Zenit PDF — the standard sandbox entitlement set, minus the unused app group and
+  minus every network entitlement.
+
+  No com.apple.security.network.client and no network.server: the application makes no network
+  connection, so the App Sandbox refuses any socket it might try to open. The update system that
+  once needed the client entitlement was removed; a link a person clicks (a markup's web address)
+  opens in their browser through Launch Services, which needs no network entitlement here. PDF
+  JavaScript never runs, launch actions are ignored, and no telemetry is collected.
+  Scripts/verify-no-network.sh fails the build if a network or temporary-exception entitlement
+  is attached to any piece of the signed bundle.
+
+  No com.apple.security.cs.disable-library-validation: it existed only because an ad-hoc app
+  could not load an ad-hoc embedded framework under Library Validation. The
+  bundle embeds no framework now, every dynamic dependency resolves to the operating system, and
+  Library Validation stays on. Scripts/verify-bundle-linkage.sh fails the build if an embedded
+  library ever appears that Library Validation would refuse.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+	<key>com.apple.security.files.user-selected.read-write</key>
+	<true/>
+	<key>com.apple.security.files.bookmarks.app-scope</key>
+	<true/>
+	<!--
+	  No com.apple.security.application-groups (removed 2026-09-23). Nothing used the
+	  group container, and on macOS 15 and later an app-group identifier that no
+	  provisioning profile authorises — which ad-hoc signing cannot have — makes the system ask
+	  the person on first access. A future design that needs shared storage between processes
+	  (for example a local automation socket) must not assume a group container exists.
+	-->
+	<!--
+	  File ▸ Print. Without this key the sandbox refuses the print connection and macOS
+	  answers ⌘P with its own alert — "This application does not support printing. Please
+	  contact the application's developer." — even though printDocument(_:) is fully
+	  implemented (LT-23).
+	-->
+	<key>com.apple.security.print</key>
+	<true/>
+</dict>
+</plist>

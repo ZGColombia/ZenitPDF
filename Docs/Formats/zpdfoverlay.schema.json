@@ -1,0 +1,194 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenitgroup.com.co/schemas/zpdfoverlay/1",
+  "title": "Zenit PDF measurement overlay (.zpdfoverlay), schema version 1",
+  "description": "The measurements of one drawing, carried to another copy of the same drawing: each measurement's ledger row and its geometry in PDF page space. Coordinates are decimal strings so a double survives to the bit. The source digest identifies the drawing the overlay was made on.",
+  "type": "object",
+  "required": ["format", "schemaVersion", "generatedAt", "producer", "source", "columns", "numberLocale", "measurements"],
+  "properties": {
+    "format": { "const": "zenit.measurement.overlay" },
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string" },
+    "producer": {
+      "type": "object",
+      "required": ["application", "package", "ledgerContractVersion", "formulaGrammarVersion"],
+      "properties": {
+        "application": { "type": "string" },
+        "package": { "type": "string" },
+        "ledgerContractVersion": { "type": "integer" },
+        "formulaGrammarVersion": { "type": "integer" }
+      },
+      "additionalProperties": false
+    },
+    "source": {
+      "type": "object",
+      "required": ["fileName", "pageCount", "digest"],
+      "properties": {
+        "fileName": { "type": "string" },
+        "pageCount": { "type": "integer", "minimum": 0 },
+        "digest": {
+          "type": "object",
+          "required": ["algorithm", "sha256", "byteCount"],
+          "properties": {
+            "algorithm": { "const": "SHA-256" },
+            "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+            "byteCount": { "type": "integer", "minimum": 0 }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "columns": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["key", "title", "kind", "unit"],
+        "properties": {
+          "key": { "type": "string" },
+          "title": { "type": "string" },
+          "kind": { "type": "string" },
+          "unit": { "type": "string" },
+          "decimalPlaces": { "type": ["integer", "null"] },
+          "numberFormat": { "type": ["string", "null"] },
+          "aggregationSemantics": { "type": ["string", "null"] },
+          "formula": { "type": ["string", "null"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "numberLocale": {
+      "type": "object",
+      "required": ["identifier", "decimalSeparator"],
+      "properties": {
+        "identifier": { "type": "string" },
+        "decimalSeparator": { "type": "string" },
+        "groupingSeparator": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "measurements": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["row", "geometry"],
+        "properties": {
+          "row": { "$ref": "#/$defs/row" },
+          "geometry": { "anyOf": [{ "type": "null" }, { "$ref": "#/$defs/geometry" }] },
+          "placement": {
+            "type": "object",
+            "required": ["pageIndex"],
+            "properties": {
+              "pageIndex": { "type": "integer", "minimum": 0 },
+              "tool": { "type": ["string", "null"] },
+              "parameters": { "type": ["string", "null"] },
+              "style": { "type": ["string", "null"], "description": "The markup's style as the JSON of the MarkupStyle contract (stroke colour, fill, opacity, line width, line style). Optional; absent in files written before 2026-10-04." }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "decimalString": { "type": "string", "pattern": "^-?\\d+(\\.\\d+)?([eE][-+]?\\d+)?$" },
+    "point": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": { "x": { "$ref": "#/$defs/decimalString" }, "y": { "$ref": "#/$defs/decimalString" } },
+      "additionalProperties": false
+    },
+    "ring": {
+      "type": "object",
+      "required": ["points", "isClosed"],
+      "properties": { "points": { "type": "array", "items": { "$ref": "#/$defs/point" } }, "isClosed": { "type": "boolean" } },
+      "additionalProperties": false
+    },
+    "geometry": {
+      "type": "object",
+      "required": ["pageID", "points", "segments", "polygons", "arcs", "circles", "countPoints"],
+      "properties": {
+        "pageID": { "type": "string" },
+        "points": { "type": "array", "items": { "$ref": "#/$defs/point" } },
+        "segments": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["start", "end"],
+            "properties": { "start": { "$ref": "#/$defs/point" }, "end": { "$ref": "#/$defs/point" } },
+            "additionalProperties": false
+          }
+        },
+        "polygons": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["outer", "holes"],
+            "properties": { "outer": { "$ref": "#/$defs/ring" }, "holes": { "type": "array", "items": { "$ref": "#/$defs/ring" } } },
+            "additionalProperties": false
+          }
+        },
+        "arcs": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["center", "radius", "startAngle", "sweepAngle"],
+            "properties": {
+              "center": { "$ref": "#/$defs/point" }, "radius": { "$ref": "#/$defs/decimalString" },
+              "startAngle": { "$ref": "#/$defs/decimalString" }, "sweepAngle": { "$ref": "#/$defs/decimalString" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "circles": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["center", "radius"],
+            "properties": { "center": { "$ref": "#/$defs/point" }, "radius": { "$ref": "#/$defs/decimalString" } },
+            "additionalProperties": false
+          }
+        },
+        "countPoints": {
+          "type": "array",
+          "items": {
+            "type": "object", "required": ["id", "position"],
+            "properties": {
+              "id": { "type": "string" },
+              "position": { "$ref": "#/$defs/point" },
+              "sequenceNumber": { "type": ["integer", "null"] },
+              "groupID": { "type": ["string", "null"] },
+              "symbolID": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "cell": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "enum": ["blank", "text", "date", "boolean", "refusal", "number"] },
+        "value": { "type": ["string", "boolean"] },
+        "token": { "type": "string" },
+        "raw": { "type": "string" },
+        "display": { "type": "string" },
+        "unit": { "type": "string" }
+      },
+      "additionalProperties": false
+    },
+    "row": {
+      "type": "object",
+      "required": ["markupID", "index", "groupPath", "cells"],
+      "properties": {
+        "markupID": { "type": "string" },
+        "index": { "type": "integer", "minimum": 0 },
+        "groupPath": { "type": "array", "items": { "type": "string" } },
+        "cells": { "type": "array", "items": { "$ref": "#/$defs/cell" } },
+        "provenance": { "enum": ["measured", "derived", "read"] },
+        "trace": { "type": "object" }
+      },
+      "additionalProperties": false
+    }
+  }
+}

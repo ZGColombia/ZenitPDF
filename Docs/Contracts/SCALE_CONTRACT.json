@@ -1,0 +1,405 @@
+{
+  "contract" : "SCALE_CONTRACT",
+  "contractVersion" : 2,
+  "frozenAt" : "2026-09-01T23:28:48Z",
+  "generator" : "zpdf-contract-freeze (ZPDFContracts v2)",
+  "invariants" : [
+    "r = A * p + b, with A in metres per PDF point and b in metres (spec 10.1).",
+    "realArea = abs(det(A)) * pdfArea (spec 10.1).",
+    "Matrix components persist as decimal strings, never as binary floats.",
+    "A markup stores the scale id, the scale version, the original PDF geometry, the computed SI values and the formula version (spec 10.6).",
+    "Changing a scale offers Recalculate / Keep existing / Cancel, and Recalculate is undoable (spec 10.6).",
+    "Scale Regions may not overlap by default; a markup crossing two is split, resolved by the user, or blocked (spec 10.4)."
+  ],
+  "specSections" : [
+    "10.1",
+    "10.2",
+    "10.3",
+    "10.4",
+    "10.5",
+    "10.6",
+    "11.5"
+  ],
+  "summary" : "The scale model: an affine map from PDF page points to metres, persisted as decimal strings, versioned so every measurement can be traced to the scale that produced it.",
+  "tables" : [
+    {
+      "columns" : [
+        "guard",
+        "value",
+        "error"
+      ],
+      "name" : "scaleGuards",
+      "rows" : [
+        [
+          "minimum metres per PDF point before confirmation",
+          "0.000001",
+          "extremeScaleRequiresConfirmation"
+        ],
+        [
+          "maximum metres per PDF point before confirmation",
+          "10000",
+          "extremeScaleRequiresConfirmation"
+        ],
+        [
+          "minimum two-point calibration distance",
+          "4 PDF points",
+          "calibrationPointsTooClose"
+        ],
+        [
+          "minimum known length",
+          "> 0",
+          "nonPositiveKnownLength"
+        ],
+        [
+          "determinant",
+          "!= 0",
+          "singularMatrix"
+        ]
+      ]
+    }
+  ],
+  "types" : [
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite; persisted as a decimal string",
+          "name" : "a",
+          "type" : "Decimal",
+          "unit" : "m / PDF point"
+        },
+        {
+          "invariant" : "finite; persisted as a decimal string",
+          "name" : "b",
+          "type" : "Decimal",
+          "unit" : "m / PDF point"
+        },
+        {
+          "invariant" : "finite; persisted as a decimal string",
+          "name" : "c",
+          "type" : "Decimal",
+          "unit" : "m / PDF point"
+        },
+        {
+          "invariant" : "finite; persisted as a decimal string",
+          "name" : "d",
+          "type" : "Decimal",
+          "unit" : "m / PDF point"
+        },
+        {
+          "invariant" : "finite; persisted as a decimal string; not applied to deltas",
+          "name" : "tx",
+          "type" : "Decimal",
+          "unit" : "m"
+        },
+        {
+          "invariant" : "finite; persisted as a decimal string; not applied to deltas",
+          "name" : "ty",
+          "type" : "Decimal",
+          "unit" : "m"
+        }
+      ],
+      "invariants" : [
+        "The six components are stored as Decimal and persisted as decimal strings, so a scale round-trips bit-identically across builds and locales.",
+        "Geometry maths reads the Double projection through `components`; the crossing is explicit.",
+        "det(A) == 0 makes inverted() throw ScaleError.singularMatrix.",
+        "abs(det(A)) is the area factor: square metres per square PDF point.",
+        "length(from:to:) maps the delta, not the two endpoints, so translation cannot leak into a length."
+      ],
+      "kind" : "struct",
+      "name" : "AffineScaleMatrix",
+      "summary" : "The affine map r = A * p + b from PDF page points to real-world metres (spec 10.1)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "display unit for lengths measured under this scale",
+          "name" : "length",
+          "type" : "LengthUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display unit for areas",
+          "name" : "area",
+          "type" : "AreaUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display unit for volumes",
+          "name" : "volume",
+          "type" : "VolumeUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display unit for angles",
+          "name" : "angle",
+          "type" : "AngleUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "applied at the view and export boundary only",
+          "name" : "precision",
+          "type" : "PrecisionMode",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "ScaleUnitPolicy",
+      "summary" : "Display unit and precision metadata carried by a scale."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable across edits to the matrix",
+          "name" : "id",
+          "type" : "ScaleID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the page this scale belongs to; nil only for a bare engine value or a pre-v2 project",
+          "name" : "pageID",
+          "type" : "PageID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "bumped on every matrix change; markups record the version they used",
+          "name" : "version",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "see AffineScaleMatrix",
+          "name" : "matrix",
+          "type" : "AffineScaleMatrix",
+          "unit" : "m / PDF point"
+        },
+        {
+          "invariant" : "display metadata only; never changes a stored value",
+          "name" : "units",
+          "type" : "ScaleUnitPolicy",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "provenance; the UI must never present a guessed scale as a measured one",
+          "name" : "source",
+          "type" : "ScaleSource",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "optional human label such as \"1:50\"",
+          "name" : "label",
+          "type" : "String?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "uniform() and separateXY() reject a zero, negative or non-finite factor with ScaleError.nonPositiveScale.",
+        "A factor outside 1e-6...1e4 metres per PDF point needs explicit confirmation (ScaleError.extremeScaleRequiresConfirmation).",
+        "Two-point calibration rejects identical or near-identical points (default floor 4 PDF points) and a non-positive known length.",
+        "A preset drawing ratio honours the page's /UserUnit: metresPerPoint = 0.0254 / 72 * denominator / numerator * userUnit (ScaleTransform.preset, spec 9.1). A calibration needs no correction because its points already live in the page's user space.",
+        "inverse() returns a bare AffineScaleMatrix, not a ScaleTransform: the inverse has no id, no version and no provenance, and calling it a scale is how a metres-per-point number ends up persisted as points-per-metre.",
+        "The matrix only ever changes through revised(matrix:source:), which bumps the version.",
+        "A scale belongs to a page. The order a measurement resolves by is: the Scale Region containing the geometry, else the page's own scale, else nothing — and nothing refuses the measurement rather than computing it at 1:1 or against a sibling page's calibration.",
+        "assigned(toPage:) does not bump the version: recording which sheet a scale was calibrated on changes no number, and bumping would mark every measurement under it stale for nothing."
+      ],
+      "kind" : "struct",
+      "name" : "ScaleTransform",
+      "summary" : "A versioned, identified scale: the matrix plus everything needed to reproduce and audit it (spec 10.1, 10.6)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "calibrationTwoPoint",
+          "rawValue" : "calibrationTwoPoint"
+        },
+        {
+          "name" : "calibrationXY",
+          "rawValue" : "calibrationXY"
+        },
+        {
+          "name" : "preset",
+          "rawValue" : "preset"
+        },
+        {
+          "name" : "inherited",
+          "rawValue" : "inherited"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Provenance is part of the contract: a recalculation prompt reads differently for an inherited scale than for a hand-calibrated one."
+      ],
+      "kind" : "enum",
+      "name" : "ScaleSource",
+      "summary" : "Where a scale came from (spec 10.2, 10.3, 10.4)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "decimalPlaces",
+          "note" : "0...12",
+          "rawValue" : "Int"
+        },
+        {
+          "name" : "imperialFraction",
+          "note" : "nearest 1/denominator",
+          "rawValue" : "ImperialFractionDenominator"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Display rounding never touches the stored SI value (spec 11.5).",
+        "decimalPlaces outside 0...12 throws ScaleError.unsupportedDecimalPlaces, from validate() and from init(from:) alike: a stored precision is validated when it is decoded (ADR-0017)."
+      ],
+      "kind" : "enum",
+      "name" : "PrecisionMode",
+      "summary" : "How a value is rounded when it is shown or exported (spec 11.5)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "whole",
+          "note" : "1/1",
+          "rawValue" : "1"
+        },
+        {
+          "name" : "half",
+          "note" : "1/2",
+          "rawValue" : "2"
+        },
+        {
+          "name" : "quarter",
+          "note" : "1/4",
+          "rawValue" : "4"
+        },
+        {
+          "name" : "eighth",
+          "note" : "1/8",
+          "rawValue" : "8"
+        },
+        {
+          "name" : "sixteenth",
+          "note" : "1/16",
+          "rawValue" : "16"
+        },
+        {
+          "name" : "thirtySecond",
+          "note" : "1/32",
+          "rawValue" : "32"
+        },
+        {
+          "name" : "sixtyFourth",
+          "note" : "1/64",
+          "rawValue" : "64"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "ImperialFractionDenominator",
+      "summary" : "The imperial fraction denominators the product supports (spec 11.5)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "recalculate",
+          "rawValue" : "recalculate"
+        },
+        {
+          "name" : "keepExisting",
+          "rawValue" : "keepExisting"
+        },
+        {
+          "name" : "cancel",
+          "rawValue" : "cancel"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Recalculate is undoable."
+      ],
+      "kind" : "enum",
+      "name" : "ScaleChangePolicy",
+      "summary" : "The three answers to \"this scale changed, what about the measurements?\" (spec 10.6)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "currentPage",
+          "rawValue" : "currentPage"
+        },
+        {
+          "name" : "selectedPages",
+          "rawValue" : "selectedPages"
+        },
+        {
+          "name" : "pageRange",
+          "rawValue" : "pageRange"
+        },
+        {
+          "name" : "pagesWithSameDimensions",
+          "rawValue" : "pagesWithSameDimensions"
+        },
+        {
+          "name" : "entireDocument",
+          "rawValue" : "entireDocument"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "The user sees a preview and the number of affected markups before a bulk apply."
+      ],
+      "kind" : "enum",
+      "name" : "ScaleApplicationScope",
+      "summary" : "The scope a scale is applied to in a bulk operation (spec 10.5)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "splitAtBoundary",
+          "rawValue" : "splitAtBoundary"
+        },
+        {
+          "name" : "askUser",
+          "rawValue" : "askUser"
+        },
+        {
+          "name" : "block",
+          "rawValue" : "block"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "There is no case for choosing a scale silently. The app never quietly picks the wrong scale."
+      ],
+      "kind" : "enum",
+      "name" : "ScaleRegionCrossingPolicy",
+      "summary" : "What happens when a markup crosses two Scale Regions (spec 10.4)."
+    }
+  ]
+}

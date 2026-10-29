@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE dictionary SYSTEM "file://localhost/System/Library/DTDs/sdef.dtd">
+<!--
+  Zenit PDF's AppleScript dictionary (NL-PLAT-11). The standard Cocoa suite gives open, close,
+  count, quit and the document list; the Zenit suite reads a takeoff — its pages, scale and
+  ledger rows — exports its ledger and applies a job template. Every command calls the same code
+  the menus run. A sandboxed application may receive Apple events without extra entitlements; it
+  sends none.
+-->
+<dictionary title="Zenit PDF Terminology" xmlns:xi="http://www.w3.org/2001/XInclude">
+
+    <xi:include href="file:///System/Library/ScriptingDefinitions/CocoaStandard.sdef" xpointer="xpointer(/dictionary/suite)"/>
+
+    <suite name="Zenit PDF Suite" code="ZNTs" description="Takeoffs, their ledgers and job templates.">
+
+        <class-extension extends="document" description="A drawing or a Zenit PDF project.">
+            <cocoa class="ZenitPDFAppKit.ZenitPDFProjectDocument"/>
+            <property name="page count" code="ZNpc" type="integer" access="r" description="How many sheets the drawing has.">
+                <cocoa key="scriptPageCount"/>
+            </property>
+            <property name="scale state" code="ZNss" type="text" access="r" description="The drawing's scale: the ratio when every calibrated sheet agrees, the ratios when they differ, or “not calibrated”.">
+                <cocoa key="scriptScaleState"/>
+            </property>
+            <property name="is project" code="ZNip" type="boolean" access="r" description="Whether the document is a saved Zenit PDF project rather than a drawing opened on its own.">
+                <cocoa key="scriptIsProject"/>
+            </property>
+            <element type="ledger row" access="r" description="The Quantity Ledger's rows, in ledger order.">
+                <cocoa key="scriptLedgerRows"/>
+            </element>
+            <responds-to command="export ledger">
+                <cocoa method="scriptExportLedger:"/>
+            </responds-to>
+            <responds-to command="get totals">
+                <cocoa method="scriptGetTotals:"/>
+            </responds-to>
+            <responds-to command="apply template">
+                <cocoa method="scriptApplyTemplate:"/>
+            </responds-to>
+        </class-extension>
+
+        <class name="ledger row" code="ZNlr" plural="ledger rows" description="One row of the Quantity Ledger. Read-only: a quantity comes from geometry, never from a script.">
+            <cocoa class="ZenitPDFAppKit.ZenitScriptLedgerRow"/>
+            <property name="id" code="ID  " type="text" access="r" description="The markup's identity.">
+                <cocoa key="uniqueID"/>
+            </property>
+            <property name="subject" code="ZNsu" type="text" access="r">
+                <cocoa key="subject"/>
+            </property>
+            <property name="label" code="ZNla" type="text" access="r">
+                <cocoa key="label"/>
+            </property>
+            <property name="quantity" code="ZNqt" type="text" access="r" description="The row's main quantity as the ledger shows it, with its unit.">
+                <cocoa key="quantity"/>
+            </property>
+            <property name="unit" code="ZNun" type="text" access="r">
+                <cocoa key="unit"/>
+            </property>
+        </class>
+
+        <enumeration name="ledger format" code="ZNlf">
+            <enumerator name="csv" code="ZNfc" description="Comma-separated values."/>
+            <enumerator name="xlsx" code="ZNfx" description="An Excel workbook."/>
+            <enumerator name="json" code="ZNfj" description="The Zenit ledger interchange file (.zpdfjson)."/>
+        </enumeration>
+
+        <command name="export ledger" code="ZNtsExLg" description="Write the document's Quantity Ledger to a file.">
+            <direct-parameter type="document" description="The document to export."/>
+            <parameter name="to" code="kfil" type="file" description="Where to write the file.">
+                <cocoa key="file"/>
+            </parameter>
+            <parameter name="as" code="ZNas" type="ledger format" optional="yes" description="The format; xlsx when omitted.">
+                <cocoa key="format"/>
+            </parameter>
+            <result type="text" description="The path written."/>
+        </command>
+
+        <command name="get totals" code="ZNtsGtTo" description="The ledger's grand totals, one line each: “Plan Area: 84.20 m²”.">
+            <direct-parameter type="document" description="The document to read."/>
+            <result type="text"/>
+        </command>
+
+        <command name="apply template" code="ZNtsApTp" description="Apply one of the person's job templates, or a shipped starter, by name. Never sets a scale: a template cannot carry one.">
+            <direct-parameter type="document" description="The document to set up."/>
+            <parameter name="named" code="ZNnm" type="text" description="The template's name.">
+                <cocoa key="name"/>
+            </parameter>
+            <result type="text" description="What was applied."/>
+        </command>
+
+    </suite>
+</dictionary>

@@ -1,0 +1,1203 @@
+{
+  "contract" : "MARKUP_CONTRACT",
+  "contractVersion" : 6,
+  "frozenAt" : "2026-09-01T23:28:48Z",
+  "generator" : "zpdf-contract-freeze (ZPDFContracts v2)",
+  "invariants" : [
+    "Live projects keep Zenit markups in SQLite with a stable UUID and a custom overlay; PDF annotations are an export shape, not the storage format (spec 14.2).",
+    "Every mutation is an undoable command (spec 14.5).",
+    "A locked markup rejects geometry and style edits; a hidden markup is not drawn; a non-printable markup is excluded from print and flattened export.",
+    "A cutout points at its parent and appears as a ledger child (spec 12.4).",
+    "No competing product's icon, colour, screenshot, layout measurement, wording or distinctive feature name is reproduced anywhere in this contract, and no such product is named."
+  ],
+  "specSections" : [
+    "14.1",
+    "14.2",
+    "14.3",
+    "14.4",
+    "14.5"
+  ],
+  "summary" : "The markup record: what a Zenit markup is, what it looks like, what it is worth in the ledger, and which mutations the undo stack knows about.",
+  "tables" : [
+    {
+      "columns" : [
+        "kind",
+        "producesQuantity",
+        "isTextMarkup"
+      ],
+      "name" : "markupKinds",
+      "rows" : [
+        [
+          "text",
+          "false",
+          "false"
+        ],
+        [
+          "callout",
+          "false",
+          "false"
+        ],
+        [
+          "note",
+          "false",
+          "false"
+        ],
+        [
+          "highlight",
+          "false",
+          "true"
+        ],
+        [
+          "underline",
+          "false",
+          "true"
+        ],
+        [
+          "strikeout",
+          "false",
+          "true"
+        ],
+        [
+          "freehand",
+          "false",
+          "false"
+        ],
+        [
+          "line",
+          "false",
+          "false"
+        ],
+        [
+          "arrow",
+          "false",
+          "false"
+        ],
+        [
+          "polyline",
+          "false",
+          "false"
+        ],
+        [
+          "rectangle",
+          "false",
+          "false"
+        ],
+        [
+          "ellipse",
+          "false",
+          "false"
+        ],
+        [
+          "polygon",
+          "false",
+          "false"
+        ],
+        [
+          "cloud",
+          "false",
+          "false"
+        ],
+        [
+          "stamp",
+          "false",
+          "false"
+        ],
+        [
+          "image",
+          "false",
+          "false"
+        ],
+        [
+          "hyperlink",
+          "false",
+          "false"
+        ],
+        [
+          "measurement",
+          "true",
+          "false"
+        ],
+        [
+          "count",
+          "true",
+          "false"
+        ],
+        [
+          "revisionCloud",
+          "false",
+          "false"
+        ],
+        [
+          "issue",
+          "false",
+          "false"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "mode",
+        "behaviour"
+      ],
+      "name" : "exportModes",
+      "rows" : [
+        [
+          "editableAnnotated",
+          "standard PDF annotations where possible, optional Zenit custom dictionary"
+        ],
+        [
+          "flattened",
+          "markups drawn into the page content stream"
+        ],
+        [
+          "clean",
+          "no Zenit markups at all"
+        ]
+      ]
+    }
+  ],
+  "types" : [
+    {
+      "cases" : [
+        {
+          "name" : "text",
+          "rawValue" : "text"
+        },
+        {
+          "name" : "callout",
+          "rawValue" : "callout"
+        },
+        {
+          "name" : "note",
+          "rawValue" : "note"
+        },
+        {
+          "name" : "highlight",
+          "rawValue" : "highlight"
+        },
+        {
+          "name" : "underline",
+          "rawValue" : "underline"
+        },
+        {
+          "name" : "strikeout",
+          "rawValue" : "strikeout"
+        },
+        {
+          "name" : "freehand",
+          "rawValue" : "freehand"
+        },
+        {
+          "name" : "line",
+          "rawValue" : "line"
+        },
+        {
+          "name" : "arrow",
+          "rawValue" : "arrow"
+        },
+        {
+          "name" : "polyline",
+          "rawValue" : "polyline"
+        },
+        {
+          "name" : "rectangle",
+          "rawValue" : "rectangle"
+        },
+        {
+          "name" : "ellipse",
+          "rawValue" : "ellipse"
+        },
+        {
+          "name" : "polygon",
+          "rawValue" : "polygon"
+        },
+        {
+          "name" : "cloud",
+          "rawValue" : "cloud"
+        },
+        {
+          "name" : "stamp",
+          "rawValue" : "stamp"
+        },
+        {
+          "name" : "image",
+          "rawValue" : "image"
+        },
+        {
+          "name" : "hyperlink",
+          "rawValue" : "hyperlink"
+        },
+        {
+          "name" : "measurement",
+          "note" : "reaches the Quantity Ledger",
+          "rawValue" : "measurement"
+        },
+        {
+          "name" : "count",
+          "note" : "reaches the Quantity Ledger",
+          "rawValue" : "count"
+        },
+        {
+          "name" : "revisionCloud",
+          "rawValue" : "revisionCloud"
+        },
+        {
+          "name" : "issue",
+          "rawValue" : "issue"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "MarkupKind",
+      "summary" : "The markup types the product creates (spec 14.1)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "none",
+          "rawValue" : "none"
+        },
+        {
+          "name" : "open",
+          "rawValue" : "open"
+        },
+        {
+          "name" : "inProgress",
+          "rawValue" : "inProgress"
+        },
+        {
+          "name" : "resolved",
+          "rawValue" : "resolved"
+        },
+        {
+          "name" : "accepted",
+          "rawValue" : "accepted"
+        },
+        {
+          "name" : "rejected",
+          "rawValue" : "rejected"
+        },
+        {
+          "name" : "cancelled",
+          "rawValue" : "cancelled"
+        },
+        {
+          "name" : "completed",
+          "rawValue" : "completed"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "`none` is a state of its own, so \"not part of a review workflow\" never has to be spelled as an absent value each consumer interprets differently.",
+        "Status is never signalled by colour alone in the UI."
+      ],
+      "kind" : "enum",
+      "name" : "MarkupStatus",
+      "summary" : "Review status of a markup (spec 14.3)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "solid",
+          "rawValue" : "solid"
+        },
+        {
+          "name" : "dashed",
+          "rawValue" : "dashed"
+        },
+        {
+          "name" : "dotted",
+          "rawValue" : "dotted"
+        },
+        {
+          "name" : "dashDot",
+          "rawValue" : "dashDot"
+        },
+        {
+          "name" : "cloud",
+          "rawValue" : "cloud"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "LineStyle",
+      "summary" : "Line dash pattern."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "none",
+          "rawValue" : "none"
+        },
+        {
+          "name" : "openArrow",
+          "rawValue" : "openArrow"
+        },
+        {
+          "name" : "closedArrow",
+          "rawValue" : "closedArrow"
+        },
+        {
+          "name" : "circle",
+          "rawValue" : "circle"
+        },
+        {
+          "name" : "square",
+          "rawValue" : "square"
+        },
+        {
+          "name" : "diamond",
+          "rawValue" : "diamond"
+        },
+        {
+          "name" : "slash",
+          "rawValue" : "slash"
+        },
+        {
+          "name" : "butt",
+          "rawValue" : "butt"
+        },
+        {
+          "name" : "round",
+          "rawValue" : "round"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "LineCapStyle",
+      "summary" : "Line end decoration (spec 14.3)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "leading",
+          "rawValue" : "leading"
+        },
+        {
+          "name" : "center",
+          "rawValue" : "center"
+        },
+        {
+          "name" : "trailing",
+          "rawValue" : "trailing"
+        },
+        {
+          "name" : "justified",
+          "rawValue" : "justified"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "TextAlignment",
+      "summary" : "Horizontal text alignment inside a markup's text box."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stroke colour",
+          "name" : "color",
+          "type" : "RGBAColor",
+          "unit" : "sRGB 0...1"
+        },
+        {
+          "invariant" : "nil means unfilled",
+          "name" : "fill",
+          "type" : "RGBAColor?",
+          "unit" : "sRGB 0...1"
+        },
+        {
+          "invariant" : "multiplied with the colours' own alpha",
+          "name" : "opacity",
+          "type" : "Double",
+          "unit" : "0...1"
+        },
+        {
+          "invariant" : "finite and non-negative",
+          "name" : "lineWidth",
+          "type" : "Double",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "dash pattern",
+          "name" : "lineStyle",
+          "type" : "LineStyle",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "line end decoration",
+          "name" : "startCap",
+          "type" : "LineCapStyle",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "line end decoration",
+          "name" : "endCap",
+          "type" : "LineCapStyle",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "family name only; resolution happens in the design system",
+          "name" : "fontName",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "finite and positive",
+          "name" : "fontSize",
+          "type" : "Double",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "horizontal alignment",
+          "name" : "textAlignment",
+          "type" : "TextAlignment",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "bold, italic, text colour and box border (ADR-0029); nil is plain text in the stroke colour, which is what every style written before ADR-0029 means",
+          "name" : "textStyle",
+          "type" : "MarkupTextStyle?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "scallop radius of a clouded outline (ADR-0029); nil is automatic, a set value is clamped to 2...72",
+          "name" : "cloudArcSize",
+          "type" : "Double?",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "counter-clockwise about the box centre (ADR-0029); nil is none; stamps keep StampInstance.rotationDegrees",
+          "name" : "rotationDegrees",
+          "type" : "Double?",
+          "unit" : "degree"
+        },
+        {
+          "invariant" : "normal or multiply (ADR-0029); nil is normal; multiply is the highlighter",
+          "name" : "blendMode",
+          "type" : "MarkupBlendMode?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "a measurement's caption fields, segment lengths and dragged label offset (ADR-0030 §3); nil is the headline value at the automatic position",
+          "name" : "measurementCaption",
+          "type" : "MeasurementCaption?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Fonts are named, not resolved: this package cannot import AppKit.",
+        "measurementCaption is display only: it never holds a quantity, and it is absent from a style that does not use it (ADR-0030 §3).",
+        "Every field added by ADR-0029 is optional and absent from a style that does not use it, so a style written before ADR-0029 decodes unchanged and one that does not use the new fields encodes byte-identically."
+      ],
+      "kind" : "struct",
+      "name" : "MarkupStyle",
+      "summary" : "Everything that decides how a markup looks (spec 14.3)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "bold weight",
+          "name" : "bold",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "italic face",
+          "name" : "italic",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "nil is the stroke colour",
+          "name" : "textColor",
+          "type" : "RGBAColor?",
+          "unit" : "sRGB 0...1"
+        },
+        {
+          "invariant" : "a Text box draws a border in the stroke colour; a Callout always draws its box",
+          "name" : "boxBorder",
+          "type" : "Bool",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "MarkupTextStyle",
+      "summary" : "Text formatting beyond family, size and alignment (ADR-0029)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "normal",
+          "rawValue" : "normal"
+        },
+        {
+          "name" : "multiply",
+          "rawValue" : "multiply"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "MarkupBlendMode",
+      "summary" : "How a markup's ink combines with the drawing under it (ADR-0029)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "a page of the same project",
+          "name" : "pageID",
+          "type" : "PageID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "a web address; http, https or mailto only",
+          "name" : "url",
+          "type" : "String?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Exactly one of pageID and url is set (isValid).",
+        "Following a web address is always confirmed by a person; nothing opens on its own."
+      ],
+      "kind" : "struct",
+      "name" : "MarkupLinkTarget",
+      "summary" : "Where a hyperlink markup leads (ADR-0029)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable UUID, minted once, never reused, survives export",
+          "name" : "id",
+          "type" : "MarkupID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "owning document",
+          "name" : "documentID",
+          "type" : "DocumentID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "a markup lives on one page",
+          "name" : "pageID",
+          "type" : "PageID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "from the spec 14.1 list",
+          "name" : "kind",
+          "type" : "MarkupKind",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the measurement tool that created it, for measurement and count kinds",
+          "name" : "tool",
+          "type" : "MeasurementTool?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "primary ledger grouping key",
+          "name" : "subject",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "secondary ledger key",
+          "name" : "label",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "free text",
+          "name" : "comment",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "local author name; local-first, no account identity",
+          "name" : "author",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "review status",
+          "name" : "status",
+          "type" : "MarkupStatus",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "appearance",
+          "name" : "style",
+          "type" : "MarkupStyle",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "optional caption drawn next to the markup",
+          "name" : "caption",
+          "type" : "String?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the markup layer it belongs to (ADR-0032); nil is the project's default layer, which is every markup written before ADR-0032",
+          "name" : "layerID",
+          "type" : "LayerID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "optional Project Zone",
+          "name" : "zoneID",
+          "type" : "ZoneID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "optional Scale Region",
+          "name" : "scaleRegionID",
+          "type" : "ScaleRegionID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the scale the measurement was computed under",
+          "name" : "scaleID",
+          "type" : "ScaleID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the version of that scale; a mismatch means the value is stale",
+          "name" : "scaleVersion",
+          "type" : "Int?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "locked markups reject geometry and style edits",
+          "name" : "locked",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "hidden markups are not drawn",
+          "name" : "hidden",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "excluded from print and flattened export when false",
+          "name" : "printable",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "original page-space geometry, kept verbatim",
+          "name" : "geometry",
+          "type" : "MeasurementGeometry?",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "measurement parameters used",
+          "name" : "parameters",
+          "type" : "MeasurementParameters?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "computed values",
+          "name" : "measurement",
+          "type" : "MeasurementResult?",
+          "unit" : "SI base units"
+        },
+        {
+          "invariant" : "set for a cutout (spec 12.4)",
+          "name" : "parentMarkupID",
+          "type" : "MarkupID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "cutout children in creation order",
+          "name" : "cutoutMarkupIDs",
+          "type" : "[MarkupID]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the count group, for count markups",
+          "name" : "countGroupID",
+          "type" : "CountGroupID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "custom ledger values keyed by column",
+          "name" : "customValues",
+          "type" : "[ColumnID: LedgerCellValue]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the placed stamp's template identity and its frozen field values (ADR-0010); nil for every non-stamp markup",
+          "name" : "stamp",
+          "type" : "StampInstance?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "a reference to artwork in the project's content-addressed store, or a built-in glyph name (spec 12.13, ADR-0011); nil for a markup that draws no symbol",
+          "name" : "symbol",
+          "type" : "MarkupSymbol?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "what kind of claim the row's quantity makes: measured, derived or read (ADR-0012); absent in stored JSON decodes as measured, no migration pass",
+          "name" : "provenance",
+          "type" : "QuantityProvenance",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the ancestry of a derived or read row (ADR-0012); mandatory for those two cases, refused for measured, enforced at decode",
+          "name" : "derivation",
+          "type" : "QuantityDerivation?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the markup group (ADR-0029); members select, move, restyle and delete as one; nil when ungrouped",
+          "name" : "groupID",
+          "type" : "MarkupGroupID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "a hyperlink markup's destination (ADR-0029); nil on every other kind",
+          "name" : "link",
+          "type" : "MarkupLinkTarget?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "supplied by an injected TimestampProviding",
+          "name" : "createdAt",
+          "type" : "Date",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "supplied by an injected TimestampProviding",
+          "name" : "modifiedAt",
+          "type" : "Date",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Zenit markups are a first-class overlay in SQLite, not PDF annotations: the id is stable across exports (spec 14.2).",
+        "Original PDF geometry is stored alongside the computed SI values, so a scale change recomputes from source rather than from a previously computed number (spec 10.6).",
+        "scaleID plus scaleVersion make a stale measurement detectable (isMeasurementStale(against:)).",
+        "createdAt and modifiedAt are injected, never read from the wall clock inside a calculation.",
+        "A stamp's dynamic fields are resolved once, at placement, and frozen into stamp.fields; they are never re-resolved on read (ADR-0010).",
+        "A markup's symbol is a reference and never bytes: artwork lives once per project, keyed by SHA-256, so a markup renders correctly after its preset is deleted or edited and a project stays self-contained when it travels (ADR-0011).",
+        "Imported artwork is data. It is bounded by ArtworkLimits, refused with a named reason when it exceeds them, and nothing in an imported file is ever executed (ADR-0011).",
+        "Every row states its claim: provenance is measured, derived or read, stored and exported, immutable after commit (ADR-0012). A record with no provenance key decodes as measured, so every project written before ADR-0012 stays readable with no migration pass.",
+        "derivation is mandatory for derived and read rows and refused for measured rows; the pairing is enforced at decode and by MarkupRecord.quantityProvenanceViolation() (ADR-0012).",
+        "Draw order is the markup's layer, then the document's markup order within that layer: a layer higher in the layer list draws above every layer below it (ADR-0036, answering ADR-0032 section 7). The archive stores the markup order as markup_extra.sort_order; arranging a markup reorders it among its own layer's markups on its page and adds no field (ADR-0029).",
+        "A cloud may carry a callout: its polygon ring is the cloud and its points are [leader target, box corner, box corner], with the text in caption. It is one markup, one ledger row and one export annotation (ADR-0029).",
+        "A freehand markup stores its sampled points as an open point list; smoothing happens at draw time only (ADR-0029).",
+        "Every markup belongs to exactly one markup layer: layerID, or the default layer when layerID is nil or names a layer the project does not hold (effectiveLayerID, ADR-0032).",
+        "A markup is drawn when neither it nor its layer is hidden, editable when neither is locked, and printed when both are printable. A layer's flags never change a quantity or remove a row from the Quantity Ledger (ADR-0032)."
+      ],
+      "kind" : "struct",
+      "name" : "MarkupRecord",
+      "summary" : "One Zenit markup as it lives in the project database (spec 14.2, 14.3)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable UUID; the default layer's is the fixed MarkupLayer.defaultID in every project",
+          "name" : "id",
+          "type" : "LayerID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display name; not an identity, two layers may share it",
+          "name" : "name",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "place in the list, 0 at the top; consumers sort by it, never by name",
+          "name" : "order",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "false hides the layer's markups from the canvas and from hit-testing",
+          "name" : "visible",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "true makes the layer's markups refuse selection and every edit",
+          "name" : "locked",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "false keeps the layer's markups off print and flattened export",
+          "name" : "printable",
+          "type" : "Bool",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "A project always has the default layer; it can be renamed, hidden and locked but never deleted.",
+        "Deleting any other layer moves its markups to a layer the person names, in the same undo step.",
+        "Hiding a layer is a view decision: its markups stay in the Quantity Ledger and in every total unless the person filters by layer."
+      ],
+      "kind" : "struct",
+      "name" : "MarkupLayer",
+      "summary" : "One markup layer of a project: a named, ordered group of markups that shows, locks and prints together (ADR-0032)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "measured",
+          "note" : "derivation is refused",
+          "rawValue" : "measured"
+        },
+        {
+          "name" : "derived",
+          "note" : "derivation is mandatory",
+          "rawValue" : "derived"
+        },
+        {
+          "name" : "read",
+          "note" : "derivation is mandatory",
+          "rawValue" : "read"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "A derived or read row is never mistaken for a measurement: exporters print the provenance, and the ledger renders the difference without relying on colour alone (ADR-0012).",
+        "Correcting a read row is an audit-trailed edit on a row that still says read; it is never promoted to measured (ADR-0012)."
+      ],
+      "kind" : "enum",
+      "name" : "QuantityProvenance",
+      "summary" : "What kind of claim a row's quantity makes: measured, derived, or read (ADR-0012)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "the measured markup a derived row descends from; nil for a read row",
+          "name" : "sourceMarkupID",
+          "type" : "MarkupID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the assembly line's formula text (derived) or the OCR text (read), verbatim",
+          "name" : "formulaText",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the inputs at evaluation time, by name, so the number is reproducible on paper",
+          "name" : "inputs",
+          "type" : "[String: String]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "assembly definition id (derived) or page region (read), for the audit trail",
+          "name" : "originIdentifier",
+          "type" : "String",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Mandatory for derived and read rows, refused for measured rows (ADR-0012)."
+      ],
+      "kind" : "struct",
+      "name" : "QuantityDerivation",
+      "summary" : "The ancestry of a derived or read row (ADR-0012)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "vector",
+          "rawValue" : "vector"
+        },
+        {
+          "name" : "raster",
+          "rawValue" : "raster"
+        },
+        {
+          "name" : "none",
+          "rawValue" : "none"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Vector artwork stays vector; raster artwork is marked as raster so the editor can say it will blur."
+      ],
+      "kind" : "enum",
+      "name" : "StampArtworkKind",
+      "summary" : "What a stamp's artwork is, and therefore whether it stays sharp when magnified."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "SHA-256 of the artwork bytes in the project's artwork store; nil for a built-in glyph",
+          "name" : "artworkDigest",
+          "type" : "String?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "vector, raster or none — whether magnifying keeps the edges crisp",
+          "name" : "kind",
+          "type" : "StampArtworkKind",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the built-in count glyph's name, when there is no imported artwork",
+          "name" : "builtInGlyph",
+          "type" : "String?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "edge of the symbol's square box; finite, 1...20000",
+          "name" : "sizePoints",
+          "type" : "Double",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "counter-clockwise about the mark's own point",
+          "name" : "rotationDegrees",
+          "type" : "Double",
+          "unit" : "degree"
+        },
+        {
+          "invariant" : "the file the artwork was imported from, kept verbatim",
+          "name" : "sourceName",
+          "type" : "String",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "A symbol is resolved from the project, never from the tool library, so deleting or editing a preset cannot change a mark that was already placed.",
+        "Artwork bytes are stored once per digest; 312 batch-placed marks cost one copy and 312 references."
+      ],
+      "kind" : "struct",
+      "name" : "MarkupSymbol",
+      "summary" : "The symbol a markup draws itself as: a reference to artwork, never the artwork (ADR-0011)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "vector from a PDF page, raster from an image",
+          "name" : "kind",
+          "type" : "StampArtworkKind",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "contours to stroke, in the 0...1 artwork box",
+          "name" : "strokes",
+          "type" : "[ArtworkContour]",
+          "unit" : "unit"
+        },
+        {
+          "invariant" : "regions to fill, even-odd, in the 0...1 artwork box",
+          "name" : "regions",
+          "type" : "[ArtworkRegion]",
+          "unit" : "unit"
+        },
+        {
+          "invariant" : "the compiler that produced this geometry",
+          "name" : "compilerVersion",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "source width divided by source height; finite and positive",
+          "name" : "sourceAspectRatio",
+          "type" : "Double",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Vector artwork is geometry, never an image, so magnification multiplies coordinates and cannot resample — a stamp is sharp at 400 %.",
+        "A raster source is compiled to a bounded cell mosaic and marked raster, so the editor can say at what magnification it stops adding detail.",
+        "Every coordinate is finite and inside the unit box; ArtworkGeometry.limitViolation() is the one place the bounds are enforced."
+      ],
+      "kind" : "struct",
+      "name" : "ArtworkGeometry",
+      "summary" : "Imported artwork compiled once into unit-space geometry (ADR-0011 §2.2)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "date",
+          "rawValue" : "date"
+        },
+        {
+          "name" : "author",
+          "rawValue" : "author"
+        },
+        {
+          "name" : "pageLabel",
+          "rawValue" : "pageLabel"
+        },
+        {
+          "name" : "documentName",
+          "rawValue" : "documentName"
+        },
+        {
+          "name" : "revision",
+          "rawValue" : "revision"
+        },
+        {
+          "name" : "projectName",
+          "rawValue" : "projectName"
+        },
+        {
+          "name" : "freeText",
+          "rawValue" : "freeText"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Every field resolves at placement time and is frozen into the markup; none is re-resolved on read."
+      ],
+      "kind" : "enum",
+      "name" : "StampFieldKind",
+      "summary" : "The dynamic content a stamp can carry (ADR-0010)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "addMarkup",
+          "rawValue" : "addMarkup"
+        },
+        {
+          "name" : "removeMarkup",
+          "rawValue" : "removeMarkup"
+        },
+        {
+          "name" : "moveMarkup",
+          "rawValue" : "moveMarkup"
+        },
+        {
+          "name" : "changeStyle",
+          "rawValue" : "changeStyle"
+        },
+        {
+          "name" : "editVertices",
+          "rawValue" : "editVertices"
+        },
+        {
+          "name" : "changeScale",
+          "rawValue" : "changeScale"
+        },
+        {
+          "name" : "recalculateMeasurements",
+          "rawValue" : "recalculateMeasurements"
+        },
+        {
+          "name" : "addCutout",
+          "rawValue" : "addCutout"
+        },
+        {
+          "name" : "editCustomValue",
+          "rawValue" : "editCustomValue"
+        },
+        {
+          "name" : "batchStatusChange",
+          "rawValue" : "batchStatusChange"
+        },
+        {
+          "name" : "reorderPage",
+          "rawValue" : "reorderPage"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Every mutation is a command; NSUndoManager is integrated per document.",
+        "The list is frozen because a command name is part of the persisted undo stack."
+      ],
+      "kind" : "enum",
+      "name" : "MarkupCommandKind",
+      "summary" : "The undoable mutations of the markup engine (spec 14.5)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "editableAnnotated",
+          "rawValue" : "editableAnnotated"
+        },
+        {
+          "name" : "flattened",
+          "rawValue" : "flattened"
+        },
+        {
+          "name" : "clean",
+          "rawValue" : "clean"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "MarkupExportMode",
+      "summary" : "The three export shapes (spec 14.2)."
+    }
+  ]
+}

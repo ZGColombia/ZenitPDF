@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenitgroup.com.co/schemas/zpdftemplate/1",
+  "title": "Zenit PDF job template (.zpdftemplate), file format version 1",
+  "description": "One job template: tool presets, subjects with their colours, ledger column preferences, display units and optionally export profiles. The envelope carries the SHA-256 of the template's canonical encoding; the importer refuses a file whose content does not match it. A template has no place for a scale: the format cannot carry one.",
+  "type": "object",
+  "required": ["format", "formatVersion", "payloadSHA256", "template"],
+  "properties": {
+    "format": { "const": "zenit.jobTemplate.file" },
+    "formatVersion": { "const": 1 },
+    "payloadSHA256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "template": { "$ref": "#/$defs/template" }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "rgba": {
+      "type": "object",
+      "required": ["red", "green", "blue", "alpha"],
+      "properties": {
+        "red": { "type": "number", "minimum": 0, "maximum": 1 },
+        "green": { "type": "number", "minimum": 0, "maximum": 1 },
+        "blue": { "type": "number", "minimum": 0, "maximum": 1 },
+        "alpha": { "type": "number", "minimum": 0, "maximum": 1 }
+      },
+      "additionalProperties": false
+    },
+    "template": {
+      "type": "object",
+      "required": ["id", "formatVersion", "name", "createdAt", "presets", "subjects", "columnPreferences", "units"],
+      "properties": {
+        "id": { "type": "string" },
+        "formatVersion": { "const": 1 },
+        "name": { "type": "string", "minLength": 1 },
+        "createdAt": { "type": ["string", "number"] },
+        "presets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "name", "category", "markupKind", "colorRGBA", "defaultSubject"],
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "category": { "type": "string" },
+              "panel": { "type": "string" },
+              "markupKind": { "type": "string" },
+              "measurementKind": { "type": ["string", "null"] },
+              "colorRGBA": { "$ref": "#/$defs/rgba" },
+              "defaultSubject": { "type": "string" }
+            }
+          }
+        },
+        "subjects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "colorRGBA"],
+            "properties": { "name": { "type": "string" }, "colorRGBA": { "$ref": "#/$defs/rgba" } },
+            "additionalProperties": false
+          }
+        },
+        "columnPreferences": { "type": "array", "items": { "type": "object" } },
+        "units": {
+          "type": "object",
+          "properties": {
+            "length": { "type": "string" },
+            "area": { "type": "string" },
+            "volume": { "type": "string" },
+            "slope": { "type": "string" },
+            "metricDecimalPlaces": { "type": "integer", "minimum": 0 },
+            "imperialPrecision": { "type": "integer", "minimum": 1 }
+          },
+          "additionalProperties": false
+        },
+        "exportProfiles": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "json"],
+            "properties": { "name": { "type": "string" }, "json": { "type": "string" } },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

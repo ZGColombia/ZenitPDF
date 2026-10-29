@@ -1,0 +1,648 @@
+{
+  "contract" : "SNAP_CONTRACT",
+  "contractVersion" : 1,
+  "frozenAt" : "2026-09-01T23:28:48Z",
+  "generator" : "zpdf-contract-freeze (ZPDFContracts v2)",
+  "invariants" : [
+    "Snap geometry is canonical page space with object matrices and parent form transforms applied (spec 13.4).",
+    "Curves are stored as curves; flattening is adaptive and used only for indexing and hit testing.",
+    "The spatial index is a packed R-tree per page, cached by document SHA, page and engine version.",
+    "OCR text is never used as a construction line (spec 13.2).",
+    "The active candidate is held until the cursor leaves tolerance + hysteresis (spec 13.9).",
+    "A page without vector content reports Vector Snap as unavailable rather than failing quietly (spec 13.11).",
+    "Reduced Motion replaces animated snap feedback with a static state (spec 13.10)."
+  ],
+  "specSections" : [
+    "13.1",
+    "13.2",
+    "13.4",
+    "13.5",
+    "13.6",
+    "13.7",
+    "13.8",
+    "13.9",
+    "13.10",
+    "13.11"
+  ],
+  "summary" : "Vector Snap: what is indexed, how a candidate is scored, and the radius and hysteresis behaviour that keeps the cursor from jittering between candidates.",
+  "tables" : [
+    {
+      "columns" : [
+        "setting",
+        "logicalPixels"
+      ],
+      "name" : "snapRadiusDefaults",
+      "rows" : [
+        [
+          "defaultPixels",
+          "10"
+        ],
+        [
+          "minimumPixels",
+          "4"
+        ],
+        [
+          "maximumPixels",
+          "24"
+        ],
+        [
+          "hysteresisPixels",
+          "4"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "kind",
+        "priority",
+        "requiresVectorContent"
+      ],
+      "name" : "snapPriority",
+      "rows" : [
+        [
+          "markupVertex",
+          "0",
+          "false"
+        ],
+        [
+          "calibrationPoint",
+          "1",
+          "false"
+        ],
+        [
+          "intersection",
+          "2",
+          "true"
+        ],
+        [
+          "endpoint",
+          "3",
+          "true"
+        ],
+        [
+          "midpoint",
+          "4",
+          "true"
+        ],
+        [
+          "center",
+          "5",
+          "true"
+        ],
+        [
+          "quadrant",
+          "6",
+          "true"
+        ],
+        [
+          "tangent",
+          "7",
+          "true"
+        ],
+        [
+          "perpendicularProjection",
+          "8",
+          "true"
+        ],
+        [
+          "nearestPointOnSegment",
+          "9",
+          "true"
+        ],
+        [
+          "markupEdge",
+          "10",
+          "false"
+        ],
+        [
+          "markupCenter",
+          "11",
+          "false"
+        ],
+        [
+          "zoneBoundary",
+          "12",
+          "false"
+        ],
+        [
+          "pdfVectorContent",
+          "13",
+          "true"
+        ],
+        [
+          "parallelGuide",
+          "14",
+          "false"
+        ],
+        [
+          "angleIncrement",
+          "15",
+          "false"
+        ],
+        [
+          "grid",
+          "16",
+          "false"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "key",
+        "effect"
+      ],
+      "name" : "modifierKeys",
+      "rows" : [
+        [
+          "Shift",
+          "constrain angles"
+        ],
+        [
+          "Command",
+          "toggle snap temporarily"
+        ],
+        [
+          "Option",
+          "bypass / cycle the current candidate"
+        ],
+        [
+          "Tab",
+          "cycle overlapping candidates"
+        ],
+        [
+          "Backspace",
+          "remove the latest vertex"
+        ],
+        [
+          "Enter",
+          "finish"
+        ],
+        [
+          "Escape",
+          "cancel"
+        ]
+      ]
+    }
+  ],
+  "types" : [
+    {
+      "cases" : [
+        {
+          "name" : "point",
+          "rawValue" : "point"
+        },
+        {
+          "name" : "segment",
+          "rawValue" : "segment"
+        },
+        {
+          "name" : "polyline",
+          "rawValue" : "polyline"
+        },
+        {
+          "name" : "cubicCurve",
+          "rawValue" : "cubicCurve"
+        },
+        {
+          "name" : "quadraticCurve",
+          "rawValue" : "quadraticCurve"
+        },
+        {
+          "name" : "rectangle",
+          "rawValue" : "rectangle"
+        },
+        {
+          "name" : "circle",
+          "rawValue" : "circle"
+        },
+        {
+          "name" : "ellipticalArc",
+          "rawValue" : "ellipticalArc"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Curves are stored as curves. Flattening is for indexing and hit testing only, so a snap onto a curve returns a point on the curve and not on a chord (spec 13.4)."
+      ],
+      "kind" : "enum",
+      "name" : "PrimitiveKind",
+      "summary" : "The kind of geometric primitive stored in a page's snap index (spec 13.4)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "point",
+          "rawValue" : "PDFPoint"
+        },
+        {
+          "name" : "segment",
+          "rawValue" : "SegmentGeometry"
+        },
+        {
+          "name" : "polyline",
+          "rawValue" : "(points: [PDFPoint], isClosed: Bool)"
+        },
+        {
+          "name" : "cubicCurve",
+          "rawValue" : "(start, control1, control2, end: PDFPoint)"
+        },
+        {
+          "name" : "quadraticCurve",
+          "rawValue" : "(start, control, end: PDFPoint)"
+        },
+        {
+          "name" : "rectangle",
+          "rawValue" : "PDFRect"
+        },
+        {
+          "name" : "circle",
+          "rawValue" : "CircleGeometry"
+        },
+        {
+          "name" : "ellipticalArc",
+          "rawValue" : "ArcGeometry"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Coordinates are canonical page space with page rotation and crop honoured.",
+        "Clipping-only and invisible paths are not indexed; oversized background rectangles are filtered (spec 13.4)."
+      ],
+      "kind" : "enum",
+      "name" : "PrimitiveGeometry",
+      "summary" : "The geometry behind a SnapPrimitive, with the object matrix and every parent form transform already applied (spec 13.4)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "index-local and dense, not a UUID: this is derived cache data",
+          "name" : "id",
+          "type" : "UInt64",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "axis-aligned page-space bounds; the R-tree key",
+          "name" : "bounds",
+          "type" : "PDFRect",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "must agree with geometry (isConsistent)",
+          "name" : "kind",
+          "type" : "PrimitiveKind",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "curves stored as curves",
+          "name" : "geometry",
+          "type" : "PrimitiveGeometry",
+          "unit" : "PDF point / radian"
+        },
+        {
+          "invariant" : "the id of the painted path the vector extractor (CGPDFScanner) emitted it from, when it came from PDF content; nil for markup, zone and calibration geometry",
+          "name" : "sourceObjectID",
+          "type" : "UInt64?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "lower for flattened or heuristically filtered content",
+          "name" : "confidence",
+          "type" : "Float",
+          "unit" : "0...1"
+        },
+        {
+          "invariant" : "OCG identity, used by the active-layer score term",
+          "name" : "layerID",
+          "type" : "String?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "bounds is a PDFRect, not the CGRect the spec sketch shows: the snap index is strictly page space and a view type here is the first step towards a zoom value reaching the measurement engine.",
+        "The index is cached keyed by document SHA, page and engine version (spec 13.4).",
+        "kind must agree with geometry.kind, or the cache is rejected rather than snapped to."
+      ],
+      "kind" : "struct",
+      "name" : "SnapPrimitive",
+      "summary" : "One entry in a page's packed R-tree of snappable geometry (spec 13.5)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "endpoint",
+          "note" : "priority 3, needs vector content",
+          "rawValue" : "endpoint"
+        },
+        {
+          "name" : "midpoint",
+          "note" : "priority 4, needs vector content",
+          "rawValue" : "midpoint"
+        },
+        {
+          "name" : "intersection",
+          "note" : "priority 2, needs vector content",
+          "rawValue" : "intersection"
+        },
+        {
+          "name" : "nearestPointOnSegment",
+          "note" : "priority 9, needs vector content",
+          "rawValue" : "nearestPointOnSegment"
+        },
+        {
+          "name" : "perpendicularProjection",
+          "note" : "priority 8, needs vector content",
+          "rawValue" : "perpendicularProjection"
+        },
+        {
+          "name" : "parallelGuide",
+          "note" : "priority 14, works on scans",
+          "rawValue" : "parallelGuide"
+        },
+        {
+          "name" : "center",
+          "note" : "priority 5, needs vector content",
+          "rawValue" : "center"
+        },
+        {
+          "name" : "quadrant",
+          "note" : "priority 6, needs vector content",
+          "rawValue" : "quadrant"
+        },
+        {
+          "name" : "tangent",
+          "note" : "priority 7, needs vector content",
+          "rawValue" : "tangent"
+        },
+        {
+          "name" : "grid",
+          "note" : "priority 16, works on scans",
+          "rawValue" : "grid"
+        },
+        {
+          "name" : "angleIncrement",
+          "note" : "priority 15, works on scans",
+          "rawValue" : "angleIncrement"
+        },
+        {
+          "name" : "markupVertex",
+          "note" : "priority 0, works on scans",
+          "rawValue" : "markupVertex"
+        },
+        {
+          "name" : "markupEdge",
+          "note" : "priority 10, works on scans",
+          "rawValue" : "markupEdge"
+        },
+        {
+          "name" : "markupCenter",
+          "note" : "priority 11, works on scans",
+          "rawValue" : "markupCenter"
+        },
+        {
+          "name" : "pdfVectorContent",
+          "note" : "priority 13, needs vector content",
+          "rawValue" : "pdfVectorContent"
+        },
+        {
+          "name" : "zoneBoundary",
+          "note" : "priority 12, works on scans",
+          "rawValue" : "zoneBoundary"
+        },
+        {
+          "name" : "calibrationPoint",
+          "note" : "priority 1, works on scans",
+          "rawValue" : "calibrationPoint"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "defaultPriority implements the spec 13.7 order; a lower number wins ties at equal screen distance.",
+        "requiresVectorContent is false for grid, angle increment, markup, zone, calibration and parallel-guide snapping, which keep working on a scanned page (spec 13.11)."
+      ],
+      "kind" : "enum",
+      "name" : "SnapKind",
+      "summary" : "The snap types the product offers (spec 13.1)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "pdfPathObject",
+          "rawValue" : "pdfPathObject"
+        },
+        {
+          "name" : "pdfFormObject",
+          "rawValue" : "pdfFormObject"
+        },
+        {
+          "name" : "zenitMarkup",
+          "rawValue" : "zenitMarkup"
+        },
+        {
+          "name" : "zoneBoundary",
+          "rawValue" : "zoneBoundary"
+        },
+        {
+          "name" : "scaleRegionBoundary",
+          "rawValue" : "scaleRegionBoundary"
+        },
+        {
+          "name" : "grid",
+          "rawValue" : "grid"
+        },
+        {
+          "name" : "temporaryGuide",
+          "rawValue" : "temporaryGuide"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "OCR text is never used as a construction line (spec 13.2)."
+      ],
+      "kind" : "enum",
+      "name" : "SnapGeometrySource",
+      "summary" : "Where a snap candidate's geometry came from (spec 13.2)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "the snap type",
+          "name" : "kind",
+          "type" : "SnapKind",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the snapped position",
+          "name" : "position",
+          "type" : "PDFPoint",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "the primitive that produced it, when one did",
+          "name" : "primitiveID",
+          "type" : "UInt64?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "geometry source",
+          "name" : "source",
+          "type" : "SnapGeometrySource",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "scoring is in pixels because \"near\" is a screen judgement",
+          "name" : "screenDistancePixels",
+          "type" : "Double",
+          "unit" : "logical screen pixel"
+        },
+        {
+          "invariant" : "carried from the primitive",
+          "name" : "confidence",
+          "type" : "Float",
+          "unit" : "0...1"
+        },
+        {
+          "invariant" : "active-layer score term",
+          "name" : "isOnActiveLayer",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "Shift angle constraint term",
+          "name" : "satisfiesDirectionConstraint",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "true while the previous winner is being held (spec 13.9)",
+          "name" : "isHeldByHysteresis",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "composed score; lower is better",
+          "name" : "score",
+          "type" : "Double",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "score = typePriority + screenDistance + confidence + activeLayer + directionConstraint + hysteresis (spec 13.7).",
+        "The active candidate is kept until the cursor leaves tolerance + hysteresis, or a clearly better candidate appears (spec 13.9)."
+      ],
+      "kind" : "struct",
+      "name" : "SnapCandidate",
+      "summary" : "A single scored snap candidate for the current cursor position (spec 13.7)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "spec default 10",
+          "name" : "defaultPixels",
+          "type" : "Double",
+          "unit" : "logical screen pixel"
+        },
+        {
+          "invariant" : "spec default 4; > 0 and <= defaultPixels",
+          "name" : "minimumPixels",
+          "type" : "Double",
+          "unit" : "logical screen pixel"
+        },
+        {
+          "invariant" : "spec default 24; >= defaultPixels",
+          "name" : "maximumPixels",
+          "type" : "Double",
+          "unit" : "logical screen pixel"
+        },
+        {
+          "invariant" : "spec default 4; >= 0",
+          "name" : "hysteresisPixels",
+          "type" : "Double",
+          "unit" : "logical screen pixel"
+        },
+        {
+          "invariant" : "which snap kinds are live",
+          "name" : "enabledKinds",
+          "type" : "Set<SnapKind>",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "kinds absent here use SnapKind.defaultPriority",
+          "name" : "priorityOverrides",
+          "type" : "[SnapKind: Int]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "> 0 when grid snap is enabled",
+          "name" : "gridSpacingPoints",
+          "type" : "Double",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "0 < value <= 180 when angle snap is enabled",
+          "name" : "angleIncrementDegrees",
+          "type" : "Double",
+          "unit" : "degree"
+        },
+        {
+          "invariant" : "Command toggles snapping temporarily (spec 13.8)",
+          "name" : "isEnabled",
+          "type" : "Bool",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "minimumPixels <= defaultPixels <= maximumPixels, or validate() throws SnapError.invalidRadiusRange.",
+        "Radii are in logical screen pixels and are converted to page points on every event, because zoom can change between two mouse moves (spec 13.6)."
+      ],
+      "kind" : "struct",
+      "name" : "SnapSettings",
+      "summary" : "Snap radius and behaviour settings (spec 13.6, 13.8, 13.9)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "vectorAvailable",
+          "rawValue" : "vectorAvailable"
+        },
+        {
+          "name" : "vectorUnavailableScannedPage",
+          "rawValue" : "vectorUnavailableScannedPage"
+        },
+        {
+          "name" : "indexing",
+          "rawValue" : "indexing"
+        },
+        {
+          "name" : "failed",
+          "rawValue" : "failed"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "A scanned page reports vectorUnavailableScannedPage explicitly; the UI says \"Vector Snap unavailable\" rather than silently doing nothing (spec 13.11)."
+      ],
+      "kind" : "enum",
+      "name" : "SnapAvailability",
+      "summary" : "The state a page's snap index can be in (spec 13.11)."
+    }
+  ]
+}

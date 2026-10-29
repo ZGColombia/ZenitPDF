@@ -1,0 +1,1651 @@
+{
+  "contract" : "MEASUREMENT_CONTRACT",
+  "contractVersion" : 5,
+  "frozenAt" : "2026-09-01T23:28:48Z",
+  "generator" : "zpdf-contract-freeze (ZPDFContracts v2)",
+  "invariants" : [
+    "The engine receives page-space geometry only: never a screen pixel, never a zoom value (spec 9.2).",
+    "run == 0 is vertical and undefined, never a division producing infinity (spec 12.8).",
+    "Slope is a vector: a length on a sloped plane elongates by sqrt(|d|^2 + (s (d . u))^2) per segment, not by a blanket sqrt(1 + s^2) (ADR-0004).",
+    "Area is direction-independent: A_true = A_plan * sqrt(1 + s^2) exactly, applied once to the net area after cutouts (ADR-0004).",
+    "Plan and true values are produced side by side and neither ever overwrites the other (ADR-0004).",
+    "A polygon needs at least three unique points; self-intersection is blocked or normalised only after user confirmation (spec 12.3).",
+    "Cutouts must overlap their parent and recalculate live; the relation is a ledger parent/child (spec 12.4).",
+    "A cutout that does not overlap its parent at all is refused with MeasurementError.cutoutOutsideParent(cutoutIndex:); a partial overlap is accepted, removes only the part inside, and warns cutoutOutsideParent (QUALITY_BAR 2.5, ADR-0015).",
+    "Under outerPlusCutoutEdges the perimeter is the boundary length of the net region — the rings of the boolean difference — so overlapping, overhanging or shared-edge cutouts never count an edge twice (spec 12.5, ADR-0015).",
+    "slopeRatio and slopePercent are ratio-dimensioned and never sum into a count total; a stored dimensionless value takes its field's dimension on decode (ADR-0014).",
+    "A net quantity below zero is MeasurementError.negativeNetArea, never a value (QUALITY_BAR P11, ADR-0015).",
+    "The informational tools (angle, slope, radius, diameter, threePointCircle) write no field a summed ledger column reads: no planLength, trueLength, perimeter, planArea or netArea (ADR-0019).",
+    "Temporary measurements are overlay only and reach neither SQLite nor the PDF (spec 12.14).",
+    "Every result carries formulaVersion, so a stale stored value is detectable rather than silently wrong.",
+    "Values are stored in SI base units without display rounding (spec 11.4).",
+    "A provenance-recorded result carries its full derivation — geometry digest, scale revision and source, calibration evidence, slope, parameters, engine identity, computed-at — captured at computation time (ADR-0007)."
+  ],
+  "specSections" : [
+    "12.1",
+    "12.2",
+    "12.3",
+    "12.4",
+    "12.5",
+    "12.6",
+    "12.7",
+    "12.8",
+    "12.9",
+    "12.10",
+    "12.11",
+    "12.12",
+    "12.13",
+    "12.14",
+    "12.15",
+    "ADR-0004",
+    "ADR-0007"
+  ],
+  "summary" : "The measurement engine's inputs and outputs: geometry in page space, parameters, the frozen field set, the result shape and the one protocol every calculator implements.",
+  "tables" : [
+    {
+      "columns" : [
+        "field",
+        "lengthPower",
+        "angle",
+        "ratio",
+        "baseUnit"
+      ],
+      "name" : "measurementFieldDimensions",
+      "rows" : [
+        [
+          "count",
+          "0",
+          "false",
+          "false",
+          "1"
+        ],
+        [
+          "planLength",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "trueLength",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "perimeter",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "truePerimeter",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "planArea",
+          "2",
+          "false",
+          "false",
+          "m^2"
+        ],
+        [
+          "trueArea",
+          "2",
+          "false",
+          "false",
+          "m^2"
+        ],
+        [
+          "netArea",
+          "2",
+          "false",
+          "false",
+          "m^2"
+        ],
+        [
+          "cutoutArea",
+          "2",
+          "false",
+          "false",
+          "m^2"
+        ],
+        [
+          "planWallArea",
+          "2",
+          "false",
+          "false",
+          "m^2"
+        ],
+        [
+          "wallArea",
+          "2",
+          "false",
+          "false",
+          "m^2"
+        ],
+        [
+          "netWallArea",
+          "2",
+          "false",
+          "false",
+          "m^2"
+        ],
+        [
+          "volume",
+          "3",
+          "false",
+          "false",
+          "m^3"
+        ],
+        [
+          "rise",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "run",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "slopeRatio",
+          "0",
+          "false",
+          "true",
+          "1"
+        ],
+        [
+          "slopePercent",
+          "0",
+          "false",
+          "true",
+          "1"
+        ],
+        [
+          "slopeAngle",
+          "0",
+          "true",
+          "false",
+          "rad"
+        ],
+        [
+          "depth",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "height",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "radius",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "diameter",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "circumference",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "arcLength",
+          "1",
+          "false",
+          "false",
+          "m"
+        ],
+        [
+          "angle",
+          "0",
+          "true",
+          "false",
+          "rad"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "quantity",
+        "formula",
+        "spec"
+      ],
+      "name" : "coreFormulas",
+      "rows" : [
+        [
+          "length",
+          "sum ||r_i+1 - r_i||",
+          "12.2"
+        ],
+        [
+          "polygonArea",
+          "1/2 * abs(sum(x_i * y_i+1 - x_i+1 * y_i))",
+          "12.3"
+        ],
+        [
+          "netArea",
+          "outerArea - union(cutoutAreas)",
+          "12.4"
+        ],
+        [
+          "volume",
+          "netArea * depth",
+          "12.6"
+        ],
+        [
+          "wallArea",
+          "selectedLengthOrPerimeter * wallHeight",
+          "12.7"
+        ],
+        [
+          "netWallArea",
+          "wallArea - openings",
+          "12.7"
+        ],
+        [
+          "slopeRatio",
+          "rise / run",
+          "12.8"
+        ],
+        [
+          "slopePercent",
+          "100 * rise / run",
+          "12.8"
+        ],
+        [
+          "slopeAngle",
+          "atan(rise / run)",
+          "12.8"
+        ],
+        [
+          "trueLength",
+          "sum sqrt(|d_i|^2 + (slopeRatio * (d_i . u))^2)",
+          "ADR-0004"
+        ],
+        [
+          "truePerimeter",
+          "the same per-segment rule around every counted ring",
+          "ADR-0004"
+        ],
+        [
+          "trueArea",
+          "netArea * sqrt(1 + slopeRatio^2)",
+          "12.8"
+        ],
+        [
+          "wallArea",
+          "trueLength * height, or trueLength * (h_start + h_end) / 2",
+          "ADR-0004"
+        ],
+        [
+          "volume (vertical depth)",
+          "netArea * depth",
+          "ADR-0004"
+        ],
+        [
+          "volume (perpendicular thickness)",
+          "netArea * sqrt(1 + slopeRatio^2) * thickness",
+          "ADR-0004"
+        ],
+        [
+          "trueSegment",
+          "sqrt(planSegment^2 + riseDrop^2)",
+          "12.9"
+        ],
+        [
+          "angle",
+          "atan2(abs(cross(u,v)), dot(u,v))",
+          "12.10"
+        ],
+        [
+          "arcLength",
+          "radius * centralAngleRadians",
+          "12.12"
+        ]
+      ]
+    }
+  ],
+  "types" : [
+    {
+      "cases" : [
+        {
+          "name" : "length",
+          "rawValue" : "length"
+        },
+        {
+          "name" : "dimension",
+          "rawValue" : "dimension"
+        },
+        {
+          "name" : "polylength",
+          "rawValue" : "polylength"
+        },
+        {
+          "name" : "perimeter",
+          "rawValue" : "perimeter"
+        },
+        {
+          "name" : "area",
+          "rawValue" : "area"
+        },
+        {
+          "name" : "rectangleArea",
+          "rawValue" : "rectangleArea"
+        },
+        {
+          "name" : "ellipseArea",
+          "rawValue" : "ellipseArea"
+        },
+        {
+          "name" : "polygonCutout",
+          "rawValue" : "polygonCutout"
+        },
+        {
+          "name" : "ellipseCutout",
+          "rawValue" : "ellipseCutout"
+        },
+        {
+          "name" : "volume",
+          "rawValue" : "volume"
+        },
+        {
+          "name" : "wallArea",
+          "rawValue" : "wallArea"
+        },
+        {
+          "name" : "count",
+          "rawValue" : "count"
+        },
+        {
+          "name" : "radius",
+          "rawValue" : "radius"
+        },
+        {
+          "name" : "diameter",
+          "rawValue" : "diameter"
+        },
+        {
+          "name" : "threePointCircle",
+          "rawValue" : "threePointCircle"
+        },
+        {
+          "name" : "angle",
+          "rawValue" : "angle"
+        },
+        {
+          "name" : "slope",
+          "rawValue" : "slope"
+        },
+        {
+          "name" : "riseDrop",
+          "rawValue" : "riseDrop"
+        },
+        {
+          "name" : "trueSlopedLength",
+          "rawValue" : "trueSlopedLength"
+        },
+        {
+          "name" : "trueSlopedArea",
+          "rawValue" : "trueSlopedArea"
+        },
+        {
+          "name" : "arcLength",
+          "rawValue" : "arcLength"
+        },
+        {
+          "name" : "temporaryMeasure",
+          "rawValue" : "temporaryMeasure"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "MeasurementTool",
+      "summary" : "The measurement tools the product ships (spec 12.1)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite",
+          "name" : "start",
+          "type" : "PDFPoint",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "finite",
+          "name" : "end",
+          "type" : "PDFPoint",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "SegmentGeometry",
+      "summary" : "A straight segment in page space."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "the closing vertex is not repeated",
+          "name" : "points",
+          "type" : "[PDFPoint]",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "closure is a flag, not a duplicated point",
+          "name" : "isClosed",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "arc segments (ADR-0030 §5): bulges[i] bends the edge from points[i]; 0 straight, positive counter-clockwise; honoured only with one entry per point; nil is every edge straight",
+          "name" : "bulges",
+          "type" : "[Double]?",
+          "unit" : "tan(θ/4)"
+        }
+      ],
+      "invariants" : [
+        "Closure is a flag so that \"three unique points\" means exactly that.",
+        "uniquePoints collapses consecutive duplicates and the wrap-around duplicate.",
+        "An arc edge's length is r·θ and its area contribution the circular segment r²/2·(θ − sin θ), both exact; only booleans (cutouts, splitting, coverage) work on a flattened ring (ADR-0030 §5)."
+      ],
+      "kind" : "struct",
+      "name" : "PolygonRing",
+      "summary" : "One ring of a polygon."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "at least three unique points for an area",
+          "name" : "outer",
+          "type" : "PolygonRing",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "each must lie inside outer",
+          "name" : "holes",
+          "type" : "[PolygonRing]",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+        "Holes are stored with the parent, so a net area is never assembled from two records that can drift apart."
+      ],
+      "kind" : "struct",
+      "name" : "PolygonGeometry",
+      "summary" : "A polygon with an outer ring and any number of holes (spec 12.4)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite",
+          "name" : "center",
+          "type" : "PDFPoint",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "finite and non-negative",
+          "name" : "radius",
+          "type" : "Double",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "counter-clockwise from the page-space +x axis",
+          "name" : "startAngle",
+          "type" : "Double",
+          "unit" : "radian"
+        },
+        {
+          "invariant" : "signed; negative sweeps run clockwise",
+          "name" : "sweepAngle",
+          "type" : "Double",
+          "unit" : "radian"
+        }
+      ],
+      "invariants" : [
+        "arcLength = radius * abs(sweepAngle) (spec 12.12)."
+      ],
+      "kind" : "struct",
+      "name" : "ArcGeometry",
+      "summary" : "A circular arc in page space (spec 12.12)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite",
+          "name" : "center",
+          "type" : "PDFPoint",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "finite and non-negative",
+          "name" : "radius",
+          "type" : "Double",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "CircleGeometry",
+      "summary" : "A full circle in page space (spec 12.11)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable identity of the placement",
+          "name" : "id",
+          "type" : "CountPointID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "finite",
+          "name" : "position",
+          "type" : "PDFPoint",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "1-based, nil when numbering is off",
+          "name" : "sequenceNumber",
+          "type" : "Int?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the count group this point belongs to",
+          "name" : "groupID",
+          "type" : "CountGroupID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the symbol drawn at this point",
+          "name" : "symbolID",
+          "type" : "SymbolID?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "CountPoint",
+      "summary" : "One placed count symbol (spec 12.13)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "geometry never spans pages",
+          "name" : "pageID",
+          "type" : "PageID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "polyline vertices, three-point circle points, angle points",
+          "name" : "points",
+          "type" : "[PDFPoint]",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "arc segments of the free-point chain (ADR-0030 §5), one entry per point, the last ignored; nil is every edge straight",
+          "name" : "pointBulges",
+          "type" : "[Double]?",
+          "unit" : "tan(θ/4)"
+        },
+        {
+          "invariant" : "independent segments",
+          "name" : "segments",
+          "type" : "[SegmentGeometry]",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "closed areas with holes",
+          "name" : "polygons",
+          "type" : "[PolygonGeometry]",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "arcs and curved edges",
+          "name" : "arcs",
+          "type" : "[ArcGeometry]",
+          "unit" : "PDF point / radian"
+        },
+        {
+          "invariant" : "radius, diameter and ellipse-area tools",
+          "name" : "circles",
+          "type" : "[CircleGeometry]",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "count symbol placements",
+          "name" : "countPoints",
+          "type" : "[CountPoint]",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+        "All coordinates are PDF points: 72 per inch, bottom-left origin, no zoom, no screen scale.",
+        "isFinite must hold before the engine runs; anything else is MeasurementError.nonFiniteCoordinate.",
+        "Every point, vertex, centre and radius is at most coordinateMagnitudeBound (1e7 PDF points) in magnitude; beyond it the engine refuses with MeasurementError.coordinateOutOfRange, never a number (QUALITY_BAR 2.5, ADR-0035)."
+      ],
+      "kind" : "struct",
+      "name" : "MeasurementGeometry",
+      "summary" : "Everything a measurement can be made of, in canonical PDF page space. A struct with parallel collections rather than an enum of shapes: a takeoff markup routinely mixes kinds, and an enum would force those into separate records that can drift apart."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "display unit for length fields",
+          "name" : "length",
+          "type" : "LengthUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display unit for area fields",
+          "name" : "area",
+          "type" : "AreaUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display unit for volume fields",
+          "name" : "volume",
+          "type" : "VolumeUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display unit for angle fields",
+          "name" : "angle",
+          "type" : "AngleUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "how slope is written",
+          "name" : "slopeForm",
+          "type" : "SlopeForm",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "applied at the view and export boundary only",
+          "name" : "precision",
+          "type" : "PrecisionMode",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "DisplayUnitPolicy",
+      "summary" : "The display units and precision a measurement is presented with."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "dimension must be length; required for Volume",
+          "name" : "depth",
+          "type" : "DecimalQuantity?",
+          "unit" : "m (SI base)"
+        },
+        {
+          "invariant" : "dimension must be length; required for Wall Area",
+          "name" : "height",
+          "type" : "DecimalQuantity?",
+          "unit" : "m (SI base)"
+        },
+        {
+          "invariant" : "dimension must be length; present only when the wall's top edge slopes, and then the trapezoid form is used",
+          "name" : "heightAtEnd",
+          "type" : "DecimalQuantity?",
+          "unit" : "m (SI base)"
+        },
+        {
+          "invariant" : "magnitude, fall-line azimuth and mode (ADR-0004)",
+          "name" : "slope",
+          "type" : "SlopeSpecification",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "required for a volume on a sloped markup; no default",
+          "name" : "volumeDepthReference",
+          "type" : "VolumeDepthReference?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "how cutouts affect the parent quantity",
+          "name" : "cutoutPolicy",
+          "type" : "CutoutPolicy",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "which edges count towards a perimeter",
+          "name" : "perimeterPolicy",
+          "type" : "PerimeterPolicy",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "subtracted from a wall area (spec 12.7)",
+          "name" : "openingAreas",
+          "type" : "[Decimal]",
+          "unit" : "m^2"
+        },
+        {
+          "invariant" : "metadata only; never changes a stored value",
+          "name" : "display",
+          "type" : "DisplayUnitPolicy",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "this markup's own display units and precision (ADR-0035); nil shows in the project's units; metadata only, never changes a stored value, encoded only when present",
+          "name" : "displayOverride",
+          "type" : "DisplayUnitPolicy?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "The rise/run modes are explicit because \"one rise for the whole polyline\" and \"a rise per segment\" give different true lengths from the same drawing (spec 12.9).",
+        "validate() throws MeasurementError.missingParameter when the chosen mode's input is absent.",
+        "depth and height must carry the length dimension or validate() throws.",
+        "depth, height and heightAtEnd must not be negative or NaN: validate() throws MeasurementError.negativeParameter, so a negative volume or wall area is never stored as a value (ADR-0016). A stored record still decodes; it fails when recomputed.",
+        "Every opening area must be a number and not negative: validate() throws MeasurementError.negativeParameter(.openingAreas), so a corrupt record cannot enlarge a net wall area (ADR-0035).",
+        "displayOverride absent means the project's units; a record written before ADR-0035 has no such key and decodes as absent, so it keeps showing in the project's units."
+      ],
+      "kind" : "struct",
+      "name" : "MeasurementParameters",
+      "summary" : "Everything a measurement needs beyond geometry and scale (spec 12.6-12.9)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "count",
+          "note" : "1",
+          "rawValue" : "count"
+        },
+        {
+          "name" : "planLength",
+          "note" : "m",
+          "rawValue" : "planLength"
+        },
+        {
+          "name" : "trueLength",
+          "note" : "m",
+          "rawValue" : "trueLength"
+        },
+        {
+          "name" : "perimeter",
+          "note" : "m",
+          "rawValue" : "perimeter"
+        },
+        {
+          "name" : "truePerimeter",
+          "note" : "m",
+          "rawValue" : "truePerimeter"
+        },
+        {
+          "name" : "planArea",
+          "note" : "m^2",
+          "rawValue" : "planArea"
+        },
+        {
+          "name" : "trueArea",
+          "note" : "m^2",
+          "rawValue" : "trueArea"
+        },
+        {
+          "name" : "netArea",
+          "note" : "m^2",
+          "rawValue" : "netArea"
+        },
+        {
+          "name" : "cutoutArea",
+          "note" : "m^2",
+          "rawValue" : "cutoutArea"
+        },
+        {
+          "name" : "planWallArea",
+          "note" : "m^2",
+          "rawValue" : "planWallArea"
+        },
+        {
+          "name" : "wallArea",
+          "note" : "m^2",
+          "rawValue" : "wallArea"
+        },
+        {
+          "name" : "netWallArea",
+          "note" : "m^2",
+          "rawValue" : "netWallArea"
+        },
+        {
+          "name" : "volume",
+          "note" : "m^3",
+          "rawValue" : "volume"
+        },
+        {
+          "name" : "rise",
+          "note" : "m",
+          "rawValue" : "rise"
+        },
+        {
+          "name" : "run",
+          "note" : "m",
+          "rawValue" : "run"
+        },
+        {
+          "name" : "slopeRatio",
+          "note" : "1",
+          "rawValue" : "slopeRatio"
+        },
+        {
+          "name" : "slopePercent",
+          "note" : "1",
+          "rawValue" : "slopePercent"
+        },
+        {
+          "name" : "slopeAngle",
+          "note" : "rad",
+          "rawValue" : "slopeAngle"
+        },
+        {
+          "name" : "depth",
+          "note" : "m",
+          "rawValue" : "depth"
+        },
+        {
+          "name" : "height",
+          "note" : "m",
+          "rawValue" : "height"
+        },
+        {
+          "name" : "radius",
+          "note" : "m",
+          "rawValue" : "radius"
+        },
+        {
+          "name" : "diameter",
+          "note" : "m",
+          "rawValue" : "diameter"
+        },
+        {
+          "name" : "circumference",
+          "note" : "m",
+          "rawValue" : "circumference"
+        },
+        {
+          "name" : "arcLength",
+          "note" : "m",
+          "rawValue" : "arcLength"
+        },
+        {
+          "name" : "angle",
+          "note" : "rad",
+          "rawValue" : "angle"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Each field declares its own dimension; a MeasurementResult whose value dimension disagrees with its field is invalid (validateDimensions()).",
+        "Lengths are metres, areas square metres, volumes cubic metres, angles radians, counts and ratios dimensionless."
+      ],
+      "kind" : "enum",
+      "name" : "MeasurementField",
+      "summary" : "Every quantity a measurement can produce. The frozen key set of MeasurementResult.values."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "subtractFromArea",
+          "rawValue" : "subtractFromArea"
+        },
+        {
+          "name" : "ignore",
+          "rawValue" : "ignore"
+        },
+        {
+          "name" : "subtractAndReportSeparately",
+          "rawValue" : "subtractAndReportSeparately"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "netArea = outerArea - union(cutoutAreas) (spec 12.4).",
+        "The policy is the parent's: subtractFromArea and subtractAndReportSeparately give the parent the same netArea, ignore gives netArea = planArea. subtractAndReportSeparately additionally reports each cutout's own area in the ledger's cutoutArea column; it never makes a cutout a quantity that is summed (ADR-0018)."
+      ],
+      "kind" : "enum",
+      "name" : "CutoutPolicy",
+      "summary" : "What to do with cutouts when an area is computed (spec 12.4)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "outerOnly",
+          "rawValue" : "outerOnly"
+        },
+        {
+          "name" : "outerPlusCutoutEdges",
+          "rawValue" : "outerPlusCutoutEdges"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "PerimeterPolicy",
+      "summary" : "Which edges count towards a perimeter (spec 12.5)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "none",
+          "rawValue" : "none"
+        },
+        {
+          "name" : "uniformPlane",
+          "rawValue" : "uniformPlane"
+        },
+        {
+          "name" : "perSegmentRiseDrop",
+          "rawValue" : "perSegmentRiseDrop"
+        },
+        {
+          "name" : "totalRiseDrop",
+          "rawValue" : "totalRiseDrop"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "uniformPlane carries a magnitude and, for any directional quantity, an azimuth.",
+        "The pre-ADR-0004 raw value uniformSlope still decodes as uniformPlane."
+      ],
+      "kind" : "enum",
+      "name" : "SlopeMode",
+      "summary" : "How slope is supplied for a measurement (ADR-0004, spec 12.8, 12.9)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "verticalDepth",
+          "rawValue" : "verticalDepth"
+        },
+        {
+          "name" : "perpendicularThickness",
+          "rawValue" : "perpendicularThickness"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "verticalDepth: volume = A_plan * depth; the projection cancels.",
+        "perpendicularThickness: volume = A_plan * sqrt(1 + s^2) * thickness.",
+        "There is no default: a volume on a sloped markup requires the choice."
+      ],
+      "kind" : "enum",
+      "name" : "VolumeDepthReference",
+      "summary" : "Which direction a volume's depth was measured in (ADR-0004)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "counter-clockwise from the page +x axis, normalised into [0, 360)",
+          "name" : "degrees",
+          "type" : "Decimal",
+          "unit" : "degree"
+        }
+      ],
+      "invariants" : [
+        "direction is exact on the four axes, so a contour-parallel edge elongates by exactly zero.",
+        "Reversing an azimuth never changes a length: (d . u) is squared everywhere it is used."
+      ],
+      "kind" : "struct",
+      "name" : "SlopeAzimuth",
+      "summary" : "The steepest-ascent direction of a sloped plane, in page space (ADR-0004)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "explicit; never inferred from which fields are set",
+          "name" : "mode",
+          "type" : "SlopeMode",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "required when mode == uniformPlane; exact through Decimal in every written form",
+          "name" : "magnitude",
+          "type" : "SlopeExpression?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "required before a slope may be applied to a length or a perimeter",
+          "name" : "azimuth",
+          "type" : "SlopeAzimuth?",
+          "unit" : "degree"
+        },
+        {
+          "invariant" : "index i applies to segment i; required when mode == perSegmentRiseDrop",
+          "name" : "perSegmentRiseDrop",
+          "type" : "[Decimal]",
+          "unit" : "m"
+        },
+        {
+          "invariant" : "required when mode == totalRiseDrop",
+          "name" : "totalRiseDrop",
+          "type" : "Decimal?",
+          "unit" : "m"
+        }
+      ],
+      "invariants" : [
+        "Applying a slope to a length or a perimeter without an azimuth is MeasurementError.slopeAzimuthRequired, never a scalar fallback.",
+        "Area needs no azimuth: orthographic projection scales every planar region by cos(theta).",
+        "Magnitudes above 100 % are accepted and warned, not rejected (ADR-0004)."
+      ],
+      "kind" : "struct",
+      "name" : "SlopeSpecification",
+      "summary" : "A slope as ADR-0004 defines it: a magnitude, a direction and an explicit mode."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "selfIntersectingPolygon",
+          "rawValue" : "selfIntersectingPolygon"
+        },
+        {
+          "name" : "polygonNormalized",
+          "rawValue" : "polygonNormalized"
+        },
+        {
+          "name" : "degenerateArea",
+          "rawValue" : "degenerateArea"
+        },
+        {
+          "name" : "duplicatePointsCollapsed",
+          "rawValue" : "duplicatePointsCollapsed"
+        },
+        {
+          "name" : "fewerThanThreeUniquePoints",
+          "rawValue" : "fewerThanThreeUniquePoints"
+        },
+        {
+          "name" : "openPolygonClosedImplicitly",
+          "rawValue" : "openPolygonClosedImplicitly"
+        },
+        {
+          "name" : "nearlyCollinearPoints",
+          "rawValue" : "nearlyCollinearPoints"
+        },
+        {
+          "name" : "verticalSlopeUndefinedRun",
+          "rawValue" : "verticalSlopeUndefinedRun"
+        },
+        {
+          "name" : "slopeMagnitudeAboveOneHundredPercent",
+          "rawValue" : "slopeMagnitudeAboveOneHundredPercent"
+        },
+        {
+          "name" : "slopeAzimuthMissingForBoundary",
+          "rawValue" : "slopeAzimuthMissingForBoundary"
+        },
+        {
+          "name" : "cutoutOutsideParent",
+          "rawValue" : "cutoutOutsideParent"
+        },
+        {
+          "name" : "extremeScale",
+          "rawValue" : "extremeScale"
+        },
+        {
+          "name" : "staleScaleVersion",
+          "rawValue" : "staleScaleVersion"
+        },
+        {
+          "name" : "numericalPrecisionLoss",
+          "rawValue" : "numericalPrecisionLoss"
+        },
+        {
+          "name" : "unitConversionApproximated",
+          "rawValue" : "unitConversionApproximated"
+        },
+        {
+          "name" : "vectorSnapUnavailable",
+          "rawValue" : "vectorSnapUnavailable"
+        },
+        {
+          "name" : "mixedScaleRegions",
+          "rawValue" : "mixedScaleRegions"
+        },
+        {
+          "name" : "riseDropCountMismatch",
+          "rawValue" : "riseDropCountMismatch"
+        },
+        {
+          "name" : "selfIntersectionCheckSkipped",
+          "rawValue" : "selfIntersectionCheckSkipped"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "selfIntersectionCheckSkipped: an outline above the engine's self-intersection vertex limit is measured as drawn and says it was not checked for self-crossings; it is never reported as known-simple (ADR-0018, IM-070)."
+      ],
+      "kind" : "enum",
+      "name" : "MeasurementWarning.Code",
+      "summary" : "The frozen set of things the engine can complain about."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "from the frozen Code set",
+          "name" : "code",
+          "type" : "MeasurementWarning.Code",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the field the warning is about, when it is about one",
+          "name" : "field",
+          "type" : "MeasurementField?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "diagnostic text; not user-facing copy",
+          "name" : "detail",
+          "type" : "String",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "A warning never replaces a value: the engine still returns the number it computed.",
+        "The UI maps code to localized copy and never signals a warning by colour alone."
+      ],
+      "kind" : "struct",
+      "name" : "MeasurementWarning",
+      "summary" : "A non-fatal finding attached to a measurement."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "two for a two-point calibration, four for separate X-Y (X pair first)",
+          "name" : "points",
+          "type" : "[PDFPoint]",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "the real-world length the user entered",
+          "name" : "enteredLength",
+          "type" : "DecimalQuantity",
+          "unit" : "m (SI base)"
+        },
+        {
+          "invariant" : "the unit it was typed in, echoed verbatim by the derivation panel",
+          "name" : "enteredUnit",
+          "type" : "LengthUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the Y line's entered length for a separate X-Y calibration; absent otherwise (ADR-0019)",
+          "name" : "secondaryEnteredLength",
+          "type" : "DecimalQuantity?",
+          "unit" : "m (SI base)"
+        },
+        {
+          "invariant" : "checks of this calibration against other stated dimensions, oldest first; absent until the first (ADR-0030)",
+          "name" : "verifications",
+          "type" : "[ScaleVerification]?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Present only for a calibrated scale; never fabricated for a preset or inherited one.",
+        "A preset (drawing-ratio) scale carries no evidence, and installing one over a calibration removes the old evidence in the same undoable step (ADR-0019).",
+        "A verification never changes the scale; a recalibration starts a new evidence record without the old checks (ADR-0030)."
+      ],
+      "kind" : "struct",
+      "name" : "CalibrationEvidence",
+      "summary" : "The picked points and entered real-world length behind a calibrated scale (ADR-0007)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "the fields the pill shows, in order; empty is the tool's headline field alone",
+          "name" : "fields",
+          "type" : "[MeasurementField]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "whether each segment of a linear or areal markup is labelled with its length",
+          "name" : "showsSegmentLengths",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "where the pill was dragged to, from its automatic position; nil is automatic",
+          "name" : "labelOffset",
+          "type" : "PDFPoint?",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+        "Nothing here is a stored quantity: values come from the markup's MeasurementResult through the ledger formatter, and segment lengths are derived from the geometry when drawn."
+      ],
+      "kind" : "struct",
+      "name" : "MeasurementCaption",
+      "summary" : "What a measurement's pill says and where it sits (NL-MEASURE-09, ADR-0030 §3). Display only."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "the two picked ends of the stated dimension",
+          "name" : "points",
+          "type" : "[PDFPoint]",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "the length the drawing prints for the line",
+          "name" : "statedLength",
+          "type" : "DecimalQuantity",
+          "unit" : "m (SI base)"
+        },
+        {
+          "invariant" : "the unit the stated length was typed in",
+          "name" : "statedUnit",
+          "type" : "LengthUnit",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "what the line measures at the scale version checked",
+          "name" : "measuredLength",
+          "type" : "DecimalQuantity",
+          "unit" : "m (SI base)"
+        },
+        {
+          "invariant" : "the revision of the scale that was checked",
+          "name" : "scaleVersion",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "from an injected clock",
+          "name" : "verifiedAt",
+          "type" : "Date",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "deviation = measuredLength / statedLength - 1, exact in Decimal; rounding happens only where it is shown."
+      ],
+      "kind" : "struct",
+      "name" : "ScaleVerification",
+      "summary" : "One check of a scale against a second dimension the drawing states (NL-MEASURE-04, ADR-0030)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable hash of the canonical page-space geometry encoding",
+          "name" : "geometryDigest",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "which scale was in force",
+          "name" : "scaleID",
+          "type" : "ScaleID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the page that scale belongs to, so the disclosure can name the sheet it was calibrated on",
+          "name" : "scalePageID",
+          "type" : "PageID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "which revision of it (spec 10.6)",
+          "name" : "scaleVersion",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "two-point calibration / separate X-Y / preset / inherited",
+          "name" : "scaleSource",
+          "type" : "ScaleSource",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "picked points and entered length, for a calibrated scale only",
+          "name" : "calibrationEvidence",
+          "type" : "CalibrationEvidence?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "magnitude, fall-line azimuth and mode (ADR-0004)",
+          "name" : "slope",
+          "type" : "SlopeSpecification",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the full parameter set the engine received",
+          "name" : "parameters",
+          "type" : "MeasurementParameters",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the calculation revision that produced the value",
+          "name" : "formulaVersion",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "build identity of the engine that ran",
+          "name" : "engineVersion",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "from an injected clock, never the wall clock directly",
+          "name" : "computedAt",
+          "type" : "Date",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "reserved by ADR-0007 §5 for the layer model; nil until then",
+          "name" : "layerName",
+          "type" : "String?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "how the geometry was captured, by a person or by a detector a person accepted (ADR-0031); absent means manual",
+          "name" : "captureMethod",
+          "type" : "CaptureMethod?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Captured at computation time by the provenance-recording engine, never reconstructed later.",
+        "captureMethod describes the geometry, not the calculation: it is kept across a recalculation while the geometry digest is unchanged and returns to manual when a person edits the geometry (ADR-0031).",
+        "The digest is deterministic: identical geometry digests identically on every machine and build.",
+        "scalePageID is the page the scale belongs to, recorded here rather than looked up later: the scale it names may since have been deleted, and a derivation that cannot finish its own sentence is not a derivation."
+      ],
+      "kind" : "struct",
+      "name" : "MeasurementProvenance",
+      "summary" : "Everything a measured value was computed from, captured at the moment of computation (ADR-0007 §1). Persisted alongside the value: if it is not captured now, the data is not recoverable afterwards."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "manual / autoTraced / symbolMatched / exactBlock / roomDetected / fromScan / wallCentreline / importedAnnotation, stored as text; a kind from a newer build reads as unrecognised",
+          "name" : "kind",
+          "type" : "CaptureMethod.Kind",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "autoTraced: gaps bridged with closing lines",
+          "name" : "bridgedGapCount",
+          "type" : "Int?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "autoTraced: the widest bridged gap",
+          "name" : "largestGapPoints",
+          "type" : "Double?",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "autoTraced: each confirmed closing line's width",
+          "name" : "closureWidthsPoints",
+          "type" : "[Double]?",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "symbolMatched: the match residual, 0 for a perfect match",
+          "name" : "residualRatio",
+          "type" : "Double?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "symbolMatched: the match is the example's mirror image",
+          "name" : "isMirrored",
+          "type" : "Bool?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "symbolMatched: the match's scale relative to the example",
+          "name" : "matchScale",
+          "type" : "Double?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "symbolMatched and exactBlock: digest of the example matched",
+          "name" : "exemplarDigest",
+          "type" : "String?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "fromScan: the detector's confidence",
+          "name" : "confidence",
+          "type" : "Double?",
+          "unit" : "0...1"
+        },
+        {
+          "invariant" : "wallCentreline: the wall thickness the pair was chained at",
+          "name" : "wallThicknessMetres",
+          "type" : "Decimal?",
+          "unit" : "m (SI base)"
+        }
+      ],
+      "invariants" : [
+        "Absent on a MeasurementProvenance means manual, so every record written before ADR-0031 decodes unchanged.",
+        "A detector never commits a quantity by itself: a capture method other than manual records a proposal a person accepted."
+      ],
+      "kind" : "struct",
+      "name" : "CaptureMethod",
+      "summary" : "How a measurement's geometry was captured: drawn by a person, or proposed by a detector and accepted by one (NL-AUTO-18, ADR-0031)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "keyed by field; never rounded",
+          "name" : "values",
+          "type" : "[MeasurementField: DecimalQuantity]",
+          "unit" : "SI base units"
+        },
+        {
+          "invariant" : "non-fatal findings",
+          "name" : "warnings",
+          "type" : "[MeasurementWarning]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the calculation version that produced these values",
+          "name" : "formulaVersion",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the derivation (ADR-0007); nil for a bare engine call or a pre-v3 stored result",
+          "name" : "provenance",
+          "type" : "MeasurementProvenance?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Values are SI base units and carry no display rounding.",
+        "Every value's dimension equals its field's declared dimension.",
+        "formulaVersion lets a later build detect a stored result that predates a calculation change."
+      ],
+      "kind" : "struct",
+      "name" : "MeasurementResult",
+      "summary" : "The result of one measurement (spec 12.15, verbatim shape)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "calculate(geometry:scale:parameters:)",
+          "rawValue" : "(MeasurementGeometry, ScaleTransform, MeasurementParameters) throws -> MeasurementResult"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Pure and Sendable: no clock, no id generation, no I/O, no view state.",
+        "The same three inputs give the same result on every machine at a given formulaVersion.",
+        "Failures are typed MeasurementError values; there is no fatalError path."
+      ],
+      "kind" : "protocol",
+      "name" : "MeasurementCalculating",
+      "summary" : "The measurement engine's entire surface (spec 12.15, verbatim shape)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable group identity",
+          "name" : "id",
+          "type" : "CountGroupID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "symbol every point in the group is drawn with",
+          "name" : "symbolID",
+          "type" : "SymbolID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "a count group lives on one page",
+          "name" : "pageID",
+          "type" : "PageID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "optional Project Zone",
+          "name" : "zoneID",
+          "type" : "ZoneID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "primary ledger grouping key",
+          "name" : "subject",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "secondary ledger key",
+          "name" : "label",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "placement order; sequential numbering follows it",
+          "name" : "pointIDs",
+          "type" : "[CountPointID]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "whether each point shows a running number",
+          "name" : "showsSequentialNumbering",
+          "type" : "Bool",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "CountGroup",
+      "summary" : "The container Count measurements aggregate into (spec 12.13)."
+    }
+  ]
+}

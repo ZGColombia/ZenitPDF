@@ -1,0 +1,563 @@
+{
+  "contract" : "FORMULA_CONTRACT",
+  "contractVersion" : 1,
+  "frozenAt" : "2026-09-01T23:28:48Z",
+  "generator" : "zpdf-contract-freeze (ZPDFContracts v2)",
+  "invariants" : [
+    "No JavaScript and no eval of any kind. The grammar is a Zenit Pratt parser over a closed operator and function set (spec 15.4).",
+    "Arithmetic is Decimal.",
+    "Every expression is dimension-analysed; incompatible dimensions are a typed error, never a silent coercion.",
+    "CONVERT yields a dimensionless magnitude in the target unit, so a converted value can never be added back to a quantity stored in SI base units.",
+    "Cycles between formula columns are detected before evaluation and reported with the dependency path.",
+    "The AST is deterministic: identical source at the same grammar version always yields the same tree.",
+    "The grammar is versioned; stored formulas record the version they were authored against."
+  ],
+  "specSections" : [
+    "15.4"
+  ],
+  "summary" : "The formula grammar: a closed operator set, a closed function set, a fixed variable vocabulary, Decimal arithmetic and dimensional analysis. No script evaluation of any kind.",
+  "tables" : [
+    {
+      "columns" : [
+        "operator",
+        "infixBindingPower",
+        "associativity",
+        "predicate"
+      ],
+      "name" : "operators",
+      "rows" : [
+        [
+          "+",
+          "4",
+          "left",
+          "false"
+        ],
+        [
+          "-",
+          "4",
+          "left",
+          "false"
+        ],
+        [
+          "*",
+          "5",
+          "left",
+          "false"
+        ],
+        [
+          "/",
+          "5",
+          "left",
+          "false"
+        ],
+        [
+          "%",
+          "5",
+          "left",
+          "false"
+        ],
+        [
+          "^",
+          "6",
+          "right",
+          "false"
+        ],
+        [
+          "==",
+          "3",
+          "left",
+          "true"
+        ],
+        [
+          "!=",
+          "3",
+          "left",
+          "true"
+        ],
+        [
+          "<",
+          "3",
+          "left",
+          "true"
+        ],
+        [
+          "<=",
+          "3",
+          "left",
+          "true"
+        ],
+        [
+          ">",
+          "3",
+          "left",
+          "true"
+        ],
+        [
+          ">=",
+          "3",
+          "left",
+          "true"
+        ],
+        [
+          "and",
+          "2",
+          "left",
+          "true"
+        ],
+        [
+          "or",
+          "1",
+          "left",
+          "true"
+        ],
+        [
+          "not",
+          "prefix only",
+          "left",
+          "true"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "function",
+        "minArgs",
+        "maxArgs"
+      ],
+      "name" : "functions",
+      "rows" : [
+        [
+          "IF",
+          "3",
+          "3"
+        ],
+        [
+          "ROUND",
+          "1",
+          "2"
+        ],
+        [
+          "ROUNDUP",
+          "1",
+          "2"
+        ],
+        [
+          "ROUNDDOWN",
+          "1",
+          "2"
+        ],
+        [
+          "MIN",
+          "1",
+          "64"
+        ],
+        [
+          "MAX",
+          "1",
+          "64"
+        ],
+        [
+          "ABS",
+          "1",
+          "1"
+        ],
+        [
+          "SUM",
+          "1",
+          "64"
+        ],
+        [
+          "COUNT",
+          "1",
+          "64"
+        ],
+        [
+          "COALESCE",
+          "1",
+          "64"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "variable",
+        "measurementField",
+        "baseUnit"
+      ],
+      "name" : "variables",
+      "rows" : [
+        [
+          "Count",
+          "count",
+          "1"
+        ],
+        [
+          "Length",
+          "planLength",
+          "m"
+        ],
+        [
+          "TrueLength",
+          "trueLength",
+          "m"
+        ],
+        [
+          "Perimeter",
+          "perimeter",
+          "m"
+        ],
+        [
+          "Area",
+          "netArea",
+          "m^2"
+        ],
+        [
+          "TrueArea",
+          "trueArea",
+          "m^2"
+        ],
+        [
+          "WallArea",
+          "netWallArea",
+          "m^2"
+        ],
+        [
+          "Volume",
+          "volume",
+          "m^3"
+        ],
+        [
+          "Depth",
+          "depth",
+          "m"
+        ],
+        [
+          "Height",
+          "height",
+          "m"
+        ],
+        [
+          "Slope",
+          "slopeRatio",
+          "1"
+        ],
+        [
+          "UnitCost",
+          "-",
+          "-"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "error",
+        "meaning"
+      ],
+      "name" : "errors",
+      "rows" : [
+        [
+          "emptySource",
+          "the source is empty or whitespace only"
+        ],
+        [
+          "unexpectedCharacter",
+          "the lexer met a character the grammar does not define"
+        ],
+        [
+          "unexpectedToken",
+          "the parser met a token it cannot place"
+        ],
+        [
+          "unexpectedEndOfInput",
+          "the source ended while input was still expected"
+        ],
+        [
+          "unknownFunction",
+          "the name is not in the frozen function set"
+        ],
+        [
+          "unknownVariable",
+          "neither a frozen variable nor a known custom column key"
+        ],
+        [
+          "argumentCountMismatch",
+          "wrong number of arguments for the function"
+        ],
+        [
+          "dimensionRejected",
+          "the expression mixes dimensions the algebra rejects"
+        ],
+        [
+          "cycleDetected",
+          "column A depends on column B which depends back on A"
+        ],
+        [
+          "unsupportedGrammarVersion",
+          "the stored grammar is newer than this build"
+        ],
+        [
+          "divisionByZero",
+          "division by zero during evaluation"
+        ]
+      ]
+    }
+  ],
+  "types" : [
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "the formula as the user typed it; never evaluated as script",
+          "name" : "source",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the grammar the source was authored against",
+          "name" : "grammarVersion",
+          "type" : "Int",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "There is no JavaScript, no host bridge and no runtime-extensible function set (spec 15.4).",
+        "Persisting the source rather than a serialised AST means a grammar fix re-parses old formulas instead of migrating them.",
+        "A grammarVersion newer than the build understands is FormulaError.unsupportedGrammarVersion, not a best-effort parse.",
+        "An empty or whitespace-only source is FormulaError.emptySource."
+      ],
+      "kind" : "struct",
+      "name" : "FormulaExpression",
+      "summary" : "A stored formula (spec 15.4). The contract freezes the persisted shape — source text plus grammar version — without freezing the AST: the Pratt parser, its node types and its evaluator live in the ledger engine package."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "add",
+          "note" : "addition; requires identical dimensions",
+          "rawValue" : "+"
+        },
+        {
+          "name" : "subtract",
+          "note" : "subtraction; requires identical dimensions",
+          "rawValue" : "-"
+        },
+        {
+          "name" : "multiply",
+          "note" : "product; length powers add",
+          "rawValue" : "*"
+        },
+        {
+          "name" : "divide",
+          "note" : "quotient; length powers subtract",
+          "rawValue" : "/"
+        },
+        {
+          "name" : "modulo",
+          "note" : "remainder; dimensionless right operand",
+          "rawValue" : "%"
+        },
+        {
+          "name" : "power",
+          "note" : "integer exponent only; right-associative",
+          "rawValue" : "^"
+        },
+        {
+          "name" : "equal",
+          "note" : "predicate",
+          "rawValue" : "=="
+        },
+        {
+          "name" : "notEqual",
+          "note" : "predicate",
+          "rawValue" : "!="
+        },
+        {
+          "name" : "lessThan",
+          "note" : "predicate",
+          "rawValue" : "<"
+        },
+        {
+          "name" : "lessThanOrEqual",
+          "note" : "predicate",
+          "rawValue" : "<="
+        },
+        {
+          "name" : "greaterThan",
+          "note" : "predicate",
+          "rawValue" : ">"
+        },
+        {
+          "name" : "greaterThanOrEqual",
+          "note" : "predicate",
+          "rawValue" : ">="
+        },
+        {
+          "name" : "and",
+          "note" : "predicate",
+          "rawValue" : "and"
+        },
+        {
+          "name" : "or",
+          "note" : "predicate",
+          "rawValue" : "or"
+        },
+        {
+          "name" : "not",
+          "note" : "predicate",
+          "rawValue" : "not"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Binding powers are fixed by the contract, so the same source always parses to the same AST.",
+        "Only ^ is right-associative.",
+        "not is prefix-only and has no infix binding power."
+      ],
+      "kind" : "enum",
+      "name" : "FormulaOperator",
+      "summary" : "The operators the grammar defines (spec 15.4)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "iff",
+          "note" : "arity 3...3",
+          "rawValue" : "IF"
+        },
+        {
+          "name" : "round",
+          "note" : "arity 1...2",
+          "rawValue" : "ROUND"
+        },
+        {
+          "name" : "roundUp",
+          "note" : "arity 1...2",
+          "rawValue" : "ROUNDUP"
+        },
+        {
+          "name" : "roundDown",
+          "note" : "arity 1...2",
+          "rawValue" : "ROUNDDOWN"
+        },
+        {
+          "name" : "min",
+          "note" : "arity 1...64",
+          "rawValue" : "MIN"
+        },
+        {
+          "name" : "max",
+          "note" : "arity 1...64",
+          "rawValue" : "MAX"
+        },
+        {
+          "name" : "abs",
+          "note" : "arity 1...1",
+          "rawValue" : "ABS"
+        },
+        {
+          "name" : "sum",
+          "note" : "arity 1...64",
+          "rawValue" : "SUM"
+        },
+        {
+          "name" : "count",
+          "note" : "arity 1...64",
+          "rawValue" : "COUNT"
+        },
+        {
+          "name" : "coalesce",
+          "note" : "arity 1...64",
+          "rawValue" : "COALESCE"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "An identifier that is not in this set is FormulaError.unknownFunction; there is no arbitrary-function path.",
+        "A wrong argument count is FormulaError.argumentCountMismatch with the permitted range."
+      ],
+      "kind" : "enum",
+      "name" : "FormulaFunction",
+      "summary" : "The function set the grammar defines (spec 15.4). Closed by design."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "count",
+          "note" : "reads count [1]",
+          "rawValue" : "Count"
+        },
+        {
+          "name" : "length",
+          "note" : "reads planLength [m]",
+          "rawValue" : "Length"
+        },
+        {
+          "name" : "trueLength",
+          "note" : "reads trueLength [m]",
+          "rawValue" : "TrueLength"
+        },
+        {
+          "name" : "perimeter",
+          "note" : "reads perimeter [m]",
+          "rawValue" : "Perimeter"
+        },
+        {
+          "name" : "area",
+          "note" : "reads netArea [m^2]",
+          "rawValue" : "Area"
+        },
+        {
+          "name" : "trueArea",
+          "note" : "reads trueArea [m^2]",
+          "rawValue" : "TrueArea"
+        },
+        {
+          "name" : "wallArea",
+          "note" : "reads netWallArea [m^2]",
+          "rawValue" : "WallArea"
+        },
+        {
+          "name" : "volume",
+          "note" : "reads volume [m^3]",
+          "rawValue" : "Volume"
+        },
+        {
+          "name" : "depth",
+          "note" : "reads depth [m]",
+          "rawValue" : "Depth"
+        },
+        {
+          "name" : "height",
+          "note" : "reads height [m]",
+          "rawValue" : "Height"
+        },
+        {
+          "name" : "slope",
+          "note" : "reads slopeRatio [1]",
+          "rawValue" : "Slope"
+        },
+        {
+          "name" : "unitCost",
+          "note" : "resolved from the column",
+          "rawValue" : "UnitCost"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Custom columns are referenced by their column key, so an unknown identifier is resolved against the column set before it becomes FormulaError.unknownVariable.",
+        "UnitCost has no fixed length power: it is currency per whatever it prices, resolved from the column."
+      ],
+      "kind" : "enum",
+      "name" : "FormulaVariable",
+      "summary" : "The built-in variables a formula can reference (spec 15.4)."
+    }
+  ]
+}

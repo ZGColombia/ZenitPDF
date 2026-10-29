@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenitgroup.com.co/schemas/zpdftools/1",
+  "title": "Zenit PDF tool set (.zpdftools), schema version 1",
+  "description": "A set of Tool Library presets. Every field is stored in a form that survives a schema change: enumerations as raw strings, colours as #RRGGBB, quantities as decimal numbers in metres. The importer treats the file as untrusted, bounds every value and reports fields it does not know; a tool set never carries a scale and nothing in it runs.",
+  "type": "object",
+  "required": ["schemaVersion", "name", "presets"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "name": { "type": "string" },
+    "author": { "type": ["string", "null"] },
+    "exportedAt": { "type": ["string", "null"] },
+    "presets": { "type": "array", "items": { "$ref": "#/$defs/preset" } }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "color": { "type": "string", "pattern": "^#[0-9A-Fa-f]{6}([0-9A-Fa-f]{2})?$" },
+    "preset": {
+      "type": "object",
+      "required": ["id", "name", "category", "markupType", "color", "defaultSubject", "displayLengthUnit"],
+      "properties": {
+        "id": { "type": "string", "pattern": "^[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}$" },
+        "name": { "type": "string" },
+        "category": { "type": "string" },
+        "markupType": { "type": "string" },
+        "measurementTool": { "type": ["string", "null"] },
+        "color": { "$ref": "#/$defs/color" },
+        "defaultSubject": { "type": "string" },
+        "displayLengthUnit": { "type": "string" },
+        "customDefaults": { "type": "object", "additionalProperties": { "type": "string" } },
+        "countSymbolName": { "type": ["string", "null"] },
+        "labelPattern": { "type": ["string", "null"] },
+        "defaultStatus": { "type": ["string", "null"] },
+        "measurementDefaults": {
+          "type": "object",
+          "properties": {
+            "depthMetres": { "type": "number" },
+            "wallHeightMetres": { "type": "number" },
+            "wallHeightAtEndMetres": { "type": "number" },
+            "slopePercent": { "type": "number" },
+            "slopeAzimuthDegrees": { "type": "number" },
+            "volumeDepthReference": { "type": "string" },
+            "cutoutPolicy": { "type": "string" },
+            "perimeterPolicy": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "embeddedImage": {
+          "type": "object",
+          "required": ["fileName", "format", "pixelWidth", "pixelHeight", "base64Data"],
+          "properties": {
+            "fileName": { "type": "string" },
+            "format": { "type": "string" },
+            "pixelWidth": { "type": "integer", "minimum": 1 },
+            "pixelHeight": { "type": "integer", "minimum": 1 },
+            "base64Data": { "type": "string" }
+          },
+          "additionalProperties": false
+        },
+        "stamp": {
+          "type": "object",
+          "required": ["widthPoints", "heightPoints", "rotationDegrees", "artworkKind", "fields"],
+          "properties": {
+            "widthPoints": { "type": "number" },
+            "heightPoints": { "type": "number" },
+            "rotationDegrees": { "type": "number" },
+            "artworkKind": { "type": "string" },
+            "artworkSourceName": { "type": ["string", "null"] },
+            "fields": { "type": "array", "items": { "type": "object" } }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

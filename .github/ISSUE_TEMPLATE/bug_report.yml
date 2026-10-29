@@ -1,0 +1,39 @@
+name: Bug report
+description: Report a reproducible problem in Zenit PDF.
+title: "[Bug] "
+body:
+  - type: markdown
+    attributes:
+      value: "For security vulnerabilities, email info@zenitgroup.com.co. Do not attach private drawings or personal data. Use a synthetic example."
+  - type: input
+    id: version
+    attributes:
+      label: Zenit PDF version
+      description: Include the version or source revision and whether this is a downloaded or local build.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: macOS version and processor architecture
+      placeholder: macOS version, Apple silicon or Intel
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Give the smallest reproducible sequence using generated or non-sensitive files.
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and actual behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Additional details
+      description: Optional sanitized logs or screenshots. Remove identifying information and local paths.

@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenitgroup.com.co/schemas/zpdfprofile/1",
+  "title": "Zenit PDF export profile (.zpdfprofile), format version 1",
+  "description": "How the Quantity Ledger is written for a receiving system's CSV import: columns in order with headers, decimals and units, the CSV dialect and encoding, an optional grouping with subtotals, and a file-name pattern. A description only; nothing in it runs.",
+  "type": "object",
+  "required": ["formatVersion", "name", "columns", "delimiter", "decimalSeparator", "quoteAllFields", "includeHeader", "encoding", "lineEnding", "fileNamePattern"],
+  "properties": {
+    "formatVersion": { "const": 1 },
+    "name": { "type": "string" },
+    "columns": {
+      "type": "array", "minItems": 1, "maxItems": 500,
+      "items": {
+        "type": "object",
+        "required": ["key"],
+        "properties": {
+          "key": { "type": "string", "minLength": 1, "maxLength": 200 },
+          "header": { "type": "string" },
+          "decimals": { "type": "integer", "minimum": 0, "maximum": 12 },
+          "unit": { "enum": ["pcs", "st", "ea", "mm", "cm", "m", "km", "in", "ft", "yd", "mi", "mm2", "mm²", "cm2", "cm²", "m2", "m²", "ha", "km2", "km²", "in2", "in²", "ft2", "ft²", "sq ft", "yd2", "yd²", "acre", "mi2", "mi²", "cm3", "cm³", "m3", "m³", "in3", "in³", "ft3", "ft³", "yd3", "yd³", "l", "L"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "delimiter": { "type": "string", "minLength": 1, "maxLength": 1 },
+    "decimalSeparator": { "type": "string", "minLength": 1, "maxLength": 1 },
+    "quoteAllFields": { "type": "boolean" },
+    "includeHeader": { "type": "boolean" },
+    "encoding": { "enum": ["utf8", "utf8WithBOM", "windows1252"] },
+    "lineEnding": { "enum": ["crlf", "lf"] },
+    "fileNamePattern": { "type": "string" },
+    "grouping": {
+      "type": "object",
+      "required": ["key", "subtotals", "subtotalLabel", "grandTotal", "grandTotalLabel"],
+      "properties": {
+        "key": { "type": "string", "minLength": 1, "maxLength": 200 },
+        "subtotals": { "type": "boolean" },
+        "subtotalLabel": { "type": "string", "maxLength": 200 },
+        "grandTotal": { "type": "boolean" },
+        "grandTotalLabel": { "type": "string", "maxLength": 200 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

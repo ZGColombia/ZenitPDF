@@ -1,0 +1,457 @@
+# Release pipeline for Zenit PDF.
+#
+# Triggered by a vX.Y.Z tag. Builds the universal app with the tag's version, signs it ad-hoc,
+# packages it, proves the one-line installer installs the result, attests provenance and
+# publishes a GitHub Release with five assets:
+#
+#   ZenitPDF-<version>-universal.dmg   the app, an Applications shortcut and a first-launch note
+#   ZenitPDF-<version>-universal.zip   the app alone
+#   SHA256SUMS.txt                     checksums of the disk image and the zip
+#   install.sh                         the one-line installer (Scripts/install.sh)
+#   uninstall.sh                       the uninstaller (Scripts/uninstall.sh)
+#
+# so that, for the newest non-pre-release,
+#   curl -fsSL https://github.com/<owner>/<repo>/releases/latest/download/install.sh | bash
+# always runs the installer published with it.
+#
+# Zenit PDF has no updater and makes no network connection: people update by running the
+# installer again or downloading the newest disk image from the Releases page.
+#
+# There is no Developer ID certificate and no notarization. See Docs/Release/DISTRIBUTION.md
+# and Docs/INSTALL.md for what that means for installation.
+#
+# A manual run (workflow_dispatch) builds, packages and smoke-tests but never publishes;
+# use it to exercise a change to this workflow before pushing a tag.
+#
+# Changelog: a tag vX.Y.Z needs a line that reads exactly `## X.Y.Z` in CHANGELOG.md (a
+# pre-release tag includes its suffix: `## 1.2.0-beta.1`). The job
+# stops before building when it is missing, and the release notes link that file and
+# Docs/KNOWN_LIMITATIONS.md as they are at the tag.
+#
+# Toolchain: the release is built with exactly the Xcode that TOOLCHAIN.md pins, or not at
+# all. The "Select Xcode" step FAILS when that Xcode is absent; a green release job on an
+# unpinned toolchain would be an unreproducible release.
+#
+# Code identity (NL-PLAT-01): this job builds with ZENIT_RELEASE_SIGNING off, so
+# Scripts/build-app.sh signs ad-hoc with the stable requirement
+# `identifier "com.zenitgroup.zenitpdf"` and does not check the maintainer's certificate pin —
+# the runner has no keychain identity and needs none. This is the only path for published
+# releases: the self-signed certificate mode (ZENIT_RELEASE_SIGNING=1) is a maintainer option for
+# local builds and is never used for, or mixed with, published releases, because switching modes
+# changes the designated requirement and makes every installed copy ask once.
+#
+# Secrets: none. The only token used is the one GitHub issues to every run (github.token),
+# limited by the permissions block below.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  # A manual run builds, packages and smoke-tests so the pipeline can be exercised, but never
+  # publishes. Publishing happens only on a pushed v* tag.
+  workflow_dispatch:
+
+# contents: create the release and upload assets. id-token + attestations: sign a build
+# provenance attestation for the disk image and the zip (NL-PLAT-02), so anyone can check with
+# `gh attestation verify ZenitPDF-<version>-universal.dmg --repo <owner>/<repo>` that the file
+# was built by a workflow in this repository; its output names the workflow and tag. Nothing
+# else is granted.
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  # The repository slug, in one place. It is derived from the checkout rather than hard-coded,
+  # so a fork or a rename cannot publish to the wrong place, and it is written into the
+  # attached install.sh and uninstall.sh. The project's repository is ZGColombia/ZenitPDF.
+  ZENIT_REPO: ${{ github.repository }}
+
+  # Pinned by TOOLCHAIN.md.
+  XCODE_VERSION: "27.1"
+
+  APP_NAME: "Zenit PDF.app"
+  BUNDLE_ID: "com.zenitgroup.zenitpdf"
+
+jobs:
+  release:
+    name: Build, package and publish
+    runs-on: xcode-27
+    timeout-minutes: 90
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+        with:
+          # Full history so --generate-notes can see the previous tag.
+          fetch-depth: 0
+          # The token is not left in .git/config for the build, the packaging and the smoke
+          # test. No later step runs git against the remote: `gh` reads GH_TOKEN, and the
+          # attestation step uses the run's OIDC token.
+          persist-credentials: false
+
+      - name: Resolve the version from the tag
+        id: version
+        run: |
+          set -euo pipefail
+          REF="${GITHUB_REF#refs/tags/}"
+          TAGGED=1
+          if [ "${GITHUB_REF}" = "${REF}" ]; then
+            # Manual run without a tag.
+            TAGGED=0
+            REF="v0.0.0-manual-$(date -u +%Y%m%d%H%M%S)"
+            echo "::warning title=No tag::Running without a v* tag; using ${REF}."
+          fi
+          VERSION="${REF#v}"
+          # The version becomes CFBundleShortVersionString and names the DMG. X.Y.Z,
+          # optionally with a pre-release suffix (1.2.0-beta.1).
+          if ! grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$' <<<"${VERSION}"; then
+            echo "::error title=Unusable tag::'${REF}' is not vX.Y.Z or vX.Y.Z-suffix."
+            exit 1
+          fi
+          # A tagged release links its CHANGELOG.md section from the release notes, so the
+          # section must exist before anything is built.
+          if [ "${TAGGED}" = 1 ] && ! grep -qxF "## ${VERSION}" CHANGELOG.md; then
+            echo "::error file=CHANGELOG.md,title=No changelog entry for ${VERSION}::CHANGELOG.md has no line that reads exactly '## ${VERSION}'. Add the section for this release (see CONTRIBUTING.md), then tag again."
+            exit 1
+          fi
+          echo "tag=${REF}"        >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Tag ${REF}, version ${VERSION}"
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          CANDIDATE="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ -d "${CANDIDATE}" ]; then
+            sudo xcode-select --switch "${CANDIDATE}"
+          else
+            echo "Available Xcode installations:"
+            ls -d /Applications/Xcode*.app 2>/dev/null || echo "  (none found)"
+            echo "::error title=Xcode ${XCODE_VERSION} not on this runner::TOOLCHAIN.md pins Xcode ${XCODE_VERSION}. A release is never built on another toolchain; move runs-on to an image that carries it."
+            exit 1
+          fi
+          xcode-select -p
+          ACTUAL="$(xcodebuild -version)"
+          ACTUAL="${ACTUAL%%$'\n'*}"
+          echo "${ACTUAL}"
+          if [ "${ACTUAL}" != "Xcode ${XCODE_VERSION}" ]; then
+            echo "::error title=Wrong Xcode::selected '${ACTUAL}', pinned 'Xcode ${XCODE_VERSION}'."
+            exit 1
+          fi
+          swift --version
+
+      - name: Verify the release scripts exist
+        run: |
+          set -euo pipefail
+          missing=0
+          for script in Scripts/build-app.sh Scripts/make-dmg.sh Scripts/install.sh Scripts/uninstall.sh; do
+            if [ ! -f "${script}" ]; then
+              echo "::error title=Missing release script::${script} does not exist."
+              missing=1
+            else
+              chmod +x "${script}"
+              bash -n "${script}" || { echo "::error file=${script}::bash -n failed"; missing=1; }
+            fi
+          done
+          # This job fails rather than publishing a release it did not build.
+          exit "${missing}"
+
+      - name: Build the application
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          # Ad-hoc signing, no certificate pin: every published release is signed this way;
+          # the certificate mode (ZENIT_RELEASE_SIGNING=1) is for local builds only.
+          ZENIT_RELEASE_SIGNING: "0"
+        run: |
+          set -euo pipefail
+          mkdir -p build release-logs
+          Scripts/build-app.sh --short-version "${VERSION}" build 2>&1 | tee release-logs/build-app.log
+          test -d "build/${APP_NAME}" \
+            || { echo "::error::build/${APP_NAME} was not produced."; exit 1; }
+
+      - name: Verify the signature
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          APP="build/${APP_NAME}"
+
+          # Scripts/build-app.sh already signed the bundle ad-hoc, with Hardened
+          # Runtime and the App Sandbox entitlements, and ran the bundle
+          # gates (licence notices, competitor names, linkage, no network).
+          # Re-signing here without --entitlements would strip them, so this step
+          # verifies rather than repeats the signature, and fails if the
+          # entitlements are gone.
+          codesign --verify --deep --strict --verbose=2 "${APP}"
+          # Captured, then matched: `producer | grep -q` under pipefail can fail on a match
+          # when grep exits before the producer has finished writing (SIGPIPE).
+          ENTITLEMENTS="$(codesign --display --entitlements - --xml "${APP}" 2>/dev/null | plutil -convert xml1 -o - -)"
+          grep -q "com.apple.security.app-sandbox" <<<"${ENTITLEMENTS}" \
+            || { echo "::error::the sandbox entitlement is not attached."; exit 1; }
+          codesign -dvv "${APP}" 2>&1 | grep -E "Identifier|Signature|TeamIdentifier" || true
+
+          # Ad-hoc signing does not make Gatekeeper trust the app. Record the
+          # expected assessment result rather than pretending it passes.
+          echo "--- spctl assessment (expected to be rejected) ---"
+          spctl --assess --type execute --verbose=4 "${APP}" || \
+            echo "spctl rejected the bundle, as expected for an unnotarized app."
+
+          echo "--- architectures ---"
+          ARCHS="$(lipo -archs "${APP}/Contents/MacOS/ZenitPDF")"
+          echo "${ARCHS}"
+          case "${ARCHS}" in
+            *arm64*x86_64*|*x86_64*arm64*) ;;
+            *) echo "::error::the app is '${ARCHS}', not Universal 2."; exit 1 ;;
+          esac
+
+          echo "--- version ---"
+          SHORT="$(plutil -extract CFBundleShortVersionString raw -o - "${APP}/Contents/Info.plist")"
+          echo "CFBundleShortVersionString = ${SHORT}"
+          test "${SHORT}" = "${VERSION}" \
+            || { echo "::error::the app says ${SHORT}, the tag says ${VERSION}."; exit 1; }
+
+      - name: Package the disk image, the zip and the checksums
+        run: |
+          set -euo pipefail
+          # SKIP_LAYOUT=1: the AppleScript window layout needs a Finder in a user
+          # session, which a runner does not have. The image is valid without it and
+          # still carries the app, the Applications shortcut and the first-launch note.
+          SKIP_LAYOUT=1 Scripts/make-dmg.sh "build/${APP_NAME}" dist \
+            2>&1 | tee release-logs/make-dmg.log
+
+          echo "--- dist ---"
+          ls -la dist
+
+      - name: Attach the install and uninstall scripts
+        run: |
+          set -euo pipefail
+          # The attached copies name this repository, so a fork's release installs the
+          # fork's build. The default slug line is replaced exactly once in each.
+          for script in install.sh uninstall.sh; do
+            sed "s|^ZENIT_REPO=\"\${ZENIT_REPO:-[^}]*}\"$|ZENIT_REPO=\"\${ZENIT_REPO:-${ZENIT_REPO}}\"|" \
+              "Scripts/${script}" > "dist/${script}"
+            chmod 755 "dist/${script}"
+            bash -n "dist/${script}"
+            grep -qxF "ZENIT_REPO=\"\${ZENIT_REPO:-${ZENIT_REPO}}\"" "dist/${script}" \
+              || { echo "::error file=Scripts/${script}::the repository slug line was not found."; exit 1; }
+            echo "dist/${script} installs from ${ZENIT_REPO}"
+          done
+
+      - name: Verify the checksums file
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          cd dist
+          test -f SHA256SUMS.txt || { echo "::error::SHA256SUMS.txt is missing."; exit 1; }
+          cat SHA256SUMS.txt
+          for asset in "ZenitPDF-${VERSION}-universal.dmg" "ZenitPDF-${VERSION}-universal.zip"; do
+            test -f "${asset}" || { echo "::error::${asset} was not produced."; exit 1; }
+            grep -q "  ${asset}\$" SHA256SUMS.txt || { echo "::error::SHA256SUMS.txt has no line for ${asset}."; exit 1; }
+          done
+          shasum -a 256 -c SHA256SUMS.txt
+
+      - name: Smoke-test the installer against the built disk image
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          DMG="dist/ZenitPDF-${VERSION}-universal.dmg"
+          DEST="${RUNNER_TEMP}/install-smoke"
+
+          # 1. A good image installs: the app is copied, signed, free of quarantine,
+          #    and the image is detached again.
+          dist/install.sh --dmg "${DMG}" --dest "${DEST}" --yes 2>&1 | tee release-logs/install-smoke.log
+          test -d "${DEST}/${APP_NAME}"
+          codesign --verify --deep --strict "${DEST}/${APP_NAME}"
+          XATTRS="$(xattr -r "${DEST}/${APP_NAME}")"
+          if grep -q com.apple.quarantine <<<"${XATTRS}"; then
+            echo "::error::the installed app still carries com.apple.quarantine."; exit 1
+          fi
+          ATTACHED="$(hdiutil info)"
+          if grep -qF "${DMG##*/}" <<<"${ATTACHED}"; then
+            echo "::error::the disk image is still attached after the install."; exit 1
+          fi
+
+          # 2. A tampered checksum list is refused and nothing is installed.
+          TAMPER="${RUNNER_TEMP}/tamper"
+          mkdir -p "${TAMPER}"
+          cp "${DMG}" "${TAMPER}/"
+          printf '%064d  %s\n' 0 "${DMG##*/}" > "${TAMPER}/SHA256SUMS.txt"
+          if dist/install.sh --dmg "${TAMPER}/${DMG##*/}" --dest "${TAMPER}/dest" --yes > release-logs/install-tamper.log 2>&1; then
+            cat release-logs/install-tamper.log
+            echo "::error::install.sh accepted a disk image whose checksum does not match."; exit 1
+          fi
+          grep -q "does not match its published checksum" release-logs/install-tamper.log
+          test ! -e "${TAMPER}/dest/${APP_NAME}"
+          echo "tampered checksum refused, nothing installed"
+
+          LSREGISTER=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+          "${LSREGISTER}" -u "${DEST}/${APP_NAME}" || true
+          rm -rf "${DEST}" "${TAMPER}"
+
+      - name: Attest build provenance
+        # A free provenance signal that needs no Developer ID: a Sigstore-signed statement that
+        # these files were built by this workflow from this commit. Verified with the GitHub CLI.
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            dist/*.dmg
+            dist/*.zip
+
+      - name: Write the release notes
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          # Prepended to the notes GitHub generates from the commit range. The repository
+          # slug comes from ZENIT_REPO, so the file names no organisation of its own. The
+          # changelog and known-limitations links point at the files as they are at this tag.
+          DMG="ZenitPDF-${VERSION}-universal.dmg"
+          ZIP="ZenitPDF-${VERSION}-universal.zip"
+          BASE="https://github.com/${ZENIT_REPO}/releases/download/${TAG}"
+          BLOB="https://github.com/${ZENIT_REPO}/blob/${TAG}"
+          case "${TAG}" in
+            *-*) # A pre-release is never "latest": point the one-liner at this tag.
+                 ONE_LINER="curl -fsSL ${BASE}/install.sh | bash -s -- --version ${VERSION}" ;;
+            *)   ONE_LINER="curl -fsSL https://github.com/${ZENIT_REPO}/releases/latest/download/install.sh | bash" ;;
+          esac
+
+          cat > release-notes.md <<NOTES
+          ## What's in this release
+
+          See the [changelog](${BLOB}/CHANGELOG.md) for what changed in ${VERSION}, and the
+          [known limitations](${BLOB}/Docs/KNOWN_LIMITATIONS.md) before relying on a feature.
+
+          ## Install
+
+          **Easiest: one line in Terminal.** Open the Terminal app, paste this line and press Return.
+          It downloads the disk image, checks its SHA-256, installs Zenit PDF into Applications and
+          lets macOS open it without a security prompt:
+
+          \`\`\`
+          ${ONE_LINER}
+          \`\`\`
+
+          **Or download the disk image:** [${DMG}](${BASE}/${DMG}). Open it and drag Zenit PDF onto
+          the Applications folder. A zip of the app ([${ZIP}](${BASE}/${ZIP})) is attached as well.
+
+          ### Opening it the first time (disk image or zip)
+
+          Zenit PDF is not signed with an Apple Developer ID and not notarized, so macOS asks you to
+          confirm once:
+
+          - **macOS 15 Sequoia and macOS 26 Tahoe:** double-click Zenit PDF in Applications and click
+            **Done**. Open **System Settings > Privacy & Security**, scroll down to **Security** and
+            click **Open Anyway** next to "Zenit PDF" was blocked to protect your Mac. Confirm with
+            **Open Anyway** and your password or Touch ID.
+          - **macOS 14 Sonoma:** Control-click (or right-click) Zenit PDF in Applications, choose
+            **Open**, then click **Open** again.
+
+          The disk image contains these steps as "How to open Zenit PDF the first time". The full guide,
+          with troubleshooting, is [Docs/INSTALL.md](https://github.com/${ZENIT_REPO}/blob/${TAG}/Docs/INSTALL.md).
+
+          ## Updating
+
+          Run the same Terminal line again, or download the new disk image and replace the app in
+          Applications. Zenit PDF never checks for updates and makes no network connection. Your
+          projects are files you saved; installing a new version does not touch them.
+
+          ## Uninstalling
+
+          \`\`\`
+          curl -fsSL https://github.com/${ZENIT_REPO}/releases/latest/download/uninstall.sh | bash
+          \`\`\`
+
+          ## Verifying the download
+
+          \`\`\`
+          shasum -a 256 -c SHA256SUMS.txt --ignore-missing
+          gh attestation verify ${DMG} --repo ${ZENIT_REPO}
+          \`\`\`
+          NOTES
+          cat release-notes.md
+
+      - name: Publish the GitHub Release
+        if: github.event_name == 'push'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+
+          ASSETS=(
+            "dist/ZenitPDF-${VERSION}-universal.dmg"
+            "dist/ZenitPDF-${VERSION}-universal.zip"
+            "dist/SHA256SUMS.txt"
+            "dist/install.sh"
+            "dist/uninstall.sh"
+          )
+          for f in "${ASSETS[@]}"; do
+            test -f "${f}" || { echo "::error::${f} is missing; nothing was published."; exit 1; }
+          done
+
+          # A tag with a pre-release suffix (v1.2.0-beta.1) is published as a
+          # pre-release so it is not offered as the latest download.
+          PRERELEASE=()
+          case "${TAG}" in
+            *-*) PRERELEASE=(--prerelease) ;;
+          esac
+
+          echo "Publishing ${TAG} with: ${ASSETS[*]} ${PRERELEASE[*]:-}"
+
+          # --generate-notes builds the changelog from the commit range and the notes
+          # file is prepended to it.
+          gh release create "${TAG}" "${ASSETS[@]}" \
+            --repo "${ZENIT_REPO}" \
+            --title "Zenit PDF ${TAG}" \
+            --notes-file release-notes.md \
+            --generate-notes \
+            --verify-tag \
+            ${PRERELEASE[@]+"${PRERELEASE[@]}"}
+
+      - name: Upload build logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-logs
+          path: |
+            release-logs/
+            release-notes.md
+            dist/SHA256SUMS.txt
+          if-no-files-found: warn
+          retention-days: 90
+
+      - name: Summary
+        if: always()
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          set -euo pipefail
+          {
+            echo "### Zenit PDF release"
+            echo ""
+            echo "| Item | Value |"
+            echo "| --- | --- |"
+            echo "| Tag | ${TAG} |"
+            echo "| Repository | ${ZENIT_REPO} |"
+            echo "| Version | ${VERSION} |"
+            echo "| Signing | ad-hoc (no Developer ID, no notarization) |"
+            echo ""
+            echo "Assets:"
+            echo ""
+            echo '```'
+            ls -la dist 2>/dev/null || echo "(no dist directory)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="Zenit PDF">
+  <title>Zenit PDF</title>
+  <desc>Zenit PDF application icon. Original artwork, MIT-licensed with the project.</desc>
+
+  <!--
+    Master artwork. 1024 x 1024 canvas, macOS app-icon grid.
+
+    The Zenit brand mark: a navy squircle carrying a blue ring, crossed by a
+    red Z.
+
+    Body        824 x 824 centred (100 pt inset on every side).
+    Corner      radius 185.4 = 0.225 x 824, drawn as a continuous-curvature
+                squircle (corner smoothing 0.6) rather than a circular arc,
+                so the silhouette matches system apps in the Dock.
+    Ring        centre 512,512. Outer radius 272, inner radius 200, so the band
+                is 72 wide. A light bevel rides the outer edge from the upper
+                left, a dark one the inner edge from the lower right: one light
+                source, upper left, consistent with the body gradient.
+    Monogram    Z on a drafting construction — two
+                datum bars of equal weight tied by one diagonal — at bars
+                344..680, caps 356..668, weight 64, terminal 18, run 168. It
+                crosses the ring, which is what makes the two read as one mark
+                rather than a glyph inside a circle.
+    Ribbon      two annular sectors between radius 236 and 302, sweeping off
+                the ring upper-right and lower-left, one behind the ring and one in
+                front of the Z so the band weaves. Ground detail: the raster
+                pipeline omits them at 16/32 px, where a 66 pt band at that
+                scale is under two pixels, leaving the ring and the Z.
+
+    Palette     navy-light   #33456B      ring-light   #7C9CCB
+                navy-deep    #1B2438      ring-mid     #4C6795
+                red          #D8202F      ring-deep    #2E3F60
+                red-deep     #96121D      graphite     #101317 (shading only)
+  -->
+
+  <defs>
+    <!-- 824 squircle, continuous corners, smoothing 0.6 -->
+    <path id="body" d="M 396.64 100
+      L 627.36 100
+      C 731.194 100 783.111 100 822.770 120.207
+      A 185.4 185.4 0 0 1 903.793 201.230
+      C 924 240.889 924 292.806 924 396.64
+      L 924 627.36
+      C 924 731.194 924 783.111 903.793 822.770
+      A 185.4 185.4 0 0 1 822.770 903.793
+      C 783.111 924 731.194 924 627.36 924
+      L 396.64 924
+      C 292.806 924 240.889 924 201.230 903.793
+      A 185.4 185.4 0 0 1 120.207 822.770
+      C 100 783.111 100 731.194 100 627.36
+      L 100 396.64
+      C 100 292.806 100 240.889 120.207 201.230
+      A 185.4 185.4 0 0 1 201.230 120.207
+      C 240.889 100 292.806 100 396.64 100
+      Z"/>
+
+    <clipPath id="body-clip"><use href="#body" xlink:href="#body"/></clipPath>
+
+    <!-- ground: navy, lit from the upper left -->
+    <linearGradient id="ground" gradientUnits="userSpaceOnUse" x1="150" y1="60" x2="874" y2="964">
+      <stop offset="0" stop-color="#33456B"/>
+      <stop offset="1" stop-color="#1B2438"/>
+    </linearGradient>
+
+    <linearGradient id="deepen" gradientUnits="userSpaceOnUse" x1="340" y1="240" x2="940" y2="1030">
+      <stop offset="0" stop-color="#101317" stop-opacity="0"/>
+      <stop offset="1" stop-color="#101317" stop-opacity="0.42"/>
+    </linearGradient>
+
+    <linearGradient id="sheen" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="420">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.10"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <linearGradient id="rim" gradientUnits="userSpaceOnUse" x1="0" y1="100" x2="0" y2="924">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.34"/>
+      <stop offset="0.45" stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="1" stop-color="#101317" stop-opacity="0.28"/>
+    </linearGradient>
+
+    <!-- ring: brushed blue, lighter towards the light -->
+    <linearGradient id="ringface" gradientUnits="userSpaceOnUse" x1="300" y1="264" x2="724" y2="760">
+      <stop offset="0" stop-color="#7C9CCB"/>
+      <stop offset="0.52" stop-color="#4C6795"/>
+      <stop offset="1" stop-color="#2E3F60"/>
+    </linearGradient>
+
+    <!-- the Z: red, deepening away from the light -->
+    <linearGradient id="ink" gradientUnits="userSpaceOnUse" x1="340" y1="352" x2="700" y2="672">
+      <stop offset="0" stop-color="#E8434F"/>
+      <stop offset="0.55" stop-color="#D8202F"/>
+      <stop offset="1" stop-color="#96121D"/>
+    </linearGradient>
+
+    <linearGradient id="ribbon" gradientUnits="userSpaceOnUse" x1="222" y1="222" x2="802" y2="802">
+      <stop offset="0" stop-color="#C01B28"/>
+      <stop offset="1" stop-color="#7E0F18"/>
+    </linearGradient>
+
+    <linearGradient id="ribbon-lit" gradientUnits="userSpaceOnUse" x1="420" y1="200" x2="830" y2="520">
+      <stop offset="0" stop-color="#F0505C"/>
+      <stop offset="1" stop-color="#C01B28"/>
+    </linearGradient>
+  </defs>
+
+  <g clip-path="url(#body-clip)">
+    <use href="#body" xlink:href="#body" fill="url(#ground)"/>
+    <use href="#body" xlink:href="#body" fill="url(#deepen)"/>
+    <use href="#body" xlink:href="#body" fill="url(#sheen)"/>
+
+    <!--
+      Ribbon, woven. The lower-left tail is drawn *before* the ring and the
+      upper-right one *after* the Z, so the band passes behind the ring on one
+      side and in front of the monogram on the other. One draw order is the
+      whole of the interlock; there is no masking anywhere.
+      Each tail is an annular sector that **tapers to a point**: the outer arc
+      runs at radius 302 and the inner one returns at 236, and the two meet at
+      a single point rather than being joined by a cap. A ribbon with a cut end
+      reads as a broken arc; one that comes to a point reads as a ribbon. The
+      blunt end is where it passes behind the ring, which is where a cut
+      belongs.
+    -->
+    <path id="tail-under" fill="url(#ribbon)" d="M 653.78 778.65
+      A 302 302 0 0 1 211.65 480.43
+      Q 217.51 454.76 252.17 442.38
+      Q 278.37 466.59 277.29 487.33
+      A 236 236 0 0 0 622.80 720.38
+      Z"/>
+
+    <!-- ring: outer disc minus inner disc, even-odd -->
+    <path id="ring" fill="url(#ringface)" fill-rule="evenodd"
+      d="M 512 240 A 272 272 0 1 1 511.99 240 Z
+         M 512 312 A 200 200 0 1 0 512.01 312 Z"/>
+
+    <!-- ring bevels: light on the outer edge from the upper left, dark on the inner edge -->
+    <path fill="none" stroke="#CFE0F7" stroke-opacity="0.62" stroke-width="9" stroke-linecap="round"
+      d="M 237.51 483.15 A 276 276 0 0 1 666.34 283.19"/>
+    <path fill="none" stroke="#101317" stroke-opacity="0.52" stroke-width="9" stroke-linecap="round"
+      d="M 706.93 532.49 A 196 196 0 0 1 402.4 674.49"/>
+
+    <!-- Z monogram: bars 344..680, datum weight 64, terminal 18, diagonal run 168 -->
+    <path id="monogram" fill="url(#ink)" d="M 344 356
+      L 680 356
+      L 680 374
+      L 512 604
+      L 680 604
+      L 680 668
+      L 344 668
+      L 344 650
+      L 512 420
+      L 344 420
+      Z"/>
+
+    <path id="tail-over" fill="url(#ribbon-lit)" d="M 370.22 245.35
+      A 302 302 0 0 1 812.35 543.57
+      Q 806.49 569.24 771.83 581.62
+      Q 745.63 557.41 746.71 536.67
+      A 236 236 0 0 0 401.20 303.62
+      Z"/>
+
+    <!-- inner rim light: stroke straddles the edge, clip keeps the inner half -->
+    <use href="#body" xlink:href="#body" fill="none" stroke="url(#rim)" stroke-width="7"/>
+  </g>
+</svg>

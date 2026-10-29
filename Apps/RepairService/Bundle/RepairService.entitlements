@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  RepairService.xpc — parsing runs sandboxed and out of process.
+
+  Deliberately minimal: the sandbox and nothing else. No network entitlement, no
+  user-selected-file entitlement, no app group. The service reads only file
+  descriptors inherited over its NSXPCConnection and writes only inside its own
+  container's temporary directory.
+-->
+<plist version="1.0">
+<dict>
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+</dict>
+</plist>

@@ -1,0 +1,1872 @@
+/* Zenit PDF — Swedish (sv). Base localization is English; every key is the English
+   string. Terms follow Docs/Design/INFORMATION_ARCHITECTURE.md. Keys absent here fall back
+   to the English key. */
+
+"Acknowledgements" = "Tillkännagivanden";
+"Actual Size" = "Verklig storlek";
+"Area" = "Area";
+"Bookmarks" = "Bokmärken";
+"Bring All to Front" = "Lägg alla överst";
+"Calibrate Scale…" = "Kalibrera skala…";
+"Callout" = "Bildtext";
+"Cancel" = "Avbryt";
+"Clear Menu" = "Rensa menyn";
+"Close Document" = "Stäng dokument";
+"Comment" = "Kommentar";
+"Component" = "Komponent";
+"Components" = "Komponenter";
+"Continuous" = "Löpande";
+"Copy" = "Kopiera";
+"Count" = "Räkna";
+"Create Zenit PDF Project…" = "Skapa Zenit PDF-projekt…";
+"Cut" = "Klipp ut";
+"Cutout" = "Cutout";
+"Delete Selection" = "Ta bort markering";
+"Detach Quantity Ledger" = "Frikoppla mängdliggaren";
+"Discard" = "Kasta";
+"Done" = "Klar";
+"Edit" = "Redigera";
+"Enter Full Screen" = "Helskärm";
+"Export" = "Exportera";
+"Export…" = "Exportera…";
+"File" = "Arkiv";
+"Fit Page" = "Anpassa sida";
+"Fit Width" = "Anpassa bredd";
+"Grid Snap" = "Rutnätssnap";
+"Hide Others" = "Dölj övriga";
+"Hide Toolbar" = "Dölj verktygsfält";
+"Information" = "Information";
+"Inspector" = "Inspektör";
+"Label" = "Etikett";
+"Layers" = "Lager";
+"Length" = "Längd";
+"Licence text" = "Licenstext";
+"Markup Snap" = "Markeringssnap";
+"Measure" = "Mäta";
+"Minimize" = "Minimera";
+"Navigator" = "Navigator";
+"New" = "Nytt";
+"No Recent Documents" = "Inga senaste dokument";
+"Open Read-Only" = "Öppna skrivskyddat";
+"Open Recent" = "Öppna senaste";
+"Open documents" = "Öppna dokument";
+"Open…" = "Öppna…";
+"PDF" = "PDF";
+"Page" = "Sida";
+"Page canvas" = "Sidyta";
+"Pages" = "Sidor";
+"Pan" = "Panorera";
+"Panels" = "Paneler";
+"Part of a cutout lies outside this area. Only the part inside is subtracted." = "En del av ett urtag ligger utanför den här ytan. Bara delen innanför dras av.";
+"Paste" = "Klistra in";
+"Perimeter" = "Omkrets";
+"Polylength" = "Flerdelad längd";
+"Print…" = "Skriv ut…";
+"Problem" = "Problem";
+"Project" = "Projekt";
+"Project Zones" = "Projektzoner";
+"Quantity Ledger" = "Mängdliggare";
+"Read Only" = "Skrivskyddad";
+"Recover" = "Återskapa";
+"Redo" = "Gör om";
+"Revision Compare" = "Jämför revisioner";
+"Revision Overlay" = "Revisionsöverlägg";
+"Save" = "Spara";
+"Save As…" = "Spara som…";
+"Scale" = "Skala";
+"Scale Regions" = "Skalområden";
+"Search" = "Sök";
+"Select" = "Välj";
+"Select All" = "Markera allt";
+"Services" = "Tjänster";
+"Set Scale" = "Ange skala";
+"Shapes" = "Former";
+"Show All" = "Visa alla";
+"Show Inspector" = "Visa inspektör";
+"Show Navigator" = "Visa navigator";
+"Show Quantity Ledger" = "Visa mängdliggare";
+"Show Tool Library" = "Visa verktygsbibliotek";
+"Single Page" = "Enkelsida";
+"Slope" = "Lutning";
+"Split Canvas" = "Delad vy";
+"Status bar" = "Statusfält";
+"Subject" = "Ämne";
+"Text" = "Text";
+"Tool Library" = "Verktygsbibliotek";
+"Tools" = "Verktyg";
+"Two Up" = "Uppslag";
+"Type" = "Typ";
+"Undo" = "Ångra";
+"Unit" = "Enhet";
+"Untitled" = "Namnlös";
+"Value" = "Värde";
+"Vector Snap" = "Vektorsnap";
+"Version %1$@ (%2$@)" = "Version %1$@ (%2$@)";
+"View" = "Visa";
+"Volume" = "Volym";
+"Warning" = "Varning";
+"Window" = "Fönster";
+"Workspaces" = "Arbetsprofiler";
+"Zones" = "Zoner";
+"Zoom" = "Zoom";
+"Zoom In" = "Zooma in";
+"Zoom Out" = "Zooma ut";
+
+/* The main-window chrome. "Open" is deliberately absent: the same
+   English key is both the action (Öppna) and the markup status (Öppen); it falls back to English
+   until the source splits the two keys. "Built for what's next" is the brand line and stays English. */
+"%1$lld of %2$lld" = "%1$lld av %2$lld";
+"%@ items" = "%@ poster";
+"%@ Measurement" = "%@-mätning";
+"%@ off" = "%@ av";
+"%@, markup layer" = "%@, markeringslager";
+"%lld result" = "%lld träff";
+"%lld results" = "%lld träffar";
+"Accepted" = "Godkänd";
+"Actions for %@" = "Åtgärder för %@";
+"Active scale" = "Aktiv skala";
+"Add" = "Lägg till";
+"Add to Selection" = "Lägg till i markeringen";
+"Add Zone" = "Lägg till zon";
+"Adjust %@" = "Justera %@";
+"Areas" = "Areor";
+"Attach Photograph…" = "Bifoga fotografi…";
+"Author" = "Författare";
+"Author name" = "Författarnamn";
+"Author: %@" = "Författare: %@";
+"Blue" = "Blå";
+"Border" = "Kantlinje";
+"Border Colour" = "Kantlinjefärg";
+"Border Width" = "Kantlinjebredd";
+"Bottom pane tab" = "Flik i nedre panelen";
+"boundary hidden" = "gräns dold";
+"boundary shown" = "gräns visad";
+"Built for what's next" = "Built for what's next";
+"Bulk Edit" = "Massredigera";
+"Bulk Edit (%d)" = "Massredigera (%d)";
+"Calibrate" = "Kalibrera";
+"Cancelled" = "Avbruten";
+"Canvas controls" = "Sidytans kontroller";
+"Canvas status" = "Sidytans status";
+"Clear" = "Rensa";
+"Clear Filter" = "Rensa filter";
+"Clear Search" = "Rensa sökning";
+"Clear the search" = "Rensa sökningen";
+"Close" = "Stäng";
+"Close %@" = "Stäng %@";
+"Close Drawing" = "Stäng ritning";
+"Close Inspector" = "Stäng inspektören";
+"Close Navigator" = "Stäng navigatorn";
+"Close Other Tabs" = "Stäng övriga flikar";
+"Close Project Zones" = "Stäng projektzoner";
+"Close Tab" = "Stäng flik";
+"Close this document" = "Stäng det här dokumentet";
+"Closed" = "Stängd";
+"Cloud" = "Moln";
+"Collapse" = "Fäll ihop";
+"Collapse Quantity Ledger" = "Fäll ihop mängdliggaren";
+"Collapse to Header" = "Fäll ihop till rubriken";
+"Collapsed" = "Hopfälld";
+"Color" = "Färg";
+"Colour" = "Färg";
+"Comments" = "Kommentarer";
+"Compare" = "Jämför";
+"Completed" = "Slutförd";
+"Coord" = "Koord";
+"Copy Path" = "Kopiera sökväg";
+"Counts" = "Antal";
+"Create Zone" = "Skapa zon";
+"Created" = "Skapad";
+"Dash-Dot" = "Streck-punkt";
+"Dashed" = "Streckad";
+"Delete" = "Ta bort";
+"Detach" = "Frikoppla";
+"Detach to Its Own Window" = "Frikoppla till eget fönster";
+"Dismiss" = "Stäng";
+"Dismiss all" = "Stäng alla";
+"Dock" = "Docka";
+"Dock in Window" = "Docka i fönstret";
+"Document Options" = "Dokumentalternativ";
+"Dotted" = "Prickad";
+"Draw boundary on the page" = "Rita gränsen på sidan";
+"Drawing layers" = "Ritningslager";
+"Duplicate" = "Duplicera";
+"Error" = "Fel";
+"Expand" = "Expandera";
+"Expand Quantity Ledger" = "Expandera mängdliggaren";
+"Expand the Quantity Ledger" = "Expandera mängdliggaren";
+"Expanded" = "Expanderad";
+"File Selection into Zone" = "Lägg markeringen i zonen";
+"Fill Colour" = "Fyllnadsfärg";
+"Filter" = "Filter";
+"Fit Page in Window" = "Anpassa sidan till fönstret";
+"Geometry index" = "Geometriindex";
+"Grid" = "Rutnät";
+"Group by" = "Gruppera efter";
+"Hidden" = "Dold";
+"Hide Navigator" = "Dölj navigator";
+"Hide Quantity Ledger" = "Dölj mängdliggaren";
+"Hide the Navigator" = "Dölj navigatorn";
+"Hide zone boundary" = "Dölj zongräns";
+"History" = "Historik";
+"In Progress" = "Pågår";
+"Inside" = "Inuti";
+"Inspector page" = "Inspektörsida";
+"Layer" = "Lager";
+"Legend:" = "Förklaring:";
+"Lengths" = "Längder";
+"Line style" = "Linjestil";
+"Line width in points" = "Linjebredd i punkter";
+"Lock" = "Lås";
+"Locked" = "Låst";
+"Look In" = "Sök i";
+"Markup" = "Markering";
+"Markup actions" = "Markeringsåtgärder";
+"Markup Actions" = "Markeringsåtgärder";
+"Markup layers" = "Markeringslager";
+"Markups" = "Markeringar";
+"Match Case" = "Matcha skiftläge";
+"Measurement controls" = "Mätkontroller";
+"Measuring here" = "Mäter här";
+"Mixed value" = "Blandat värde";
+"Modified" = "Ändrad";
+"More Actions" = "Fler åtgärder";
+"Move Into" = "Flytta till";
+"Name" = "Namn";
+"Navigator page" = "Navigatorsida";
+"Navigator section" = "Navigatoravsnitt";
+"New name for %@" = "Nytt namn för %@";
+"New Project Zone" = "Ny projektzon";
+"New Tab" = "Ny flik";
+"Next Page" = "Nästa sida";
+"Next page" = "Nästa sida";
+"Next Result" = "Nästa träff";
+"no boundary" = "ingen gräns";
+"No comments" = "Inga kommentarer";
+"No document" = "Inget dokument";
+"No document open" = "Inget dokument öppet";
+"No Grouping" = "Ingen gruppering";
+"No layers" = "Inga lager";
+"No pages" = "Inga sidor";
+"No Panel" = "Ingen panel";
+"No Project Zones" = "Inga projektzoner";
+"No results" = "Inga träffar";
+"None" = "Ingen";
+"Not calibrated" = "Inte kalibrerad";
+"Notes" = "Anteckningar";
+"Nothing selected" = "Inget markerat";
+"of %d" = "av %d";
+"Off" = "Av";
+"On" = "På";
+"Once" = "En gång";
+"Opacity" = "Opacitet";
+"Opacity percentage" = "Opacitet i procent";
+"Open a document in a new tab" = "Öppna ett dokument i en ny flik";
+"Open drawings" = "Öppna ritningar";
+"Options" = "Alternativ";
+"Page %1$d of %2$d" = "Sida %1$d av %2$d";
+"Page %@" = "Sida %@";
+"Page number" = "Sidnummer";
+"Page Number" = "Sidnummer";
+"Page Options" = "Sidalternativ";
+"Panel (Quantity Ledger)" = "Panel (Mängdliggare)";
+"Per Sheet" = "Per ritning";
+"Precision" = "Precision";
+"Previous Page" = "Föregående sida";
+"Previous page" = "Föregående sida";
+"Previous Result" = "Föregående träff";
+"Print" = "Skriv ut";
+"Project Zone" = "Projektzon";
+"Properties" = "Egenskaper";
+"pt" = "pt";
+"Quantities" = "Mängder";
+"Quantity Ledger options" = "Alternativ för mängdliggaren";
+"Quantity Ledger Options" = "Alternativ för mängdliggaren";
+"Quantity summary" = "Mängdsammanfattning";
+"Redraw boundary" = "Rita om gränsen";
+"Rejected" = "Avvisad";
+"Remove" = "Ta bort";
+"Remove from Selection" = "Ta bort från markeringen";
+"Rename…" = "Byt namn…";
+"Repeat" = "Upprepa";
+"Resolved" = "Löst";
+"Reuse tool" = "Återanvänd verktyg";
+"Reveal in Finder" = "Visa i Finder";
+"Review status" = "Granskningsstatus";
+"Run search" = "Sök";
+"Scale Region" = "Skalområde";
+"Scale Regions…" = "Skalområden…";
+"Search all open drawings" = "Sök i alla öppna ritningar";
+"Search All Open Drawings" = "Sök i alla öppna ritningar";
+"Search in document" = "Sök i dokumentet";
+"Search in Document" = "Sök i dokumentet";
+"Search Options" = "Sökalternativ";
+"Search scope" = "Sökomfång";
+"Search this document" = "Sök i det här dokumentet";
+"Searching…" = "Söker…";
+"Selected" = "Markerad";
+"Separator" = "Avgränsare";
+"Settings" = "Inställningar";
+"Settings…" = "Inställningar…";
+"Show" = "Visa";
+"Show Open Drawings" = "Visa öppna ritningar";
+"Show Page" = "Visa sida";
+"Show the Navigator" = "Visa navigatorn";
+"Show the pane on the left" = "Visa panelen till vänster";
+"Show the pane on the right" = "Visa panelen till höger";
+"Show zone boundary" = "Visa zongräns";
+"Showing" = "Visas";
+"Snap:" = "Snap:";
+"Solid" = "Heldragen";
+"Status" = "Status";
+"Stop Drawing" = "Sluta rita";
+"Style" = "Stil";
+"Text size" = "Textstorlek";
+"Text size in points" = "Textstorlek i punkter";
+"Tool" = "Verktyg";
+"Tool options" = "Verktygsalternativ";
+"Top Level" = "Översta nivån";
+"Total %@" = "Summa %@";
+"total %@" = "summa %@";
+"Totals" = "Summor";
+"Unlock" = "Lås upp";
+"Unlocked" = "Olåst";
+"Use Plain Count" = "Använd vanlig räkning";
+"Valid" = "Giltig";
+"Vector" = "Vektor";
+"Visible" = "Synlig";
+"Warnings" = "Varningar";
+"Whole Words" = "Hela ord";
+"Workspace" = "Arbetsyta";
+"Write a Note" = "Skriv en anteckning";
+"Zenit PDF" = "Zenit PDF";
+"Zone name" = "Zonnamn";
+"Zone type" = "Zontyp";
+"Zone Type" = "Zontyp";
+"Zoom Level" = "Zoomnivå";
+"Zoom percentage" = "Zoomprocent";
+"Zoom presets" = "Zoomförval";
+"Zoom to Selection" = "Zooma till markering";
+"Page %1$@, %2$d of %3$d" = "Sida %1$@, %2$d av %3$d";
+"Type a page number or a sheet label and press Return" = "Skriv ett sidnummer eller en ritningsbeteckning och tryck på Retur";
+"Type a zoom percentage and press Return. Control-click for presets." = "Skriv en zoomprocent och tryck på Retur. Kontroll-klicka för förval.";
+"/ %d" = "/ %d";
+"· %1$d / %2$d" = "· %1$d / %2$d";
+"%1$lld/%2$lld" = "%1$lld/%2$lld";
+"Search in document…" = "Sök i dokumentet…";
+"Tool Library, Search, Compare, Export" = "Verktygsbibliotek, Sök, Jämför, Exportera";
+"Appearance" = "Utseende";
+"Dark" = "Mörkt";
+"Light" = "Ljust";
+"Match System" = "Följ systemet";
+"Appearance:" = "Utseende:";
+"Combine every sheet into one summary for the whole document" = "Slå ihop alla ritningar till en sammanfattning för hela dokumentet";
+"Separate the summary into one section per sheet" = "Dela upp sammanfattningen i ett avsnitt per ritning";
+"%1$@ × %2$@ mm" = "%1$@ × %2$@ mm";
+"%1$@ × %2$@ in" = "%1$@ × %2$@ tum";
+"%1$@ · %2$@" = "%1$@ · %2$@";
+"Page %1$lld of %2$lld" = "Sida %1$lld av %2$lld";
+"%1$@, %2$@" = "%1$@, %2$@";
+"Actions for page %@" = "Åtgärder för sida %@";
+"%lld page" = "%lld sida";
+"%lld pages" = "%lld sidor";
+"status.open" = "Öppen";
+"Notes written on the selected markups appear here." = "Anteckningar som skrivits på de markerade markeringarna visas här.";
+"Opens the Markup tab, where the Notes field edits the markup's comment." = "Öppnar fliken Markering, där fältet Anteckningar redigerar markeringens kommentar.";
+"The change was not saved: this document does not record that field." = "Ändringen sparades inte: det här dokumentet lagrar inte det fältet.";
+"Label, quantities, colour, notes and review status of the selection." = "Etikett, mängder, färg, anteckningar och granskningsstatus för markeringen.";
+"Scale Region, subject, precision, the calculation, lock state, Project Zone and custom data." = "Skalområde, ämne, precision, beräkningen, låsläge, projektzon och egna data.";
+"The notes written on the selected markups." = "Anteckningarna som skrivits på de markerade markeringarna.";
+"Select a markup on the page to edit its properties." = "Markera en markering på sidan för att redigera dess egenskaper.";
+"Markup colour" = "Markeringsfärg";
+"Multiple values" = "Flera värden";
+"Read-only; calculated from the drawn geometry." = "Skrivskyddad, beräknad från den ritade geometrin.";
+"This selection produces no quantities." = "Den här markeringen ger inga mängder.";
+"The selected markups measure different quantities." = "De markerade markeringarna mäter olika mängder.";
+"The change was not applied: %@" = "Ändringen tillämpades inte: %@";
+"%d different markup types" = "%d olika markeringstyper";
+"How This Number Was Calculated" = "Så beräknades talet";
+"Applies to every selected markup, as one undoable change." = "Gäller alla markerade markeringar, som en ändring som kan ångras.";
+"Gross Area" = "Bruttoarea";
+"Cutout Area" = "Cutout-area";
+"This outline has too many points to check whether it crosses itself. The area assumes it does not." = "Konturen har för många punkter för att kontrollera om den korsar sig själv. Arean förutsätter att den inte gör det.";
+"Fill colour" = "Fyllnadsfärg";
+"Fill opacity" = "Fyllnadsopacitet";
+"Overall opacity" = "Total opacitet";
+"Border colour" = "Kantlinjefärg";
+"Fill opacity percentage" = "Fyllnadsopacitet i procent";
+"Remove Fill" = "Ta bort fyllning";
+"Remove the fill. A closed area goes back to its standard tint." = "Ta bort fyllningen. En sluten yta får tillbaka sin standardton.";
+"Edit Notes" = "Redigera anteckningar";
+"Show Toolbar" = "Visa verktygsfält";
+"More" = "Mer";
+"More toolbar items" = "Fler objekt i verktygsfältet";
+"Toolbar" = "Verktygsfält";
+"Opens Settings to change the author name" = "Öppnar Inställningar för att ändra författarnamnet";
+"Author: %@\nNew markups and measurements are signed with this name. Click to change it in Settings." = "Författare: %@\nNya markeringar och mätningar signeras med det här namnet. Klicka för att ändra det i Inställningar.";
+"%lld more document" = "%lld dokument till";
+"%lld more documents" = "%lld dokument till";
+"Ink opacity" = "Färgopacitet";
+"The opacity of the whole markup, stroke and fill together." = "Opaciteten för hela markeringen, linje och fyllning tillsammans.";
+"%@ — keep the active tool armed after a markup is finished." = "%@ – behåll det aktiva verktyget valt när en markering är klar.";
+"Page %@ options" = "Alternativ för sida %@";
+"Switch To" = "Byt till";
+"Back to the pages of this drawing" = "Tillbaka till sidorna i den här ritningen";
+"Back to Pages" = "Tillbaka till sidor";
+"%1$@ — %2$@" = "%1$@ – %2$@";
+"Hide" = "Dölj";
+"The selection includes a locked markup. Unlock it first." = "Markeringen innehåller en låst markering. Lås upp den först.";
+"Open Anyway" = "Öppna ändå";
+"“%@” is already open in another Zenit PDF window on this Mac." = "”%@” är redan öppet i ett annat Zenit PDF-fönster på den här datorn.";
+"“%1$@” is open on “%2$@”." = "”%1$@” är öppet på ”%2$@”.";
+"%1$@ has had it open since %2$@." = "%1$@ har haft det öppet sedan %2$@.";
+"%@ has it open." = "%@ har det öppet.";
+"It has been open since %@." = "Det har varit öppet sedan %@.";
+"This is not a crash: that session is still running." = "Det här är ingen krasch: den sessionen pågår fortfarande.";
+"Open Read-Only lets you look without changing anything. Open Anyway lets you edit, and whichever of you saves last replaces the other’s changes." = "Öppna skrivskyddat låter dig titta utan att ändra något. Öppna ändå låter dig redigera, och den av er som sparar sist ersätter den andras ändringar.";
+"“%@” has sync conflict copies." = "”%@” har konfliktkopior från synkronisering.";
+"A sync service saved two versions of this project at the same time. The one you opened may not hold everybody’s latest work." = "En synktjänst sparade två versioner av projektet samtidigt. Den du öppnade kanske inte innehåller allas senaste arbete.";
+"Copies in the same folder: %@." = "Kopior i samma mapp: %@.";
+"Other versions waiting to be resolved: %lld." = "Andra versioner som väntar på att lösas: %lld.";
+"Open each copy and compare before deleting any of them." = "Öppna varje kopia och jämför innan du tar bort någon av dem.";
+"OK" = "OK";
+"Add %lld Tool" = "Lägg till %lld verktyg";
+"Add %lld Tools" = "Lägg till %lld verktyg";
+
+/* Documents: drawing sections in Pages (LT3-11). */
+"%1$@, edited" = "%1$@, redigerad";
+"Hide the pages of this drawing" = "Dölj ritningens sidor";
+"Show the pages of this drawing" = "Visa ritningens sidor";
+"Switch to this drawing" = "Byt till den här ritningen";
+"Show Drawing" = "Visa ritning";
+"Drawing, sheet %@" = "Ritning, blad %@";
+"Drawing, page %ld" = "Ritning, sida %ld";
+"A link asked Zenit PDF for something it does not do" = "En länk bad Zenit PDF om något som programmet inte gör";
+"Nothing was changed." = "Ingenting ändrades.";
+"Link" = "Länk";
+"A link asked Zenit PDF to open a file" = "En länk bad Zenit PDF att öppna en fil";
+"Links cannot open files. Nothing was opened. Choose File ▸ Open… to open it yourself." = "Länkar kan inte öppna filer. Ingenting öppnades. Välj Arkiv ▸ Öppna… för att öppna den själv.";
+
+/* Inspector controls, Export chooser, undo names. */
+"Zones can be assigned in a project." = "Zoner kan tilldelas i ett projekt.";
+"Export the Quantity Ledger or the drawing" = "Exportera mängdliggaren eller ritningen";
+"Change Colour" = "Ändra färg";
+"Change Line Width" = "Ändra linjebredd";
+"Change Opacity" = "Ändra opacitet";
+"Change Line Style" = "Ändra linjestil";
+"Change Text Size" = "Ändra textstorlek";
+"Change Fill" = "Ändra fyllning";
+"Change Appearance" = "Ändra utseende";
+"%1$@ (%2$ld Markups)" = "%1$@ (%2$ld markeringar)";
+"Change Status" = "Ändra status";
+"Edit Subject" = "Redigera ämne";
+"Edit Label" = "Redigera etikett";
+"Edit Value" = "Redigera värde";
+"Assign Zone" = "Tilldela zon";
+"Quantity Ledger…" = "Mängdliggare…";
+"The Quantity Ledger has no rows to export yet." = "Mängdliggaren har inga rader att exportera än.";
+"%lld dpi" = "%lld dpi";
+"the resolution each page records" = "den upplösning varje sida anger";
+"Opened “%@” as a drawing" = "Öppnade ”%@” som ritning";
+"%1$@ at %2$@. The sheet size comes from the scan. Calibrate as usual; Vector Snap has no linework to use on a scan." = "%1$@ med %2$@. Bladets storlek kommer från skanningen. Kalibrera som vanligt; vektorfäst har inga linjer att använda på en skanning.";
+"Image" = "Bild";
+"“%@” has no trusted resolution" = "”%@” saknar tillförlitlig upplösning";
+"The sheet’s real size is not known, so nothing on it is to scale yet. Calibrate each page against a known length before measuring." = "Bladets verkliga storlek är okänd, så inget på det är skalenligt än. Kalibrera varje sida mot en känd längd innan du mäter.";
+"Page %1$lld is %2$lld × %3$lld pixels. Zenit PDF opens images of up to %4$lld million pixels per page; scan at a lower resolution or split the sheet." = "Sida %1$lld är %2$lld × %3$lld pixlar. Zenit PDF öppnar bilder på upp till %4$lld miljoner pixlar per sida; skanna med lägre upplösning eller dela bladet.";
+"It has %1$lld pages; Zenit PDF opens up to %2$lld pages from one image file." = "Den har %1$lld sidor; Zenit PDF öppnar upp till %2$lld sidor ur en bildfil.";
+"The file is larger than Zenit PDF opens as a drawing." = "Filen är större än vad Zenit PDF öppnar som ritning.";
+"It is not a TIFF, JPEG, PNG or HEIC image that can be read." = "Det är ingen läsbar TIFF-, JPEG-, PNG- eller HEIC-bild.";
+"Zenit PDF cannot open “%@” as a drawing." = "Zenit PDF kan inte öppna ”%@” som ritning.";
+"“%@” opened, but could not be added to the project" = "”%@” öppnades men kunde inte läggas till i projektet";
+"It is open as a tab. Try adding it again, or save the project and retry." = "Den är öppen som flik. Försök lägga till den igen, eller spara projektet och försök på nytt.";
+
+/* User columns, Column Manager, money, export trace. */
+"Nothing was changed: the column “%@” is no longer in this project." = "Inget ändrades: kolumnen ”%@” finns inte längre i projektet.";
+"Nothing was changed: “%@” is calculated or measured and cannot be typed into." = "Inget ändrades: ”%@” beräknas eller mäts och kan inte skrivas i.";
+"Nothing was changed: every column needs a name." = "Inget ändrades: varje kolumn behöver ett namn.";
+"Nothing was changed: two columns are called “%@”. Give each column its own name." = "Inget ändrades: två kolumner heter ”%@”. Ge varje kolumn ett eget namn.";
+"Nothing was changed: the choice column “%@” needs at least one option." = "Inget ändrades: valkolumnen ”%@” behöver minst ett alternativ.";
+"Nothing was changed: every option of “%@” needs its own, non-empty name." = "Inget ändrades: varje alternativ i ”%@” behöver ett eget namn som inte är tomt.";
+"Nothing was changed: the formula column “%@” has no formula." = "Inget ändrades: formelkolumnen ”%@” saknar formel.";
+"Nothing was changed: %3$d rows use the option “%2$@” of “%1$@”. Retire the option instead of removing it." = "Inget ändrades: %3$d rader använder alternativet ”%2$@” i ”%1$@”. Pensionera alternativet i stället för att ta bort det.";
+"Nothing was changed: “%1$@” is read by the formula column %2$@. Change that formula first." = "Inget ändrades: ”%1$@” läses av formelkolumnen %2$@. Ändra den formeln först.";
+"Nothing was changed: %2$d rows hold values “%1$@” cannot keep as the new type. Clear or correct them first." = "Inget ändrades: %2$d rader har värden som ”%1$@” inte kan behålla som den nya typen. Töm eller rätta dem först.";
+"Nothing was changed: converting “%1$@” would edit %2$d locked markups. Unlock them and try again." = "Inget ändrades: att konvertera ”%1$@” skulle ändra %2$d låsta markeringar. Lås upp dem och försök igen.";
+"Nothing was changed: %@" = "Inget ändrades: %@";
+"Edit Ledger Columns" = "Redigera liggarkolumner";
+"Done: %@. Undo takes it back." = "Klart: %@. Ångra tar tillbaka det.";
+"Add Column" = "Lägg till kolumn";
+"Edit Column" = "Redigera kolumn";
+"Delete Column" = "Ta bort kolumn";
+"Move Column" = "Flytta kolumn";
+"Show Column" = "Visa kolumn";
+"Hide Column" = "Dölj kolumn";
+"Ledger Columns" = "Liggarkolumner";
+"Your own columns. Built-in columns are shown or hidden from the column header menu." = "Dina egna kolumner. Inbyggda kolumner visas eller döljs från kolumnrubrikens meny.";
+"Column Manager" = "Kolumnhanteraren";
+"No columns of your own yet" = "Inga egna kolumner än";
+"Add a column for a rate, a cost code list or a formula such as Area × Unit Cost." = "Lägg till en kolumn för ett à-pris, en kontoplan eller en formel som Area × À-pris.";
+"Show %@ in the ledger" = "Visa %@ i liggaren";
+"Move %@ left" = "Flytta %@ åt vänster";
+"Move %@ right" = "Flytta %@ åt höger";
+"Edit %@" = "Redigera %@";
+"%d options" = "%d alternativ";
+"hidden" = "dold";
+"New Column" = "Ny kolumn";
+"Column name" = "Kolumnnamn";
+"Column type" = "Kolumntyp";
+"Changing the type converts the values already typed. If some cannot be converted, nothing changes and you are told how many." = "Att byta typ konverterar de värden som redan skrivits. Om några inte kan konverteras ändras inget och du får veta hur många.";
+"Choose a column" = "Välj en kolumn";
+"Pick a column to edit it, or add a new one." = "Välj en kolumn för att redigera den, eller lägg till en ny.";
+"Currency code" = "Valutakod";
+"Holds" = "Innehåller";
+"Amount or rate" = "Belopp eller à-pris";
+"An amount sums into group and grand totals. A rate is money per metre, square metre or cubic metre and never sums." = "Ett belopp summeras i grupp- och totalsummor. Ett à-pris är pengar per meter, kvadratmeter eller kubikmeter och summeras aldrig.";
+"Decimals" = "Decimaler";
+"Ledger default" = "Liggarens standard";
+"Decimal places" = "Antal decimaler";
+"No Colour" = "Ingen färg";
+"Colour of option %@" = "Färg för alternativet %@";
+"Option" = "Alternativ";
+"Option %d name" = "Namn på alternativ %d";
+"Retired" = "Pensionerad";
+"Move option up" = "Flytta alternativet uppåt";
+"Remove option" = "Ta bort alternativet";
+"Add Option" = "Lägg till alternativ";
+"An option rows already use cannot be removed; retire it instead and it stays readable on those rows." = "Ett alternativ som rader redan använder kan inte tas bort; pensionera det i stället så syns det kvar på de raderna.";
+"Insert" = "Infoga";
+"Insert a variable or column" = "Infoga en variabel eller kolumn";
+"The formula checks out. Units are checked: adding an area to a length is refused." = "Formeln stämmer. Enheterna kontrolleras: att lägga en area till en längd nekas.";
+"Add Column…" = "Lägg till kolumn…";
+"Manage Columns…" = "Hantera kolumner…";
+"No unit" = "Ingen enhet";
+"Count (pcs)" = "Antal (st)";
+"Ratio / factor" = "Kvot / faktor";
+"Amount (sums)" = "Belopp (summeras)";
+"Rate per metre" = "À-pris per meter";
+"Rate per m²" = "À-pris per m²";
+"Rate per m³" = "À-pris per m³";
+"Nothing was changed: every column needs its own name." = "Inget ändrades: varje kolumn behöver ett eget namn.";
+"Then by" = "Sedan efter";
+"Remove Level “%@”" = "Ta bort nivån ”%@”";
+"Totals as live formulas" = "Summor som levande formler";
+"Include measurement trace (sheet, scale at measure time, dates, author)" = "Ta med mätspår (ritning, skala vid mätning, datum, författare)";
+"It was measured on “%1$@”, the same drawing as “%2$@” under another name." = "Den mättes på ”%1$@”, samma ritning som ”%2$@” under ett annat namn.";
+"%lld could not be redrawn: they carry no drawing, no page, or no tool." = "%lld kunde inte ritas om: de saknar ritning, sida eller verktyg.";
+"Each is measured under this drawing’s own scale. Undo removes them all." = "Var och en mäts med den här ritningens egen skala. Ångra tar bort alla.";
+"Imported %1$lld measurements from “%2$@”" = "Importerade %1$lld mätningar från ”%2$@”";
+"Overlay" = "Mätöverlägg";
+"The measurements travel with the drawing's fingerprint and open only on the same drawing." = "Mätningarna följer med ritningens fingeravtryck och öppnas bara på samma ritning.";
+"Exported “%@”" = "Exporterade ”%@”";
+"Import it onto the same drawing in another project with File ▸ Import Measurements Overlay…." = "Importera den till samma ritning i ett annat projekt med Arkiv ▸ Importera mätöverlägg….";
+"Import Measurements Overlay" = "Importera mätöverlägg";
+"“%@” was not imported" = "”%@” importerades inte";
+"Choose a measurements overlay made on this drawing." = "Välj ett mätöverlägg som gjorts på den här ritningen.";
+"Export Measurements Overlay…" = "Exportera mätöverlägg…";
+"Import Measurements Overlay…" = "Importera mätöverlägg…";
+
+/* Documents: honest drop and arranging the set. */
+"Opens as a separate drawing" = "Öppnas som en separat ritning";
+"Move to Top" = "Flytta överst";
+"Move Up" = "Flytta upp";
+"Move Down" = "Flytta ned";
+"Move to Bottom" = "Flytta nederst";
+"Move Page" = "Flytta sida";
+"Move Pages" = "Flytta sidor";
+
+/* nl-measure: scale sheet, bulk scale, missing scale, vertex editing, double-count guard */
+"Calibrate Scale" = "Kalibrera skala";
+"Calibrated" = "Kalibrerad";
+"Calibrated X/Y" = "Kalibrerad X/Y";
+"Change Scale" = "Ändra skala";
+"Apply Scale" = "Tillämpa skala";
+"Apply Scale to Pages" = "Tillämpa skala på sidor";
+"Apply Scale to Pages…" = "Tillämpa skala på sidor…";
+"Apply this page's scale to the rest of the set: pages of the same size, a range, the selected pages or all." = "Tillämpa den här sidans skala på resten av ritningsuppsättningen: sidor av samma storlek, ett intervall, de markerade sidorna eller alla.";
+"Set this page's scale first; it is the scale that will be applied to the other pages." = "Ange den här sidans skala först; det är den skalan som tillämpas på de andra sidorna.";
+"This page has no scale yet, so nothing on it can be measured. Set the scale to start measuring." = "Den här sidan har ingen skala än, så inget på den kan mätas. Ange skalan för att börja mäta.";
+"Set the scale for this page: a drawing ratio such as 1:50, or calibrate from two points." = "Ange skalan för den här sidan: ett ritningsförhållande som 1:50, eller kalibrera från två punkter.";
+"Opens the scale sheet for this page." = "Öppnar skalpanelen för den här sidan.";
+"This vertex cannot be removed: the shape would no longer be a measurement of its kind." = "Hörnet kan inte tas bort: formen skulle inte längre vara en mätning av sitt slag.";
+"Double count" = "Dubbelräkning";
+"Two “%@” areas overlap" = "Två ytor ”%@” överlappar";
+"%1$@ and %2$@ share %3$@ %4$@. Both are summed, so that area is counted twice." = "%1$@ och %2$@ delar %3$@ %4$@. Båda summeras, så den ytan räknas två gånger.";
+"Waste and Order by Area" = "Spill och beställning efter area";
+"Waste and Order by Length" = "Spill och beställning efter längd";
+"Waste and Order by Volume" = "Spill och beställning efter volym";
+"Waste and Order by Count" = "Spill och beställning efter antal";
+"Waste" = "Spill";
+"Pack size" = "Förpackningsstorlek";
+"Gross" = "Brutto";
+"Order" = "Beställning";
+"Add Waste and Order Columns" = "Lägg till spill- och beställningskolumner";
+"Rows as on screen" = "Rader som på skärmen";
+"Selected rows (%d)" = "Markerade rader (%d)";
+"Rows to export" = "Rader att exportera";
+"Rows:" = "Rader:";
+"%1$d selected of %2$d rows" = "%1$d markerade av %2$d rader";
+"Show only rows with the status %@. Click again to show all." = "Visa bara rader med statusen %@. Klicka igen för att visa alla.";
+"Status filters" = "Statusfilter";
+"Choose a marked-up copy of this drawing. Its comments become markups you can review." = "Välj en kopia av ritningen med markeringar. Dess kommentarer blir markeringar som du kan granska.";
+"Nothing new in “%@”" = "Inget nytt i ”%@”";
+"Imported the review from “%@”" = "Granskningen från ”%@” har importerats";
+"Review" = "Granskning";
+"Import review from “%@”?" = "Importera granskningen från ”%@”?";
+"Import" = "Importera";
+"%1$@: %2$lld" = "%1$@: %2$lld";
+"Unnamed" = "Namnlös";
+"By author: %@." = "Per författare: %@.";
+"Not imported: %@." = "Importeras inte: %@.";
+"Imported shapes are markups, never quantities. One Undo takes the import back." = "Importerade former är markeringar, aldrig mängder. En Ångra tar tillbaka importen.";
+"It has %1$lld pages and this drawing has %2$lld, so it is not a copy of this drawing." = "Den har %1$lld sidor och ritningen har %2$lld, så den är inte en kopia av ritningen.";
+"The file is password-protected." = "Filen är lösenordsskyddad.";
+"The file is too large to be a review file." = "Filen är för stor för att vara en granskningsfil.";
+"The file could not be read as a PDF." = "Filen kunde inte läsas som en PDF.";
+"Edit Text" = "Redigera text";
+"%lld new markup" = "%lld ny markering";
+"%lld new markups" = "%lld nya markeringar";
+"%lld reply" = "%lld svar";
+"%lld replies" = "%lld svar";
+"%lld status change" = "%lld statusändring";
+"%lld status changes" = "%lld statusändringar";
+"%lld already in project" = "%lld finns redan i projektet";
+"%lld not imported" = "%lld importeras inte";
+"Nothing to import." = "Inget att importera.";
+", " = ", ";
+"%lld annotations beyond the first %lld" = "%lld anteckningar utöver de första %lld";
+"on a page this drawing does not have" = "på en sida som ritningen inte har";
+"A reply to an annotation that was not imported" = "Ett svar på en anteckning som inte importerades";
+"Annotation" = "Anteckning";
+"its picture is not imported" = "dess bild importeras inte";
+"not a review mark" = "inte en granskningsmarkering";
+"its shape could not be read" = "dess form kunde inte läsas";
+"Add Reply" = "Lägg till svar";
+"Withdraw Reply" = "Dra tillbaka svar";
+"Yes" = "Ja";
+"No" = "Nej";
+"(empty)" = "(tom)";
+"Import Review Annotations" = "Importera granskningsanteckningar";
+"Import Review Annotations…" = "Importera granskningsanteckningar…";
+"Reviewer" = "Granskare";
+"Author not recorded" = "Författare ej registrerad";
+"%1$@ reverted a status change: %2$@ → %3$@" = "%1$@ återställde en statusändring: %2$@ → %3$@";
+"%1$@ set status %2$@ → %3$@" = "%1$@ satte status %2$@ → %3$@";
+"Reply withdrawn" = "Svaret har dragits tillbaka";
+"Time not recorded" = "Tid ej registrerad";
+"Withdraw this reply. It stays in the thread, marked withdrawn." = "Dra tillbaka svaret. Det står kvar i tråden, markerat som tillbakadraget.";
+"Reply…" = "Svara…";
+"Reply" = "Svara";
+"Send the reply (⌘↩)." = "Skicka svaret (⌘↩).";
+"The markup is locked. Unlock it to reply." = "Markeringen är låst. Lås upp den för att svara.";
+"Text drawn on the sheet" = "Text som ritas på bladet";
+"Assembly" = "Recept";
+"Apply Assembly" = "Använd recept";
+"Apply Assembly…" = "Använd recept…";
+"Remove Assembly" = "Ta bort recept";
+"Nothing was changed: that assembly is not in this version of Zenit PDF." = "Inget ändrades: receptet finns inte i den här versionen av Zenit PDF.";
+"Nothing was changed: %d of the selected rows measure nothing an assembly can read." = "Inget ändrades: %d av de markerade raderna mäter inget som ett recept kan läsa.";
+"Nothing was changed: %d of the selected rows are derived by an assembly from their measured row. Edit the measured row instead." = "Inget ändrades: %d av de markerade raderna härleds av ett recept från sin uppmätta rad. Redigera den uppmätta raden i stället.";
+"%d selected measurements" = "%d markerade mätningar";
+"Produces" = "Ger";
+"Required" = "Krävs";
+"From the measurement" = "Från mätningen";
+"Apply" = "Verkställ";
+"“%1$@” changes %2$lld cells" = "”%1$@” ändrar %2$lld celler";
+"This workbook was exported from another project or drawing. Rows are matched by their Row ID; only rows this ledger has are changed." = "Arbetsboken exporterades från ett annat projekt eller en annan ritning. Rader matchas på sitt rad-ID; bara rader som finns i den här mängdliggaren ändras.";
+"%1$@: “%2$@” → “%3$@”" = "%1$@: ”%2$@” → ”%3$@”";
+"…and %lld more." = "…och %lld till.";
+"Not applied:" = "Tillämpas inte:";
+"a measured or computed value comes from the drawing, not from a cell" = "ett uppmätt eller beräknat värde kommer från ritningen, inte från en cell";
+"not a number" = "inte ett tal";
+"%1$@ “%2$@” → “%3$@”: %4$@" = "%1$@ ”%2$@” → ”%3$@”: %4$@";
+"%lld rows in the workbook are no longer in the ledger and are ignored." = "%lld rader i arbetsboken finns inte längre i mängdliggaren och ignoreras.";
+"%lld ledger rows are not in the workbook and stay as they are." = "%lld rader i mängdliggaren finns inte i arbetsboken och lämnas som de är.";
+"Choose a workbook exported from this ledger and edited in a spreadsheet." = "Välj en arbetsbok som exporterats från den här mängdliggaren och redigerats i ett kalkylprogram.";
+"“%@” changes nothing that can be brought back" = "”%@” ändrar inget som kan föras tillbaka";
+"Spreadsheet" = "Kalkylblad";
+"Apply %lld Changes" = "Tillämpa %lld ändringar";
+"Applied %1$lld changes from “%2$@”" = "Tillämpade %1$lld ändringar från ”%2$@”";
+"Undo takes them all back in one step." = "Ångra tar tillbaka alla i ett steg.";
+"%lld cells were not applied; the review listed why. Undo takes the rest back in one step." = "%lld celler tillämpades inte; granskningen visade varför. Ångra tar tillbaka resten i ett steg.";
+"Import Spreadsheet Changes…" = "Importera kalkylbladsändringar…";
+"Apply Spreadsheet Changes" = "Tillämpa kalkylbladsändringar";
+"the markup is no longer in the ledger" = "markeringen finns inte längre i mängdliggaren";
+"the markup is locked" = "markeringen är låst";
+"the column is measured or computed; its value comes from the drawing" = "kolumnen är uppmätt eller beräknad; dess värde kommer från ritningen";
+"the new value is not a number" = "det nya värdet är inte ett tal";
+"this kind of column is not brought back from a spreadsheet" = "den här sortens kolumn förs inte tillbaka från ett kalkylblad";
+
+/* Command palette, shortcuts, workspaces, onboarding, annotations, toast, units. */
+"Canvas" = "Arbetsyta";
+"Choose the units quantities are shown in." = "Välj enheterna som mängderna visas i.";
+"Click a shortcut and press the new keys. Delete removes it; Escape cancels." = "Klicka på ett kortkommando och tryck på de nya tangenterna. Delete tar bort det; Escape avbryter.";
+"Command" = "Kommando";
+"Command Palette" = "Kommandopalett";
+"Command Palette…" = "Kommandopalett…";
+"Command palette search" = "Sök i kommandopaletten";
+"Customize Keyboard Shortcuts…" = "Anpassa kortkommandon…";
+"Default" = "Standard";
+"Delete Workspace" = "Radera arbetsyta";
+"Filter commands" = "Filtrera kommandon";
+"Go to %@" = "Gå till %@";
+"Imperial (ft, ft², yd³)" = "Imperiala (ft, ft², yd³)";
+"Keyboard Shortcuts" = "Kortkommandon";
+"Keyboard Shortcuts…" = "Kortkommandon…";
+"Lengths in %@" = "Längder i %@";
+"Make %ld drawing annotations editable?" = "Göra %ld anteckningar i ritningen redigerbara?";
+"Make Annotations Editable" = "Gör anteckningar redigerbara";
+"Make Drawing Annotations Editable…" = "Gör ritningens anteckningar redigerbara…";
+"Make Editable" = "Gör redigerbara";
+"Marks already in the drawing become markups you can select, recolour and edit. You review them first; the originals are hidden, never deleted." = "Markeringar som redan finns i ritningen blir markeringar du kan markera, färga om och redigera. Du granskar dem först; originalen döljs och raderas aldrig.";
+"Metric (m, m², m³)" = "Metriska (m, m², m³)";
+"No annotations were made editable." = "Inga anteckningar gjordes redigerbara.";
+"Not adopted: %@" = "Inte övertagna: %@";
+"Nothing matches." = "Inget matchar.";
+"Redid %@" = "Gjorde om %@";
+"Restore All Defaults" = "Återställ alla standardvärden";
+"Restore the standard shortcut for %@" = "Återställ standardkortkommandot för %@";
+"Save Current Workspace…" = "Spara aktuell arbetsyta…";
+"Save Workspace" = "Spara arbetsyta";
+"Select All in Document" = "Markera alla i dokumentet";
+"Select All “%@” on This Page" = "Markera alla ”%@” på den här sidan";
+"Select Same Kind on Page" = "Markera samma typ på sidan";
+"Select Same Subject on Page" = "Markera samma ämne på sidan";
+"Shortcut for %@" = "Kortkommando för %@";
+"Show the Welcome Guide Again" = "Visa välkomstguiden igen";
+"Tap the trackpad when a point snaps to the drawing" = "Knacka på styrplattan när en punkt fäster mot ritningen";
+"That shortcut is already used by “%@”." = "Det kortkommandot används redan av ”%@”.";
+"The drawing's annotations could not be read. A drawing locked with a password keeps them as they are." = "Ritningens anteckningar kunde inte läsas. En lösenordsskyddad ritning behåller dem som de är.";
+"The number keys arm the tools in the active tool set." = "Siffertangenterna aktiverar verktygen i den aktiva verktygsuppsättningen.";
+"The originals are hidden, not deleted; the drawing file is not changed. Undo brings them back." = "Originalen döljs, de raderas inte; ritningsfilen ändras inte. Ångra tar tillbaka dem.";
+"The panes, their sizes and the pages they show are saved under this name. A name already used is replaced." = "Panelerna, deras storlekar och sidorna de visar sparas under det här namnet. Ett namn som redan används ersätts.";
+"There is nothing new to make editable. %@" = "Det finns inget nytt att göra redigerbart. %@";
+"Type a command, tool, page or subject" = "Skriv ett kommando, verktyg, en sida eller ett ämne";
+"Type shortcut…" = "Tryck kortkommando…";
+"Type the name of any command, tool, page or subject and press Return." = "Skriv namnet på ett kommando, verktyg, en sida eller ett ämne och tryck på Retur.";
+"Undid %@" = "Ångrade %@";
+"Use ⌘ with this shortcut. Only the canvas tools take a single letter." = "Använd ⌘ med det här kortkommandot. Endast arbetsytans verktyg tar en enda bokstav.";
+"Welcome to Zenit PDF" = "Välkommen till Zenit PDF";
+"Workspace %ld" = "Arbetsyta %ld";
+"Workspace %ld (empty)" = "Arbetsyta %ld (tom)";
+"Workspace name" = "Arbetsytans namn";
+"Zenit PDF can open PDF drawings only." = "Zenit PDF kan bara öppna PDF-ritningar.";
+"macOS uses that shortcut for every application." = "macOS använder det kortkommandot för alla program.";
+"quantities" = "mängder";
+"scale" = "skala";
+"search" = "sök";
+"square" = "kvadrat";
+"%ld markups" = "%ld markeringar";
+
+/* Documents: sheet names and revisions. */
+"Name Sheet…" = "Namnge ritningsblad…";
+"Number" = "Nummer";
+"Title" = "Titel";
+"Name Sheets" = "Namnge ritningsblad";
+"%1$@ has no sheet %2$@" = "%1$@ saknar blad %2$@";
+"The overlay shows the page in the same position, which is a different sheet." = "Överlägget visar sidan på samma plats, vilket är ett annat blad.";
+"The revision opened, but the project could not keep it." = "Revisionen öppnades, men projektet kunde inte spara den.";
+"Project File" = "Projektfil";
+"Save Name" = "Spara namn";
+"Measurements that change: %d." = "Mätningar som ändras: %d.";
+"%1$@ %2$@ → %3$@ %4$@" = "%1$@ %2$@ → %3$@ %4$@";
+"Recalculate the measurements on this page?" = "Räkna om mätningarna på den här sidan?";
+"Recalculate" = "Räkna om";
+"Plan Area" = "Planyta";
+"Wall Area" = "Väggyta";
+"Page Scales" = "Sidskalor";
+"Page Scales…" = "Sidskalor…";
+"Every sheet with its scale: set, proposed from its title block, or none." = "Varje blad med sin skala: angiven, föreslagen från namnrutan, eller ingen.";
+"Set" = "Angiven";
+"Proposed" = "Föreslagen";
+"No scale" = "Ingen skala";
+"Reading…" = "Läser…";
+"Read from “%@”" = "Läst från ”%@”";
+"%1$d sheets: %2$d set, %3$d proposed, %4$d without a scale." = "%1$d blad: %2$d angivna, %3$d föreslagna, %4$d utan skala.";
+"Sheets and their scales" = "Blad och deras skalor";
+"Applies the scale of the page on screen to other pages." = "Tillämpar skalan för sidan som visas på andra sidor.";
+"Apply %d Proposed Scales" = "Tillämpa %d föreslagna skalor";
+"Sets each chosen sheet to the scale printed on it. One undo takes them all back." = "Ger varje valt blad den skala som står på det. En ångring tar tillbaka alla.";
+"Apply Proposed Scales" = "Tillämpa föreslagna skalor";
+"Drawing ratio" = "Ritningsförhållande";
+"Copied from another page" = "Kopierad från en annan sida";
+"Copy Style" = "Kopiera stil";
+"Paste Style" = "Klistra in stil";
+"Summary" = "Sammanställning";
+"Total: %1$@ (%2$d rows)" = "Totalt: %1$@ (%2$d rader)";
+"no single total" = "ingen gemensam summa";
+"Legend" = "Teckenförklaring";
+"No count marks yet." = "Inga räknemarkeringar än.";
+"(no subject)" = "(inget ämne)";
+"As of %@" = "Per %@";
+"Filtered: %1$@ — %2$d of %3$d rows" = "Filtrerad: %1$@ — %2$d av %3$d rader";
+"All rows" = "Alla rader";
+"this sheet only" = "bara den här ritningen";
+" and " = " och ";
+" or " = " eller ";
+"not " = "inte ";
+"Place Summary" = "Placera sammanställning";
+"Nothing was placed: the document has no sheet." = "Inget placerades: dokumentet har ingen ritning.";
+"A live quantity table is on the sheet. It updates as you measure, and says when the ledger is filtered." = "En levande mängdtabell finns på ritningen. Den uppdateras när du mäter och säger när liggaren är filtrerad.";
+"A live count legend is on the sheet. It updates as you count." = "En levande teckenförklaring finns på ritningen. Den uppdateras när du räknar.";
+"Place Quantity Table on Sheet" = "Placera mängdtabell på ritningen";
+"Place Count Legend on Sheet" = "Placera teckenförklaring på ritningen";
+"Shared review needs a project. Save this drawing as a project first." = "Delad granskning kräver ett projekt. Spara ritningen som ett projekt först.";
+"Use Folder" = "Använd mapp";
+"Choose a folder everyone reviewing this project can reach, such as a synced drive or a file share. The project stays here; the folder holds each person's changes." = "Välj en mapp som alla som granskar projektet når, till exempel en synkad enhet eller en filresurs. Projektet stannar här; mappen innehåller varje persons ändringar.";
+"This project is not connected to a shared review folder. Choose File ▸ Shared Review ▸ Connect first." = "Projektet är inte anslutet till en mapp för delad granskning. Välj Arkiv ▸ Delad granskning ▸ Anslut först.";
+"Nothing new from anyone else." = "Inget nytt från någon annan.";
+"%1$lld added, %2$lld changed, %3$lld removed." = "%1$lld tillagda, %2$lld ändrade, %3$lld borttagna.";
+"1 new reply." = "1 nytt svar.";
+"%lld new replies." = "%lld nya svar.";
+"%lld of your changes shared." = "%lld av dina ändringar delade.";
+"Reviewing with %@." = "Granskar med %@.";
+"%lld changes could not be applied by this version and were left as they are." = "%lld ändringar kunde inte tillämpas av den här versionen och lämnades som de var.";
+"Some lines are still arriving from the sync service and will be read next time." = "Några rader är fortfarande på väg från synktjänsten och läses nästa gång.";
+"Synced with “%@”" = "Synkat med ”%@”";
+"Shared Review" = "Delad granskning";
+"That folder holds the review of “%@”, another project. Choose an empty folder or this project's own." = "Mappen innehåller granskningen av ”%@”, ett annat projekt. Välj en tom mapp eller projektets egen.";
+"A newer version of Zenit PDF wrote this folder. Update to review in it." = "En nyare version av Zenit PDF skrev mappen. Uppdatera för att granska i den.";
+"The folder could not be written to. Check that it is still connected and that you may write to it." = "Det gick inte att skriva till mappen. Kontrollera att den fortfarande är ansluten och att du får skriva i den.";
+"The changes could not be applied: %@. Nothing in the project was changed." = "Ändringarna kunde inte tillämpas: %@. Inget i projektet ändrades.";
+"Shared review" = "Delad granskning";
+"Connect Shared Review Folder…" = "Anslut mapp för delad granskning…";
+"Sync Shared Review" = "Synka delad granskning";
+"Disconnect Shared Review Folder" = "Koppla från mapp för delad granskning";
+"%1$@ in %2$ld markups" = "%1$@ i %2$ld markeringar";
+"total" = "totalt";
+"Verify Scale" = "Verifiera skala";
+"Verify Scale…" = "Verifiera skala…";
+"Verify" = "Verifiera";
+"Click both ends of a dimension the drawing states and see how far the scale is from it." = "Klicka på båda ändarna av ett mått som står på ritningen och se hur långt skalan avviker från det.";
+"Verify Scale: click both ends of a dimension the drawing states." = "Verifiera skala: klicka på båda ändarna av ett mått som står på ritningen.";
+"What length does the drawing state for that line?" = "Vilken längd anger ritningen för den linjen?";
+"Use a printed dimension other than the one you calibrated on. Nothing about the scale changes." = "Använd ett annat tryckt mått än det du kalibrerade mot. Skalan ändras inte.";
+"The scale agrees with the drawing within %@ %%." = "Skalan stämmer med ritningen inom %@ %%.";
+"The scale is off by %@ %%." = "Skalan avviker med %@ %%.";
+"The line measures %1$@ where the drawing says %2$@." = "Linjen mäter %1$@ där ritningen anger %2$@.";
+"Check the calibration before measuring further." = "Kontrollera kalibreringen innan du mäter vidare.";
+"Split Area" = "Dela yta";
+"Select one area, then click the two ends of the dividing line. One undo puts it back." = "Markera en yta och klicka sedan på delningslinjens två ändar. En ångring återställer den.";
+"Split Area: click the two ends of the dividing line." = "Dela yta: klicka på delningslinjens två ändar.";
+"Select one area to split." = "Markera en yta att dela.";
+"Only a measured area can be split." = "Bara en mätt yta kan delas.";
+"This area is locked. Unlock it to split it." = "Ytan är låst. Lås upp den för att dela den.";
+"This area has cutouts, and splitting cutouts along with it is not available yet." = "Ytan har urtag, och att dela urtagen tillsammans med den finns inte än.";
+"The line does not cross the area, so there is nothing to split." = "Linjen korsar inte ytan, så det finns inget att dela.";
+"The line is so close to an edge that one part would be a sliver." = "Linjen ligger så nära en kant att en del skulle bli en tunn remsa.";
+"The parts did not add up to the area, so nothing was changed." = "Delarna blev inte lika med ytan, så ingenting ändrades.";
+"Summary Matrix" = "Sammanställningsmatris";
+"Summary Matrix…" = "Sammanställningsmatris…";
+"Totals of the rows the ledger shows, by one grouping down and another across." = "Summor för raderna liggaren visar, med en gruppering nedåt och en annan tvärs över.";
+"Down" = "Nedåt";
+"Across" = "Tvärs";
+"Building…" = "Beräknar…";
+"Copy as Table" = "Kopiera som tabell";
+"Total" = "Totalt";
+"“%@” is a DWG drawing." = "”%@” är en DWG-ritning.";
+"DWG is a closed format Zenit PDF cannot read. Ask for a PDF or DXF export, or save it as DXF in your CAD program, then open that." = "DWG är ett slutet format som Zenit PDF inte kan läsa. Be om en PDF- eller DXF-export, eller spara som DXF i ditt CAD-program och öppna den.";
+"1:%1$lld from the drawing file (%2$@)" = "1:%1$lld från ritningsfilen (%2$@)";
+"Drawn at 1:%lld from the file's own units. Measure straight away; no calibration needed." = "Ritad i 1:%lld enligt filens egna enheter. Mät direkt; ingen kalibrering behövs.";
+"The file states no unit, so it is drawn as if one unit were a millimetre and is not to scale. Calibrate before measuring." = "Filen anger ingen enhet, så den ritas som om en enhet vore en millimeter och är inte skalenlig. Kalibrera innan du mäter.";
+"%lld entities of kinds Zenit PDF does not draw (such as hatch fills) were left out." = "%lld objekt av typer som Zenit PDF inte ritar (till exempel skrafferingar) utelämnades.";
+"Opened “%1$@” with %2$lld layers" = "Öppnade ”%1$@” med %2$lld lager";
+"CAD" = "CAD";
+
+/* Documents: Pages index. */
+"Cards" = "Kort";
+"Index" = "Index";
+"Filter sheets" = "Filtrera blad";
+"Other Sheets" = "Övriga blad";
+"Pages view" = "Sidvy";
+"Markups tinted by author" = "Markeringar tonade per författare";
+"No markup names an author." = "Ingen markering anger en författare.";
+"Tint Markups by Author" = "Tona markeringar per författare";
+"Review List" = "Granskningslista";
+"Review List — %@" = "Granskningslista – %@";
+"Search markups" = "Sök markeringar";
+"Filter by status" = "Filtrera på status";
+"Filter by author" = "Filtrera på författare";
+"With replies" = "Med svar";
+"Sort" = "Sortera";
+"%1$lld of %2$lld markups" = "%1$lld av %2$lld markeringar";
+"All Statuses" = "Alla statusar";
+"%lld Statuses" = "%lld statusar";
+"All Authors" = "Alla författare";
+"%lld Authors" = "%lld författare";
+"Kind" = "Typ";
+"Note" = "Anteckning";
+"Replies" = "Svar";
+"Last Activity" = "Senaste aktivitet";
+"Reveal Markup" = "Visa markering";
+"No markup matches the filter." = "Ingen markering matchar filtret.";
+"No markups yet." = "Inga markeringar ännu.";
+"Switch Automatically" = "Byt automatiskt";
+"When %@ Starts" = "När %@ startar";
+"Keep the Current Layout" = "Behåll aktuell layout";
+
+/* PDF */
+"%d markups could not be drawn and are missing from the file." = "%d markeringar kunde inte ritas och saknas i filen.";
+"The drawing is digitally signed. The annotations were appended after the signed content, so the signature still covers the original drawing." = "Ritningen är digitalt signerad. Anteckningarna lades till efter det signerade innehållet, så signaturen täcker fortfarande originalritningen.";
+"The annotations could not be appended to the original file (%@), so the file was rewritten. Appearance streams, opacity settings and review states are simplified in this copy." = "Anteckningarna kunde inte läggas till i originalfilen (%@), så filen skrevs om. Utseenden, opacitet och granskningsstatus är förenklade i den här kopian.";
+"The drawing is digitally signed, and a rewritten copy no longer carries a valid signature." = "Ritningen är digitalt signerad, och en omskriven kopia har inte längre en giltig signatur.";
+"Save markups into “%@”?" = "Spara markeringar i ”%@”?";
+"Save markups into a copy of “%@”?" = "Spara markeringar i en kopia av ”%@”?";
+"%d annotations and the takeoff are added to the end of the file. The original drawing stays unchanged at the start of the file, so any signature on it stays valid, and annotations other people made are kept." = "%d anteckningar och mängdavtagningen läggs till i slutet av filen. Originalritningen ligger oförändrad i början av filen, så en eventuell signatur förblir giltig, och andras anteckningar behålls.";
+"The drawing is signed by %@; the signature keeps covering the original drawing." = "Ritningen är signerad av %@; signaturen fortsätter att täcka originalritningen.";
+"Save into PDF" = "Spara i PDF";
+"%d annotations, one per markup. The original drawing is unchanged at the start of the file." = "%d anteckningar, en per markering. Originalritningen ligger oförändrad i början av filen.";
+"The measurements travel inside the file as a takeoff Zenit can read back." = "Mätningarna följer med i filen som en mängdavtagning Zenit kan läsa tillbaka.";
+"Annotations from an earlier save were replaced, not duplicated." = "Anteckningar från en tidigare sparning ersattes i stället för att dubbleras.";
+"Markups saved into “%@”" = "Markeringar sparade i ”%@”";
+"an unreadable certificate" = "ett oläsbart certifikat";
+"With Markups" = "Med markeringar";
+"The drawing in this project is never changed. Choose where the PDF with the markups goes." = "Ritningen i det här projektet ändras aldrig. Välj var PDF:en med markeringarna ska sparas.";
+"Choose at least one thing to do to the copy." = "Välj minst en sak att göra med kopian.";
+"A protected copy needs a permissions password, so its restrictions cannot be lifted by anybody who opens it." = "En skyddad kopia behöver ett behörighetslösenord, så att begränsningarna inte kan tas bort av alla som öppnar den.";
+"The permissions password must differ from the open password; otherwise everyone who can open the copy can change it." = "Behörighetslösenordet måste skilja sig från öppningslösenordet; annars kan alla som kan öppna kopian ändra den.";
+"the copy cannot replace the drawing it is made from" = "kopian kan inte ersätta ritningen den görs av";
+"%1$@ → %2$@ (%3$d %% smaller)." = "%1$@ → %2$@ (%3$d %% mindre).";
+"%d of the drawing's own annotations were burned into the pages." = "%d av ritningens egna anteckningar brändes in i sidorna.";
+"Scripts, attached files, automatic actions and metadata were removed." = "Skript, bifogade filer, automatiska åtgärder och metadata togs bort.";
+"The copy opens without a password; printing and copying follow the permissions you chose." = "Kopian öppnas utan lösenord; utskrift och kopiering följer de behörigheter du valde.";
+"The copy opens only with its password." = "Kopian öppnas bara med sitt lösenord.";
+"Pictures are not re-encoded, so a scanned drawing shrinks only by what its structure allows." = "Bilder kodas inte om, så en skannad ritning krymper bara så mycket strukturen tillåter.";
+"Saved “%@”" = "Sparade ”%@”";
+"Reduce file size" = "Minska filstorleken";
+"Remove scripts, attachments and metadata" = "Ta bort skript, bilagor och metadata";
+"Burn in the drawing's own annotations and form fields" = "Bränn in ritningens egna anteckningar och formulärfält";
+"Protect with a password" = "Skydda med lösenord";
+"Allow printing" = "Tillåt utskrift";
+"Allow copying text" = "Tillåt kopiering av text";
+"Open password (optional)" = "Öppningslösenord (valfritt)";
+"Permissions password" = "Behörighetslösenord";
+"Open password" = "Öppningslösenord";
+"Save a smaller, cleaned or password-protected copy of the drawing. The drawing itself is not changed." = "Spara en mindre, rensad eller lösenordsskyddad kopia av ritningen. Själva ritningen ändras inte.";
+"Optimized" = "Optimerad";
+"No text has been recognised on this drawing yet. Choose Read Text from Scanned Pages… first." = "Ingen text har tolkats på den här ritningen än. Välj Läs text från skannade sidor… först.";
+"%1$d recognised words on %2$d pages can now be found and selected in any PDF reader. The drawing looks exactly as before." = "%1$d tolkade ord på %2$d sidor kan nu sökas och markeras i alla PDF-läsare. Ritningen ser ut precis som förut.";
+"Save a copy of the drawing whose recognised text any PDF reader can search. The drawing itself is not changed." = "Spara en kopia av ritningen vars tolkade text alla PDF-läsare kan söka i. Själva ritningen ändras inte.";
+"Searchable" = "Sökbar";
+"layers hidden in the Navigator are applied only when the pages are rebuilt" = "lager som döljs i navigatorn tillämpas bara när sidorna byggs om";
+"the drawing is password-protected" = "ritningen är lösenordsskyddad";
+"there are no markups to add" = "det finns inga markeringar att lägga till";
+"The drawing's bookmarks, links, page labels and layers are kept." = "Ritningens bokmärken, länkar, sidetiketter och lager behålls.";
+"The drawing's bookmarks, links, page labels and layers are kept. The markups were added after the drawing's original bytes, so a PDF tool could take them off again." = "Ritningens bokmärken, länkar, sidetiketter och lager behålls. Markeringarna lades till efter ritningens ursprungliga byte, så ett PDF-verktyg skulle kunna ta bort dem igen.";
+"The pages were rebuilt (%@), so the drawing's bookmarks and links are not in the file." = "Sidorna byggdes om (%@), så ritningens bokmärken och länkar finns inte i filen.";
+"Open a drawing before printing or exporting it." = "Öppna en ritning innan du skriver ut eller exporterar den.";
+"This drawing has no pages." = "Den här ritningen har inga sidor.";
+"Annotations in the original PDF are not included on page(s) %@." = "Anteckningar i original-PDF:en ingår inte på sida/sidor %@.";
+"Layers hidden in the Navigator are still included on page(s) %@." = "Lager som döljs i navigatorn ingår ändå på sida/sidor %@.";
+"%d annotations in the original PDF are not included in this output." = "%d anteckningar i original-PDF:en ingår inte i den här utdatan.";
+"Layers hidden in the Navigator are still included in this output." = "Lager som döljs i navigatorn ingår ändå i den här utdatan.";
+"The drawing is digitally signed by %@. This export is a new file and carries no signature; Export Annotated PDF… keeps the signed drawing intact." = "Ritningen är digitalt signerad av %@. Den här exporten är en ny fil utan signatur; Exportera PDF med anteckningar… behåller den signerade ritningen intakt.";
+"The drawing is digitally signed. This export is a new file and carries no signature; Export Annotated PDF… keeps the signed drawing intact." = "Ritningen är digitalt signerad. Den här exporten är en ny fil utan signatur; Exportera PDF med anteckningar… behåller den signerade ritningen intakt.";
+"The drawing could not be drawn under the markups on page(s) %@." = "Ritningen kunde inte ritas under markeringarna på sida/sidor %@.";
+"Printed scale 1:%@ (actual size)" = "Utskriven skala 1:%@ (verklig storlek)";
+"Printed scale 1:%@ (drawn 1:%@ at %d %%)" = "Utskriven skala 1:%@ (ritad 1:%@ i %d %%)";
+"Printed at %d %% — not to scale" = "Utskriven i %d %% — inte skalenlig";
+"Tile %1$@ of %2$@ — sheet %3$d" = "Del %1$@ av %2$@ — blad %3$d";
+"Drawing" = "Ritning";
+"Actual size" = "Verklig storlek";
+"Half size" = "Halv storlek";
+"Fit to paper" = "Anpassa till papperet";
+"Custom" = "Anpassad";
+"Print scale" = "Utskriftsskala";
+"Custom print scale, percent" = "Anpassad utskriftsskala, procent";
+"Print markups" = "Skriv ut markeringar";
+"Tile overlap, millimetres" = "Överlapp mellan delar, millimeter";
+"mm" = "mm";
+"Each sheet states the scale it printed at. A sheet larger than the paper at the chosen scale is printed across several pages." = "Varje blad anger skalan det skrevs ut i. Ett blad som är större än papperet i vald skala skrivs ut över flera sidor.";
+"Scale:" = "Skala:";
+"Custom scale:" = "Anpassad skala:";
+"Tile overlap:" = "Överlapp:";
+"%@ %%" = "%@ %%";
+"Printed" = "Skrivs ut";
+"Not printed" = "Skrivs inte ut";
+"Optimize or Protect a Copy…" = "Optimera eller skydda en kopia…";
+"Save a copy of the drawing that is smaller, has scripts and attachments removed, or needs a password. The drawing itself is not changed." = "Spara en kopia av ritningen som är mindre, saknar skript och bilagor eller kräver lösenord. Själva ritningen ändras inte.";
+"Save Searchable Copy…" = "Spara sökbar kopia…";
+"Save a copy of the drawing whose recognised text any PDF reader can search and select. It looks exactly like the drawing." = "Spara en kopia av ritningen vars tolkade text alla PDF-läsare kan söka i och markera. Den ser ut precis som ritningen.";
+"Save Markups into PDF…" = "Spara markeringar i PDF…";
+"Add your markups to the PDF as annotations any reader shows, with the takeoff inside. The original drawing stays unchanged at the start of the file." = "Lägg till dina markeringar i PDF:en som anteckningar alla läsare visar, med mängdavtagningen inuti. Originalritningen ligger oförändrad i början av filen.";
+"“%@” was exported." = "”%@” exporterades.";
+"“%@” was exported with %d annotations." = "”%@” exporterades med %d anteckningar.";
+"1:%@ from the drawing file" = "1:%@ från ritningsfilen";
+"Written into the PDF by the program that made it%@. Apply it, or calibrate by hand as usual." = "Inskrivet i PDF-filen av programmet som skapade den%@. Tillämpa det, eller kalibrera för hand som vanligt.";
+"%lld sheets carry their own scale, written into the PDF by the program that made it. Apply sets each sheet that has no scale yet." = "%lld blad har egen skala, inskriven i PDF-filen av programmet som skapade den. Tillämpa sätter varje blad som ännu saknar skala.";
+"Some sheets hold viewports at different scales; the largest viewport's scale is used. Check detail views before measuring in them." = "Vissa blad har vyer i olika skalor; den största vyns skala används. Kontrollera detaljvyer innan du mäter i dem.";
+"The drawing file says %@." = "Ritningsfilen anger %@.";
+"The drawing file gives each sheet its scale." = "Ritningsfilen ger varje blad dess skala.";
+"Apply to %lld Sheets" = "Tillämpa på %lld blad";
+"Clear Assignment" = "Rensa tilldelning";
+"Assign" = "Tilldela";
+"%@ cleared the assignment" = "%@ rensade tilldelningen";
+"%1$@ assigned this to %2$@, due %3$@" = "%1$@ tilldelade detta till %2$@, senast %3$@";
+"%1$@ assigned this to %2$@" = "%1$@ tilldelade detta till %2$@";
+"Assigned to me" = "Tilldelade mig";
+"Overdue" = "Försenade";
+"Assign…" = "Tilldela…";
+"Assignee" = "Ansvarig";
+"Assign to" = "Tilldela till";
+"Assignee name" = "Ansvarigs namn";
+"People on this project" = "Personer i projektet";
+"Due date" = "Förfallodatum";
+"Due" = "Senast";
+"Set Status with Note…" = "Ange status med anteckning…";
+"Why — for example “see RFI 12”" = "Varför – till exempel ”se RFI 12”";
+"Status note" = "Statusanteckning";
+"Set the status and say why" = "Ange status och skriv varför";
+"Set the status of %lld markups and say why" = "Ange status för %lld markeringar och skriv varför";
+"The note goes into each markup's thread beside the status change." = "Anteckningen hamnar i varje markerings tråd bredvid statusändringen.";
+"Set Status" = "Ange status";
+
+/* Documents: extract pages. */
+"Extract Page…" = "Extrahera sida…";
+"Extract %lld Pages…" = "Extrahera %lld sidor…";
+"Extract pages to a new PDF" = "Extrahera sidor till en ny PDF";
+"The pages were extracted." = "Sidorna extraherades.";
+"Sheet labels, bookmarks and links were kept. Layer definitions and named destinations could not be carried into the new file." = "Bladnummer, bokmärken och länkar behölls. Lagerdefinitioner och namngivna mål kunde inte föras över till den nya filen.";
+"Extract Pages" = "Extrahera sidor";
+"The pages could not be extracted." = "Sidorna kunde inte extraheras.";
+"No drawing or project is open in Zenit PDF." = "Ingen ritning eller inget projekt är öppet i Zenit PDF.";
+"The drawing in front is still opening. Try again in a moment." = "Ritningen längst fram öppnas fortfarande. Försök igen om en stund.";
+"The ledger has no totals yet." = "Mängdliggaren har inga summor än.";
+"Export Quantity Ledger" = "Exportera mängdliggare";
+"Get Totals" = "Hämta summor";
+"Open Drawing or Project" = "Öppna ritning eller projekt";
+"Ledger Format" = "Format för mängdliggare";
+"Format" = "Format";
+"Export Ledger" = "Exportera liggare";
+"Exports the Quantity Ledger of the drawing or project in front, as it is on screen." = "Exporterar mängdliggaren för ritningen eller projektet längst fram, som den visas.";
+"Returns the Quantity Ledger's totals of the drawing or project in front, one line per quantity." = "Returnerar mängdliggarens summor för ritningen eller projektet längst fram, en rad per mängd.";
+"Opens a PDF drawing, a scan, a DXF or a Zenit PDF project." = "Öppnar en PDF-ritning, en skanning, en DXF eller ett Zenit PDF-projekt.";
+"Snapshot" = "Ögonblicksbild";
+"Take Snapshot" = "Ta ögonblicksbild";
+"Snapshots and Changes" = "Ögonblicksbilder och ändringar";
+"Snapshots and Changes…" = "Ögonblicksbilder och ändringar…";
+"Store the takeoff as it stands, then see exactly what changed since." = "Spara mängdavtagningen som den är nu och se sedan exakt vad som har ändrats.";
+"Snapshot name, e.g. Bid 1" = "Namn på ögonblicksbilden, t.ex. Anbud 1";
+"Snapshot name" = "Namn på ögonblicksbilden";
+"Changes since" = "Ändringar sedan";
+"Delete Snapshot" = "Ta bort ögonblicksbild";
+"Snapshot “%@” stored." = "Ögonblicksbilden ”%@” sparades.";
+"The snapshot was not stored: %@" = "Ögonblicksbilden sparades inte: %@";
+"Added" = "Tillagd";
+"Removed" = "Borttagen";
+"Changed" = "Ändrad";
+"Whole takeoff" = "Hela mängdavtagningen";
+"Nothing has changed since this snapshot." = "Inget har ändrats sedan den här ögonblicksbilden.";
+"%d rows" = "%d rader";
+"No snapshots yet. Name one above and take it before the takeoff goes out." = "Inga ögonblicksbilder än. Namnge en ovan och ta den innan mängdavtagningen skickas.";
+"Send Project" = "Skicka projekt";
+"Only a project can be sent" = "Bara ett projekt kan skickas";
+"Save this drawing as a project first (File ▸ Save As Project…), then send it." = "Spara ritningen som ett projekt först (Arkiv ▸ Spara som projekt…) och skicka det sedan.";
+"Save the project before sending it" = "Spara projektet innan du skickar det";
+"Send Project sends the last saved state, so unsaved changes would be left out. Press ⌘S, then send." = "Skicka projekt skickar det senast sparade läget, så osparade ändringar skulle utelämnas. Tryck ⌘S och skicka sedan.";
+"The project as one file for a colleague: drawings, markups and ledger, without this Mac's recovery files." = "Projektet som en fil till en kollega: ritningar, markeringar och mängdliggare, utan den här Macens återställningsfiler.";
+"“%@” is ready to send" = "”%@” är klar att skicka";
+"Unzip it and open the project inside. It opens as a clean copy of the last save." = "Packa upp den och öppna projektet inuti. Det öppnas som en ren kopia av den senaste sparningen.";
+"The project was not sent" = "Projektet skickades inte";
+"Send Project…" = "Skicka projekt…";
+"“%@” has no currency, so the amount was not stored." = "”%@” saknar valuta, så beloppet sparades inte.";
+"“%@” takes a number. The cell was not changed." = "”%@” tar ett tal. Cellen ändrades inte.";
+"Me" = "Jag";
+"New since I looked (%lld)" = "Nytt sedan jag tittade (%lld)";
+"Mark All Seen" = "Markera alla som sedda";
+"Continue Measurement" = "Fortsätt mätning";
+"Adds points to the selected polylength or count; it stays the same row." = "Lägger till punkter i den markerade polylängden eller räkningen; den förblir samma rad.";
+"Select one polylength or count to continue." = "Markera en polylängd eller räkning att fortsätta.";
+"Only a polylength or a count can be continued." = "Bara en polylängd eller en räkning kan fortsättas.";
+"Merge Areas" = "Slå ihop ytor";
+"Joins the selected areas of one subject into the first of them; overlaps count once." = "Slår ihop de markerade ytorna med samma ämne till den första av dem; överlapp räknas en gång.";
+"Select two or more unlocked areas on one page with the same subject and no cutouts." = "Markera två eller fler olåsta ytor på en sida med samma ämne och utan urtag.";
+"These areas do not touch, so merging them would make one row out of two shapes." = "Ytorna rör inte varandra, så att slå ihop dem skulle göra en rad av två former.";
+"%lld changed" = "%lld ändrade";
+"%lld conflicts kept as yours" = "%lld konflikter behölls som dina";
+"Import Review File" = "Importera granskningsfil";
+"A review file belongs to a project. Save this drawing as a project first." = "En granskningsfil hör till ett projekt. Spara ritningen som ett projekt först.";
+"Every markup and reply, for another copy of this project. The drawing is not included." = "Varje markering och svar, för en annan kopia av projektet. Ritningen ingår inte.";
+"Choose a review file exported from another copy of this project." = "Välj en granskningsfil som exporterats från en annan kopia av projektet.";
+"From %@." = "Från %@.";
+"Quantities are measured again here. Nothing of yours is deleted. One Undo takes the import back." = "Mängderna mäts om här. Inget av ditt tas bort. En Ångra tar tillbaka importen.";
+"It is the review of “%@”, another project. A review file only merges into a copy of the project it came from." = "Det är granskningen av ”%@”, ett annat projekt. En granskningsfil slås bara ihop med en kopia av projektet den kom från.";
+"A newer version of Zenit PDF wrote this file. Update to import it." = "En nyare version av Zenit PDF skrev filen. Uppdatera för att importera den.";
+"This is not a Zenit review file." = "Det här är ingen granskningsfil från Zenit.";
+"Review file" = "Granskningsfil";
+"Export Review File…" = "Exportera granskningsfil…";
+"Import Review File…" = "Importera granskningsfil…";
+"Export Report…" = "Exportera rapport…";
+"Every markup in the list, with status, author and thread, as PDF or CSV." = "Varje markering i listan, med status, författare och tråd, som PDF eller CSV.";
+"Save as PDF to send, or change the name to .csv for a spreadsheet." = "Spara som PDF för att skicka, eller byt namnet till .csv för ett kalkylblad.";
+"Thread" = "Tråd";
+"reverted status %1$@ → %2$@" = "återställde status %1$@ → %2$@";
+"status %1$@ → %2$@" = "status %1$@ → %2$@";
+"cleared the assignment" = "rensade tilldelningen";
+"assigned to %@" = "tilldelad %@";
+"Review report — %@" = "Granskningsrapport – %@";
+"%lld markups · %@" = "%lld markeringar · %@";
+
+/* Documents: drawing links. */
+"This link is not a web address Zenit PDF will open." = "Den här länken är ingen webbadress som Zenit PDF öppnar.";
+"Open this link in your browser?" = "Öppna länken i webbläsaren?";
+"Open Link" = "Öppna länk";
+"This link would run a script or open a program. Zenit PDF shows it and never runs it." = "Den här länken skulle köra ett skript eller öppna ett program. Zenit PDF visar den men kör den aldrig.";
+"The first line must name at least the Name, Unit and Rate columns." = "Första raden måste namnge åtminstone kolumnerna Namn, Enhet och À-pris.";
+"No name." = "Inget namn.";
+"“%@” is not a unit this list understands (m, m², m³, pcs)." = "”%@” är ingen enhet som listan förstår (m, m², m³, st).";
+"“%@” is not a rate." = "”%@” är inget à-pris.";
+"“%@” is not a waste percentage." = "”%@” är ingen spillprocent.";
+"Nothing was changed: that item is no longer in the rate library." = "Inget ändrades: posten finns inte längre i prisbiblioteket.";
+"Nothing was changed: “%1$@” is priced per %2$@, and %3$d of the selected rows measure something else." = "Inget ändrades: ”%1$@” prissätts per %2$@, och %3$d av de markerade raderna mäter något annat.";
+"Update Rates" = "Uppdatera priser";
+"Line %1$d: %2$@" = "Rad %1$d: %2$@";
+"Rate Library" = "Prisbibliotek";
+"Rate Library…" = "Prisbibliotek…";
+"Your office's rates. A project keeps the rates it was priced with until you update them here." = "Kontorets priser. Ett projekt behåller priserna det prissattes med tills du uppdaterar dem här.";
+"No items yet. Paste a supplier list below: a first line naming Name, Unit and Rate, then one item per line." = "Inga poster än. Klistra in en leverantörslista nedan: en första rad som namnger Namn, Enhet och À-pris, sedan en post per rad.";
+"Price %d Rows" = "Prissätt %d rader";
+"Price the selected rows with %@" = "Prissätt de markerade raderna med %@";
+"Remove %@ from the library" = "Ta bort %@ ur biblioteket";
+"Paste a supplier list" = "Klistra in en leverantörslista";
+"Supplier list" = "Leverantörslista";
+"%d rows are priced at an older rate" = "%d rader är prissatta med ett äldre pris";
+"%1$d items imported, %2$d lines not read." = "%1$d poster importerade, %2$d rader lästes inte.";
+"Priced %d rows. Undo takes it back." = "Prissatte %d rader. Ångra tar tillbaka det.";
+"Updated the rate on %d rows. Undo takes it back." = "Uppdaterade priset på %d rader. Ångra tar tillbaka det.";
+"waste %@" = "spill %@";
+"The markups, notes, statuses and replies as XFDF, for any reader that opens the same drawing." = "Markeringar, anteckningar, statusar och svar som XFDF, för alla läsare som öppnar samma ritning.";
+"Choose an XFDF made on this drawing." = "Välj en XFDF som gjorts på den här ritningen.";
+"It was made on “%1$@”, and this drawing is “%2$@”. An XFDF only fits the drawing it was made on." = "Den gjordes på ”%1$@”, och den här ritningen är ”%2$@”. En XFDF passar bara ritningen den gjordes på.";
+"The file could not be read as XFDF." = "Filen kunde inte läsas som XFDF.";
+"Export Review as XFDF…" = "Exportera granskning som XFDF…";
+"Import XFDF…" = "Importera XFDF…";
+"Whole Project" = "Hela projektet";
+"Whole Project Summary…" = "Sammanställning för hela projektet…";
+"Every open drawing, subject by subject. A subject in two units stays two lines; nothing is converted by guess." = "Varje öppen ritning, ämne för ämne. Ett ämne i två enheter blir två rader; inget räknas om på gissning.";
+"All drawings" = "Alla ritningar";
+"No quantities yet." = "Inga mängder än.";
+"That link's markup is no longer in this project" = "Länkens markering finns inte längre i projektet";
+"It may have been deleted since the workbook was exported." = "Den kan ha tagits bort sedan arbetsboken exporterades.";
+"That link belongs to a project that is not open" = "Länken hör till ett projekt som inte är öppet";
+"Open the project it was exported from, then click the link again." = "Öppna projektet den exporterades från och klicka på länken igen.";
+"Round %lld" = "Omgång %lld";
+"Close Round" = "Stäng omgång";
+"%1$lld added, %2$lld removed, %3$lld changed" = "%1$lld tillagda, %2$lld borttagna, %3$lld ändrade";
+"%1$lld now %2$@" = "%1$lld nu %2$@";
+"Since %1$@: %2$@" = "Sedan %1$@: %2$@";
+"Compare with %@" = "Jämför med %@";
+"Rounds" = "Omgångar";
+"Review rounds" = "Granskningsomgångar";
+"A4 portrait" = "A4 stående";
+"A4 landscape" = "A4 liggande";
+"A3 portrait" = "A3 stående";
+"A3 landscape" = "A3 liggande";
+"Letter portrait" = "Letter stående";
+"Letter landscape" = "Letter liggande";
+"Report page size" = "Rapportens sidstorlek";
+"Company block or footer line" = "Företagsblock eller sidfot";
+"Report footer" = "Rapportens sidfot";
+"Export template" = "Exportmall";
+"Template name" = "Mallens namn";
+"Save as Template" = "Spara som mall";
+"No template" = "Ingen mall";
+"Template:" = "Mall:";
+"%1$@ replied: %2$@" = "%1$@ svarade: %2$@";
+"%1$@ mentioned you: %2$@" = "%1$@ nämnde dig: %2$@";
+"%1$@ set your markup to %2$@" = "%1$@ satte din markering till %2$@";
+"Someone" = "Någon";
+"Activity (%lld)" = "Aktivitet (%lld)";
+"Activity" = "Aktivitet";
+"Activity, %lld unread" = "Aktivitet, %lld olästa";
+"Nothing from anyone else yet." = "Inget från någon annan ännu.";
+"Read" = "Läst";
+"Unread" = "Oläst";
+"Mark All Read" = "Markera alla som lästa";
+"Notify me about replies and mentions" = "Meddela mig om svar och omnämnanden";
+"Review activity" = "Granskningsaktivitet";
+"Flooring" = "Golv";
+"Painting" = "Målning";
+"Groundwork" = "Markarbeten";
+"Electrical" = "El";
+"Starter: Flooring" = "Startmall: Golv";
+"Starter: Painting" = "Startmall: Målning";
+"Starter: Groundwork" = "Startmall: Markarbeten";
+"Starter: Electrical counts" = "Startmall: Elräkning";
+"Floor finish" = "Golvbeläggning";
+"Skirting" = "Golvsockel";
+"Threshold" = "Tröskel";
+"Walls, 2.5 m" = "Väggar, 2,5 m";
+"Wall paint" = "Väggmålning";
+"Ceiling" = "Tak";
+"Ceiling paint" = "Takmålning";
+"Excavation, 300 mm" = "Schaktning, 300 mm";
+"Excavation" = "Schaktning";
+"Trench" = "Kabeldike";
+"Paving" = "Stenläggning";
+"Socket outlet" = "Vägguttag";
+"Switch" = "Strömbrytare";
+"Light fitting" = "Armatur";
+"Cable run" = "Kabeldragning";
+"Export profile" = "Exportprofil";
+"Saved export profile “%@”" = "Sparade exportprofilen ”%@”";
+"Adjust its headers, decimals, delimiter or encoding once, then use File ▸ Export with Profile…." = "Justera rubriker, decimaler, avgränsare eller teckenkodning en gång och använd sedan Arkiv ▸ Exportera med profil….";
+"Choose the export profile of the system you are sending to." = "Välj exportprofilen för systemet du skickar till.";
+"Exported “%1$@” with profile “%2$@”" = "Exporterade ”%1$@” med profilen ”%2$@”";
+"Every column the profile asks for was written." = "Alla kolumner som profilen begär skrevs.";
+"%@ are not in this ledger and were written empty." = "%@ finns inte i mängdliggaren och skrevs tomma.";
+"The export profile could not be used" = "Exportprofilen kunde inte användas";
+"Save Columns as Export Profile…" = "Spara kolumner som exportprofil…";
+"Export with Profile…" = "Exportera med profil…";
+"“%@” belongs to a drawing or project." = "”%@” hör till en ritning eller ett projekt.";
+"Open the drawing or project first, then open this file again." = "Öppna ritningen eller projektet först och öppna sedan filen igen.";
+"Share Review File…" = "Dela granskningsfil…";
+
+/* Automation */
+/* Auto-trace note: gaps within tolerance were closed; count and widest gap */
+"Traced. %1$d small gap(s) up to %2$.1f pt were treated as joins." = "Spårad. %1$d små glipor på upp till %2$.1f pt behandlades som skarvar.";
+
+/* Auto-trace note: the boundary was closed and committed */
+"Traced." = "Spårad.";
+
+/* Auto-trace refusal: open boundary */
+"Not traced: the boundary around that point is not closed. Draw the area by hand, or click elsewhere." = "Inte spårad: gränsen runt den punkten är inte sluten. Rita arean för hand eller klicka någon annanstans.";
+
+/* Auto-trace refusal: the drawing round the click is over a work limit */
+"Not traced: the linework around that point is too dense to follow. Draw the area by hand, or hide layers to thin it out." = "Inte spårad: linjerna runt den punkten är för täta att följa. Rita arean för hand, eller dölj lager för att glesa ut ritningen.";
+
+/* Auto-trace refusal: no extraction for the current page */
+"Not traced: this page's vector geometry is not available yet." = "Inte spårad: sidans vektorgeometri finns inte tillgänglig än.";
+
+/* Auto-trace opening width in metres */
+"%.2f m" = "%.2f m";
+
+/* Auto-trace opening width in page points */
+"%.1f pt" = "%.1f pt";
+
+/* Auto-trace proposal note: one opening; the width */
+"Closes 1 opening (%@). Return to accept, Esc to cancel." = "Stänger 1 öppning (%@). Retur för att godta, Esc för att avbryta.";
+
+/* Auto-trace proposal note: several openings; count and widths */
+"Closes %1$d openings (%2$@). Return to accept, Esc to cancel." = "Stänger %1$d öppningar (%2$@). Retur för att godta, Esc för att avbryta.";
+
+/* Auto-trace filter: how many layers are left out */
+"%d hidden layer(s)" = "%d dolda lager";
+
+/* Auto-trace filter: dashed lines are left out */
+"dashed lines" = "streckade linjer";
+
+/* Auto-trace filter: fill-only paths are left out */
+"fills and hatch" = "fyllningar och skraffering";
+
+/* Auto-trace filter: strokes thinner than this are left out */
+"lines under %.2f pt" = "linjer under %.2f pt";
+
+/* Auto-trace filter: low-confidence geometry is left out */
+"uncertain geometry" = "osäker geometri";
+
+/* Auto-trace filter summary; the list */
+"Tracing ignores: %@" = "Spårningen bortser från: %@";
+
+/* Auto-trace options sheet title */
+"Auto-Trace Options" = "Alternativ för autospårning";
+
+/* Measure menu command: choose what one-click auto-trace leaves out */
+"Auto-Trace Options…" = "Alternativ för autospårning…";
+
+/* Auto-trace options sheet body */
+"Choose what ⌥-click tracing leaves out. Hidden layers are always left out. Whatever is chosen here is named in the status bar every time a room is traced." = "Välj vad spårning med ⌥-klick ska bortse från. Dolda lager utesluts alltid. Det som väljs här nämns i statusfältet varje gång ett rum spåras.";
+
+/* Auto-trace option */
+"Ignore dashed lines" = "Bortse från streckade linjer";
+
+/* Auto-trace option */
+"Ignore fills and hatch" = "Bortse från fyllningar och skraffering";
+
+/* Auto-trace option; the width */
+"Ignore lines thinner than %.2f pt" = "Bortse från linjer tunnare än %.2f pt";
+
+/* Status note after clearing every auto-trace option */
+"Auto-trace follows every visible line." = "Autospårningen följer varje synlig linje.";
+
+/* Symbol search scope: the current page only */
+"This page" = "Den här sidan";
+
+/* Batch apply scope choice */
+"Navigator selection" = "Markering i navigatorn";
+
+/* Batch apply scope choice */
+"Pages of one size" = "Sidor av en storlek";
+
+/* Batch apply scope choice */
+"All pages" = "Alla sidor";
+
+/* Symbol schedule designation prompt title */
+"Name This Symbol" = "Namnge symbolen";
+
+/* Symbol schedule designation prompt body */
+"The type designation printed beside the symbol — D-12, F01. Every match is shown for review before anything is counted." = "Typbeteckningen som står bredvid symbolen – D-12, F01. Varje träff visas för granskning innan något räknas.";
+
+/* Symbol designation field placeholder */
+"Designation" = "Beteckning";
+
+/* Accessibility label for the symbol search scope picker */
+"Where to look for matches" = "Var träffar ska sökas";
+
+/* Designation prompt confirm */
+"Find Matches" = "Hitta träffar";
+
+/* Status note after Measure ▸ Create Symbol Schedule… */
+"Drag a box around one instance of the symbol." = "Dra en ruta runt en förekomst av symbolen.";
+
+/* Status note when the symbol-schedule region capture ends without a rectangle */
+"Symbol schedule cancelled." = "Symbolförteckningen avbröts.";
+
+/* Status note when the symbol schedule's geometry extraction failed; the argument is the reason */
+"Could not read this page's vector geometry: %@" = "Sidans vektorgeometri kunde inte läsas: %@";
+
+/* Status note when the symbol matcher has nothing to search */
+"This page has no vector geometry to match symbols in." = "Sidan har ingen vektorgeometri att matcha symboler i.";
+
+/* Status note when the boxed region yields no exemplar */
+"No usable symbol inside the box: %@" = "Ingen användbar symbol i rutan: %@";
+
+/* Symbol review detail: measured size outside the accepted band */
+"size %1$.2f× — outside %2$.2f–%3$.2f×" = "storlek %1$.2f× – utanför %2$.2f–%3$.2f×";
+
+/* Symbol review detail: residual over the acceptance threshold */
+"residual %.2f of the bar" = "avvikelse %.2f av gränsen";
+
+/* Symbol review detail: the instance is a mirror image */
+"mirrored" = "spegelvänd";
+
+/* Symbol review detail: instance size over example size */
+"%.2f×" = "%.2f×";
+
+/* A page named by its one-based number */
+"Page %d" = "Sida %d";
+
+/* Status note when the matcher confirmed nothing */
+"No matching symbols found — nothing was counted." = "Inga matchande symboler hittades – inget räknades.";
+
+/* Undo action name for landing a symbol schedule's counts */
+"Symbol Schedule" = "Symbolförteckning";
+
+/* Status note after landing reviewed symbol counts; designation, count, pages */
+"%1$@: %2$d counted on %3$d page(s)." = "%1$@: %2$d räknade på %3$d sidor.";
+
+/* Symbol schedule warning when a cap stopped the search */
+"Schedule for %1$@: %2$d counted — the search stopped early on %3$d page(s)." = "Förteckning för %1$@: %2$d räknade – sökningen avbröts i förtid på %3$d sidor.";
+
+/* Symbol schedule warning body when a cap stopped the search */
+"Those pages may hold more of this symbol. Count them by hand or box a tighter example." = "De sidorna kan innehålla fler av symbolen. Räkna dem för hand eller rama in ett snävare exempel.";
+
+/* Warning source */
+"Symbol schedule" = "Symbolförteckning";
+
+/* Symbol review row status: confirmed match */
+"Match" = "Träff";
+
+/* Symbol review row status: almost matched */
+"Near miss" = "Nästan träff";
+
+/* Symbol review row status: a count point already sits here; the subject */
+"Already counted as %@" = "Redan räknad som %@";
+
+/* Symbol review summary: confirmed, near misses, other shapes */
+"%1$d confirmed, %2$d near miss(es) shown; %3$d other shapes did not resemble the symbol." = "%1$d bekräftade, %2$d nästan-träffar visas; %3$d andra former liknade inte symbolen.";
+
+/* Symbol review summary: places already carrying a count point */
+"Already counted: %d — left unticked so nothing is counted twice." = "Redan räknade: %d – lämnade omarkerade så att inget räknas två gånger.";
+
+/* Symbol review summary: symbol count equals printed tag count */
+"Tags agree: %1$d symbols, %2$d tags." = "Beteckningarna stämmer: %1$d symboler, %2$d beteckningar.";
+
+/* Symbol review summary: symbol and tag counts disagree */
+"%1$d symbols / %2$d tags — %3$d tag(s) with no symbol beside them are marked on the sheet." = "%1$d symboler / %2$d beteckningar – %3$d beteckningar utan symbol bredvid är markerade på bladet.";
+
+/* Symbol review summary: pages where a cap stopped the search; the page names */
+"The search stopped early on %@; those pages may hold more." = "Sökningen avbröts i förtid på %@; de sidorna kan innehålla fler.";
+
+/* Symbol review summary: pages that could not be searched; the page names */
+"Not searched: %@." = "Inte sökta: %@.";
+
+/* Accessibility label for the symbol count review panel */
+"Review the symbols found before counting them" = "Granska de hittade symbolerna innan de räknas";
+
+/* Title of the symbol count review panel */
+"Review the symbols before counting" = "Granska symbolerna innan de räknas";
+
+/* Accessibility label for the symbol review designation field */
+"Designation the counts land under" = "Beteckningen som antalen hamnar under";
+
+/* Symbol review: progress while pages are searched */
+"Searching page %1$d of %2$d…" = "Söker sida %1$d av %2$d…";
+
+/* Symbol review: stop searching further pages */
+"Stop Search" = "Stoppa sökningen";
+
+/* Accessibility hint for Stop Search */
+"Keeps what was found so far; nothing is counted until you add it" = "Behåller det som hittats hittills; inget räknas förrän du lägger till det";
+
+/* Accessibility label for the symbol review list */
+"Symbols found, grouped by page" = "Hittade symboler, grupperade per sida";
+
+/* Confirm the symbol review. %d is the number of ticked places */
+"Add %d Counts" = "Lägg till %d antal";
+
+/* Accessibility label for a symbol review row checkbox; status and detail */
+"Count this place: %1$@, %2$@" = "Räkna den här platsen: %1$@, %2$@";
+
+/* Symbol review: the row is the example the person boxed; the status */
+"%@ · the boxed example" = "%@ · det inramade exemplet";
+
+/* Accessibility label for the symbol review Show button */
+"Show this place on the sheet" = "Visa platsen på bladet";
+
+/* Symbol review: keep the exemplar in the local symbol library */
+"Save this symbol to the library" = "Spara symbolen i biblioteket";
+
+/* Accessibility hint for the save-to-library checkbox */
+"Later sheets and other projects can then be searched for it. The library stays on this Mac." = "Senare blad och andra projekt kan då sökas efter den. Biblioteket stannar på den här Macen.";
+
+/* Status note when writing the symbol library failed; the reason */
+"The symbol was counted but not saved to the library: %@" = "Symbolen räknades men sparades inte i biblioteket: %@";
+
+/* Status note when the symbol library file is unreadable; the reason */
+"The symbol library could not be read: %@" = "Symbolbiblioteket kunde inte läsas: %@";
+
+/* Status note when searching an empty symbol library */
+"The symbol library is empty. Tick “Save this symbol to the library” in a symbol review to add one." = "Symbolbiblioteket är tomt. Markera ”Spara symbolen i biblioteket” i en symbolgranskning för att lägga till en.";
+
+/* Status note when a library search found nothing; how many symbols were searched */
+"None of the %d library symbols is on this page." = "Ingen av de %d biblioteksymbolerna finns på den här sidan.";
+
+/* Symbol review title field for a library search */
+"Library symbols" = "Biblioteksymboler";
+
+/* Status note when the library search cap applied */
+"Searched the %1$d newest of %2$d library symbols." = "Sökte bland de %1$d nyaste av %2$d biblioteksymboler.";
+
+/* Measure menu command: search the page for every symbol saved in the local library */
+"Find Library Symbols on This Page…" = "Hitta biblioteksymboler på den här sidan…";
+
+/* One printed-area disagreement: room, printed area, measured area */
+"%1$@: printed %2$@ m², measured %3$@ m²" = "%1$@: angivet %2$@ m², uppmätt %3$@ m²";
+
+/* Printed-area check headline; the number of rooms */
+"%d room area(s) differ from the area printed in the room." = "%d rumsareor skiljer sig från arean som står i rummet.";
+
+/* Printed-area check explanation */
+"A wrong scale, a trace across an opening or a missing cutout all show up this way." = "En felaktig skala, en spårning genom en öppning eller ett saknat urtag syns på det här sättet.";
+
+/* Warning source */
+"Dimension check" = "Måttkontroll";
+
+/* An area in square metres */
+"%.2f m²" = "%.2f m²";
+
+/* Difference area in square PDF points */
+"%.0f pt²" = "%.0f pt²";
+
+/* Island offer title: how many islands, their total area */
+"%1$d closed outline(s) stand inside the traced area (%2$@)." = "%1$d slutna konturer står inuti den spårade arean (%2$@).";
+
+/* Island offer detail */
+"Columns and shafts are usually deducted. The traced area includes them until you choose." = "Pelare och schakt dras vanligen av. Den spårade arean innehåller dem tills du väljer.";
+
+/* Warning source: auto-trace */
+"Auto-trace" = "Autospårning";
+
+/* Island offer action */
+"Deduct as Cutouts" = "Dra av som urtag";
+
+/* Sheet name review summary: included, total, flagged */
+"%1$d of %2$d sheets named; %3$d need a look before they are accepted." = "%1$d av %2$d blad namngivna; %3$d behöver granskas innan de godtas.";
+
+/* Sheet name review: duplicate numbers block acceptance */
+"Two or more sheets share a number — fix or untick them to continue." = "Två eller fler blad har samma nummer – rätta eller avmarkera dem för att fortsätta.";
+
+/* Geometry query kind */
+"Circles of radius" = "Cirklar med radie";
+
+/* Geometry query kind */
+"Lines of length" = "Linjer med längd";
+
+/* Geometry query kind */
+"Parallel lines apart by" = "Parallella linjer på avståndet";
+
+/* Geometry query result count */
+"%d found, highlighted on the sheet." = "%d hittade, markerade på bladet.";
+
+/* Geometry query truncated */
+"The search stopped at its limit; there may be more." = "Sökningen stannade vid sin gräns; det kan finnas fler.";
+
+/* Geometry query: parallel pairs cannot be committed */
+"Parallel pairs are highlights only: two facing lines are not a measured wall." = "Parallella par är bara markeringar: två linjer mot varandra är inte en uppmätt vägg.";
+
+/* Title of the geometry query panel */
+"Find Geometry" = "Hitta geometri";
+
+/* Geometry query kind picker label */
+"Find" = "Hitta";
+
+/* Accessibility label for the geometry query kind picker */
+"What to find" = "Vad som ska hittas";
+
+/* Accessibility label for the geometry query value; the unit */
+"Value in %@" = "Värde i %@";
+
+/* Geometry query tolerance placeholder: two percent by default */
+"2 %" = "2 %";
+
+/* Accessibility label for the geometry query tolerance; the unit */
+"Tolerance in %@" = "Tolerans i %@";
+
+/* Commit circle matches as one count; the number */
+"Count These (%d)" = "Räkna dessa (%d)";
+
+/* Commit line matches as lengths; the number */
+"Measure These (%d)" = "Mät dessa (%d)";
+
+/* Geometry query refused a value */
+"That value cannot be searched for." = "Det värdet kan inte sökas efter.";
+
+/* Undo action name for committing geometry search matches */
+"Geometry Search" = "Geometrisökning";
+
+/* Measure menu command: search the page for circles, lines of a length or parallel pairs */
+"Find Geometry…" = "Hitta geometri…";
+
+/* Status note after Name Sheets from Title Block… */
+"Drag a box around the sheet number in the title block." = "Dra en ruta runt ritningsnumret i namnrutan.";
+
+/* Status note when sheet naming is cancelled */
+"Sheet naming cancelled." = "Namngivningen av blad avbröts.";
+
+/* Status note asking for the optional title box */
+"Now drag a box around the sheet title, or press Esc to use the number only." = "Dra nu en ruta runt bladets benämning, eller tryck Esc för att bara använda numret.";
+
+/* Status note after naming sheets; the count */
+"%d sheets named." = "%d blad namngivna.";
+
+/* Sheet name source: no text found */
+"Nothing read" = "Inget lästes";
+
+/* Sheet name source: read inside the person's box */
+"Read in your box" = "Läst i din ruta";
+
+/* Sheet name source: read after a known label */
+"Read after a title-block label" = "Läst efter en rubrik i namnrutan";
+
+/* Sheet name source: text judged a sheet number by its shape */
+"Judged by its shape" = "Bedömt efter sin form";
+
+/* Sheet name source: labelled by the on-device language model */
+"Picked by the on-device model" = "Valt av modellen på enheten";
+
+/* Designation prompt: box another symbol type before searching */
+"Add Another Type…" = "Lägg till en typ till…";
+
+/* Status note while boxing several symbol types */
+"%d type(s) boxed. Drag a box around the next symbol type." = "%d typer inramade. Dra en ruta runt nästa symboltyp.";
+
+/* Symbol review row status: a place two types both matched; the other designations */
+"Also matches %@ — tick the one it is" = "Matchar också %@ – markera den den är";
+
+/* Symbol review summary: contested places and how many are unresolved */
+"%1$d place(s) match more than one type; %2$d still need a pick." = "%1$d platser matchar mer än en typ; %2$d behöver fortfarande ett val.";
+
+/* Title of the sheet name review */
+"Review the sheet names" = "Granska bladens namn";
+
+/* Accessibility label for the sheet name list */
+"Proposed sheet names" = "Föreslagna bladnamn";
+
+/* Accept the sheet names; the number of ticked sheets */
+"Name %d Sheets" = "Namnge %d blad";
+
+/* Accessibility label for a sheet name row checkbox; the page */
+"Name %@" = "Namnge %@";
+
+/* Accessibility label for the sheet number field */
+"Sheet number" = "Ritningsnummer";
+
+/* Accessibility label for the sheet title field */
+"Sheet title" = "Bladets benämning";
+
+/* Sheet name review: duplicate flag */
+"Same number as another sheet" = "Samma nummer som ett annat blad";
+
+/* Sheet name review: weak reading flag */
+"Check this reading" = "Kontrollera avläsningen";
+
+/* Tools menu command: read every sheet's number and title from its title block */
+"Name Sheets from Title Block…" = "Namnge blad från namnrutan…";
+
+/* Room detection review summary: found and ticked */
+"%1$d rooms found; %2$d ticked. Nothing is measured until you add them." = "%1$d rum hittade; %2$d markerade. Inget mäts förrän du lägger till dem.";
+
+/* Title of the room detection review */
+"Review the rooms found" = "Granska de hittade rummen";
+
+/* Accessibility label for a room row checkbox; the room */
+"Add room %@" = "Lägg till rummet %@";
+
+/* Room name field placeholder */
+"Room name" = "Rumsnamn";
+
+/* Accessibility label for the room row Show button */
+"Show this room on the sheet" = "Visa rummet på bladet";
+
+/* Accept detected rooms as area measurements; the count */
+"Add %d Areas" = "Lägg till %d areor";
+
+/* Status note while rooms are detected */
+"Looking for rooms on this page…" = "Letar efter rum på den här sidan…";
+
+/* Room detection refusal: no part of the sheet is under the work limits */
+"This sheet is too dense to read rooms from. Hide layers to thin it out, or draw the rooms by hand." = "Bladet är för tätt för att läsa rum ur. Dölj lager för att glesa ut det, eller rita rummen för hand.";
+
+/* Room detection caveat when the face cap applied */
+"The search stopped at its limit; the sheet may hold more rooms." = "Sökningen stannade vid sin gräns; bladet kan innehålla fler rum.";
+
+/* Room detection found nothing */
+"No closed rooms were found on this page." = "Inga slutna rum hittades på den här sidan.";
+
+/* Room review note: openings closed */
+"closes %d opening(s)" = "stänger %d öppningar";
+
+/* Room review note: the printed area disagrees; the printed value */
+"printed %@ m² differs" = "angivet %@ m² skiljer sig";
+
+/* Undo action name for landing detected rooms */
+"Detect Rooms" = "Hitta rum";
+
+/* Status note after landing detected rooms */
+"%d rooms added as areas." = "%d rum tillagda som areor.";
+
+/* Measure menu command: propose every room on the page as a named area */
+"Detect Rooms on This Page…" = "Hitta rum på den här sidan…";
+
+/* Subject suggestion offer after auto-trace; the room name read inside the area */
+"Name this area “%@”?" = "Namnge arean ”%@”?";
+
+/* Subject suggestion detail */
+"The name is printed inside the traced room. Nothing changes unless you use it." = "Namnet står inuti det spårade rummet. Inget ändras om du inte använder det.";
+
+/* Subject suggestion action */
+"Use as Subject" = "Använd som ämne";
+
+/* Sheet name source: read by on-device text recognition; the confidence in percent */
+"Recognised in your box (%.0f %% sure)" = "Igenkänt i din ruta (%.0f %% säkert)";
+
+/* Symbol review detail: the same CAD block, counted exactly */
+"exact block" = "exakt block";
+
+/* Symbol review detail: a clipped or partly hidden drawing of the CAD block; strokes shown, strokes in the block */
+"partly hidden — %1$d of %2$d strokes visible" = "delvis dolt — %1$d av %2$d streck synliga";
+
+/* nl-markup: line ends, text formatting, context menu, markup clipboard, tool style memory, stamp prompt */
+"%@ pt" = "%@ pt";
+"%ld pasted measurements were recalculated." = "%ld inklistrade mätningar räknades om.";
+"A pasted measurement was recalculated." = "En inklistrad mätning räknades om.";
+"Align" = "Justera";
+"Arrow" = "Pil";
+"Centre" = "Centrera";
+"Change Alignment" = "Ändra justering";
+"Change Font" = "Ändra typsnitt";
+"Change Line Ends" = "Ändra linjeändar";
+"Diamond" = "Romb";
+"Dot" = "Punkt";
+"Duplicate Markups" = "Duplicera markeringar";
+"End of line" = "Linjens slut";
+"Fill" = "Fyllning";
+"Flat" = "Rak";
+"Font" = "Typsnitt";
+"Font family" = "Typsnittsfamilj";
+"Justified" = "Marginaljusterad";
+"Left" = "Vänster";
+"Line End" = "Linjeslut";
+"Line Start" = "Linjestart";
+"Line Style" = "Linjestil";
+"Line Width" = "Linjebredd";
+"Line ends" = "Linjeändar";
+"Markup Tools" = "Markeringsverktyg";
+"More Colours…" = "Fler färger…";
+"New markups of this kind are drawn with this markup's colour, fill, width, line style, ends and text style." = "Nya markeringar av den här typen ritas med den här markeringens färg, fyllning, bredd, linjestil, ändar och textstil.";
+"No Fill" = "Ingen fyllning";
+"Open Arrow" = "Öppen pil";
+"Paste %ld Markups" = "Klistra in %ld markeringar";
+"Paste Here" = "Klistra in här";
+"Paste Markup" = "Klistra in markering";
+"Paste in Place" = "Klistra in på plats";
+"Paste to %ld Pages" = "Klistra in på %ld sidor";
+"Paste to Selected Pages" = "Klistra in på valda sidor";
+"Place Stamp" = "Placera stämpel";
+"Place “%@”" = "Placera ”%@”";
+"Right" = "Höger";
+"Round" = "Rund";
+"Select All on Page" = "Markera allt på sidan";
+"Select pages in the Navigator first. The markups land at the same position on each, as one step you can undo." = "Välj sidor i navigatorn först. Markeringarna hamnar på samma plats på varje sida, som ett steg du kan ångra.";
+"Set as Default for %@" = "Använd som standard för %@";
+"Show in Inspector" = "Visa i inspektören";
+"Square" = "Fyrkant";
+"Start of line" = "Linjens början";
+"System" = "System";
+"The stamp asks for this text. It is written into the stamp once and never changes afterwards." = "Stämpeln frågar efter den här texten. Den skrivs in i stämpeln en gång och ändras aldrig efteråt.";
+"They were measured under another scale. Their values now come from the scale of %@, so they differ from the copied ones where the scales differ." = "De mättes med en annan skala. Deras värden kommer nu från skalan på %@, så de skiljer sig från de kopierade där skalorna skiljer sig.";
+"Tick" = "Snedstreck";
+"Tools remember the last style I used" = "Verktygen kommer ihåg den senaste stilen jag använde";
+"When off, a tool changes its style only through Set as Default." = "När det är av ändrar ett verktyg sin stil bara genom Använd som standard.";
+"When this is off, a markup tool draws the style set with Set as Default for its kind, from the markup's context menu or the Inspector." = "När detta är av ritar ett markeringsverktyg den stil som angetts med Använd som standard för sin typ, från markeringens snabbmeny eller inspektören.";
+"this sheet" = "det här bladet";
+"Stamp text" = "Stämpeltext";
+"Text for each sheet. {page}, {n}, {date}, {project} and {document} are filled in; {n=101} numbers from 101." = "Text för varje blad. {page}, {n}, {date}, {project} och {document} fylls i; {n=101} numrerar från 101.";
+"Header, Footer or Sheet Number" = "Sidhuvud, sidfot eller bladnummer";
+"Batch Header, Footer or Sheet Number…" = "Sidhuvud, sidfot eller bladnummer på flera blad…";
+"Put a header, a footer or a sheet number on every sheet you choose, as one action you can undo." = "Lägg ett sidhuvud, en sidfot eller ett bladnummer på varje blad du väljer, som en åtgärd du kan ångra.";
+"Batch Header or Footer" = "Sidhuvud eller sidfot på flera blad";
+"line(s) of text" = "textrad(er)";
+"Sign a Copy with a Certificate…" = "Signera en kopia med certifikat…";
+"Save a copy of the drawing signed with a certificate from your keychain. Nothing is sent anywhere." = "Spara en kopia av ritningen signerad med ett certifikat från din nyckelring. Inget skickas någonstans.";
+"Sign a copy of “%@”?" = "Signera en kopia av ”%@”?";
+"The copy is signed with the certificate you choose, on this Mac. The drawing itself is not changed, and no server is contacted." = "Kopian signeras med det certifikat du väljer, på den här Macen. Själva ritningen ändras inte, och ingen server kontaktas.";
+"Signing certificate" = "Signeringscertifikat";
+"Reason (optional)" = "Anledning (valfri)";
+"Reason for signing" = "Anledning till signering";
+"Sign Copy…" = "Signera kopia…";
+"No signing certificate on this Mac" = "Inget signeringscertifikat på den här Macen";
+"Add a certificate with its private key to your keychain — one your organisation issued, or your own — and try again." = "Lägg till ett certifikat med dess privata nyckel i din nyckelring – ett som din organisation utfärdat eller ditt eget – och försök igen.";
+"Signed" = "Signerad";
+"Signed “%@”" = "Signerade ”%@”";
+"Signed with the certificate of %@. Any change to the signed content will show as modified after signing." = "Signerad med certifikatet för %@. Varje ändring av det signerade innehållet visas som ändrad efter signering.";
+"REVIEWED" = "GRANSKAD";
+"Reviewed" = "Granskad";
+"APPROVED" = "GODKÄND";
+"Approved" = "Godkänd";
+"APPROVED AS NOTED" = "GODKÄND MED ANMÄRKNING";
+"Approved as Noted" = "Godkänd med anmärkning";
+"REVISE AND RESUBMIT" = "REVIDERA OCH SKICKA IN IGEN";
+"Revise and Resubmit" = "Revidera och skicka in igen";
+"REJECTED" = "AVVISAD";
+"FOR INFORMATION" = "FÖR KÄNNEDOM";
+"For Information" = "För kännedom";
+"By " = "Av ";
+"Sheet " = "Blad ";
+
+/* Documents (NL-DOCS) */
+"Add Drawing to Project" = "Lägg till ritning i projektet";
+"Remove from Set" = "Ta bort ur uppsättningen";
+"Restore to Set" = "Återställ till uppsättningen";
+"Change Sheet View" = "Ändra bladvy";
+"The drawing could not be added to the project." = "Ritningen kunde inte läggas till i projektet.";
+"%@ was not added. The project is unchanged." = "%@ lades inte till. Projektet är oförändrat.";
+"Drawings" = "Ritningar";
+"Adds the drawing to this project" = "Lägger till ritningen i det här projektet";
+
+/* Documents (NL-DOCS) */
+"Rotate View Right" = "Vrid vyn åt höger";
+"Rotate View Left" = "Vrid vyn åt vänster";
+"Crop View…" = "Beskär vyn…";
+"Show Whole Sheet" = "Visa hela bladet";
+"Remove %d Sheets from Set" = "Ta bort %d blad ur uppsättningen";
+"Compare with Previous Revision" = "Jämför med föregående revision";
+"Carry Forward to Revision…" = "För över till revision…";
+"Removed from Set (%d)" = "Borttagna ur uppsättningen (%d)";
+"Restore" = "Återställ";
+"Restore %@ to the set" = "Återställ %@ till uppsättningen";
+"Remove %d sheets with %d measurements from the set?" = "Ta bort %d blad med %d mätningar ur uppsättningen?";
+"Their measurements leave the Quantity Ledger. Nothing is deleted: Undo or Restore brings the sheets and their measurements back, also after saving." = "Deras mätningar lämnar mängdförteckningen. Inget raderas: Ångra eller Återställ tar tillbaka bladen och deras mätningar, även efter att du sparat.";
+"The sheets were not changed: %@" = "Bladen ändrades inte: %@";
+"Drag a box around the part of the sheet to show." = "Dra en ruta runt den del av bladet som ska visas.";
+"Crop cancelled." = "Beskärningen avbröts.";
+
+/* Documents (NL-DOCS) */
+"Combine Open Drawings into This Project…" = "Slå ihop öppna ritningar i det här projektet…";
+"Combine Open Drawings" = "Slå ihop öppna ritningar";
+"Save this takeoff as a project first, then combine the open drawings into it." = "Spara den här mängdningen som ett projekt först och slå sedan ihop de öppna ritningarna i det.";
+/* Status note: Combine Open Drawings chosen on the empty untitled window */
+"This tab has no drawing to combine into. Bring forward the drawing that should hold the others, then choose Combine Open Drawings again." = "Den här fliken har ingen ritning att slå ihop i. Ta fram ritningen som ska rymma de andra och välj sedan Slå ihop öppna ritningar igen.";
+"%lld drawing added to this project with its takeoff. Its own tab is unchanged." = "%lld ritning lades till i projektet med sin mängdning. Dess egen flik är oförändrad.";
+"%lld drawings added to this project with their takeoffs. Their own tabs are unchanged." = "%lld ritningar lades till i projektet med sina mängdningar. Deras egna flikar är oförändrade.";
+"Scale Regions and Project Zones stay in the drawings they were made in." = "Skalregioner och projektzoner stannar i ritningarna där de skapades.";
+
+/* Quantities (NL-QTY-09/11/13/15, NL-QTY-BEYOND-2, NL-UX-09, NL-MEASURE-10, NL-COLLAB-16) */
+"One sheet per group" = "Ett blad per grupp";
+"Append each sheet with its markups" = "Bifoga varje ritningsblad med sina markeringar";
+"No logo" = "Ingen logotyp";
+"Logo chosen" = "Logotyp vald";
+"Choose Logo…" = "Välj logotyp…";
+"Remove Logo" = "Ta bort logotyp";
+"Choose a PNG or JPEG logo for the report cover." = "Välj en logotyp i PNG eller JPEG för rapportens försättsblad.";
+"No summary matrix" = "Ingen sammanställningsmatris";
+"Summary matrix rows" = "Sammanställningsmatrisens rader";
+"Summary matrix columns" = "Sammanställningsmatrisens kolumner";
+"Company block (cover)" = "Företagsuppgifter (försättsblad)";
+"Company block" = "Företagsuppgifter";
+"Summary:" = "Sammanställning:";
+"by" = "mot";
+"“%@” was exported without part of what was asked for." = "”%@” exporterades utan en del av det som begärdes.";
+"The summary matrix could not be built: %@" = "Sammanställningsmatrisen kunde inte skapas: %@";
+"No page image for: %@" = "Ingen sidbild för: %@";
+"Save as PDF to send, or change the name to .csv or .xlsx for a spreadsheet." = "Spara som PDF för att skicka, eller byt namnet till .csv eller .xlsx för ett kalkylark.";
+"Choose closed Zenit PDF projects to total together. They are read, never changed." = "Välj stängda Zenit PDF-projekt att summera tillsammans. De läses, men ändras aldrig.";
+"Batch Summary" = "Samlad sammanställning";
+"Row" = "Rad";
+"Zoom To" = "Zooma till";
+"Select on Canvas" = "Markera på ritytan";
+"Explain…" = "Förklara…";
+"Show every row" = "Visa alla rader";
+"Show only %@. Click again to show every row." = "Visa bara %@. Klicka igen för att visa alla rader.";
+"1 row" = "1 rad";
+"Explain Selection…" = "Förklara markeringen…";
+"Explain" = "Förklara";
+"No quantity to add up." = "Ingen mängd att summera.";
+"Rows" = "Rader";
+"Show %@ on the canvas" = "Visa %@ på ritytan";
+"Summarise Closed Projects…" = "Summera stängda projekt…";
+"Export Workbook…" = "Exportera arbetsbok…";
+"Closed projects" = "Stängda projekt";
+"Not included" = "Inte med";
+"Decimal Feet (12.50 ft)" = "Decimalfot (12.50 ft)";
+"Decimal Inches (150.00 in)" = "Decimaltum (150.00 in)";
+"It has no saved takeoff." = "Det har ingen sparad mängdning.";
+
+/* Documents (NL-DOCS) */
+"Sheets" = "Blad";
+"The PDF could not be written." = "PDF-filen kunde inte skrivas.";
+"Export Arranged Set" = "Exportera ordnad uppsättning";
+"Export Arranged Set…" = "Exportera ordnad uppsättning…";
+"Split into Sheets…" = "Dela upp i blad…";
+"Export the arranged set as a new PDF" = "Exportera den ordnade uppsättningen som en ny PDF";
+"Create Bookmarks from Sheet Names" = "Skapa bokmärken från bladnamn";
+"%d sheets exported. No drawing was changed." = "%d blad exporterades. Ingen ritning ändrades.";
+"Split Here" = "Dela upp här";
+"Choose a folder for one PDF per sheet" = "Välj en mapp för en PDF per blad";
+"The sheets were not split; nothing was written." = "Bladen delades inte upp; inget skrevs.";
+"%d sheet files written. No drawing was changed." = "%d bladfiler skrevs. Ingen ritning ändrades.";
+
+/* Documents (NL-DOCS) */
+"Runs a script or a program; Zenit PDF will not run it" = "Kör ett skript eller program; Zenit PDF kör det inte";
+"Recipes imported into the office library." = "Recepten importerades till kontorsbiblioteket.";
+"Import Recipes…" = "Importera recept…";
+"Export Recipes…" = "Exportera recept…";
+"Choose a Zenit PDF assembly recipe file (.zpdfassembly)." = "Välj en receptfil för sammansättningar i Zenit PDF (.zpdfassembly).";
+"Office Assemblies" = "Kontorets sammansättningar";
+"This is not a Zenit PDF assembly recipe file." = "Det här är ingen receptfil för sammansättningar i Zenit PDF.";
+"This recipe file was written by a newer Zenit PDF (format %d)." = "Receptfilen skrevs av en nyare Zenit PDF (format %d).";
+"The recipe “%1$@” cannot be used: %2$@" = "Receptet ”%1$@” kan inte användas: %2$@";
+"The recipe “%@” has the identity of a built-in recipe." = "Receptet ”%@” har samma identitet som ett inbyggt recept.";
+
+/* Documents (NL-DOCS) */
+"%1$d matched · %2$d to check · %3$d added · %4$d dropped" = "%1$d matchade · %2$d att kontrollera · %3$d tillagda · %4$d borttagna";
+"Same sheet number" = "Samma bladnummer";
+"Sheet number with a revision mark — check" = "Bladnummer med revisionsmärkning — kontrollera";
+"Same place and paper size, no number — check" = "Samma plats och pappersstorlek, inget nummer — kontrollera";
+"Paired by you" = "Parad av dig";
+"No match in the revision" = "Ingen motsvarighet i revisionen";
+"Match the sheets of %@" = "Matcha bladen i %@";
+"Revision sheet for %@" = "Revisionsblad för %@";
+"Added in the revision" = "Tillagda i revisionen";
+"Confirm Pairings" = "Bekräfta parningar";
+"This sheet has no earlier revision to compare with." = "Det här bladet har ingen tidigare revision att jämföra med.";

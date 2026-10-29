@@ -1,0 +1,327 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Zenit PDF — bundle information property list.
+
+  Template. `Scripts/build-app.sh` substitutes @SHORT_VERSION@ and @BUILD_VERSION@ and writes the
+  result into Contents/Info.plist. Everything else here is literal on purpose: a plist assembled
+  line by line in shell is a plist nobody can review.
+-->
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleExecutable</key>
+	<string>ZenitPDF</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.zenitgroup.zenitpdf</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Zenit PDF</string>
+	<key>CFBundleDisplayName</key>
+	<string>Zenit PDF</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@SHORT_VERSION@</string>
+	<key>CFBundleVersion</key>
+	<string>@BUILD_VERSION@</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIconName</key>
+	<string>AppIcon</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>14.0</string>
+	<key>LSApplicationCategoryType</key>
+	<string>public.app-category.productivity</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSSupportsAutomaticTermination</key>
+	<false/>
+	<key>NSSupportsSuddenTermination</key>
+	<false/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 ZENIT GROUP S.A.S. MIT licensed.</string>
+	<!-- English only until the Swedish catalogue is complete:
+	     declaring `sv` with a partial sv.lproj is what made a Swedish-locale system render
+	     the mixed "Arkiv … Mata" menu bar. The default run shows English. -->
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>en</string>
+	</array>
+
+	<!-- Quick PDF Mode reads any PDF; Project Mode owns .zpdfproj. -->
+	<key>CFBundleDocumentTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Zenit PDF Project</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSTypeIsPackage</key>
+			<true/>
+			<key>CFBundleTypeIconFile</key>
+			<string>ProjectDocument</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>zpdfproj</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.zenitgroup.zenitpdf.project</string>
+			</array>
+			<key>NSDocumentClass</key>
+			<string>ZenitPDFAppKit.ZenitPDFProjectDocument</string>
+		</dict>
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>PDF Drawing</string>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>CFBundleTypeExtensions</key>
+			<array>
+				<string>pdf</string>
+			</array>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
+			<key>NSDocumentClass</key>
+			<string>ZenitPDFAppKit.ZenitPDFProjectDocument</string>
+		</dict>
+		<!-- NL-PLAT-03: Zenit's data files. Opened from Finder they act on the drawing in front:
+		     an overlay is imported onto it, a profile exports its ledger, a tool set opens the
+		     Tool Library's import review, a job template goes through the template import, and
+		     a ledger export opens its review (and reconciliation when a ledger is open). -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Zenit PDF Data File</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Owner</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>com.zenitgroup.zenitpdf.overlay</string>
+				<string>com.zenitgroup.zenitpdf.export-profile</string>
+				<string>com.zenitgroup.zenitpdf.toolset</string>
+				<string>com.zenitgroup.zenitpdf.jobtemplate</string>
+				<string>com.zenitgroup.zenitpdf.ledger-json</string>
+				<string>com.zenitgroup.zenitpdf.pack</string>
+			</array>
+		</dict>
+		<!-- NL-PLAT-04: scans and photos of sheets. ZenitDocumentController turns each into a PDF
+		     drawing at its recorded resolution before opening it; Zenit never edits the image. -->
+		<dict>
+			<key>CFBundleTypeName</key>
+			<string>Drawing Image</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>LSHandlerRank</key>
+			<string>Alternate</string>
+			<key>LSItemContentTypes</key>
+			<array>
+				<string>public.tiff</string>
+				<string>public.jpeg</string>
+				<string>public.png</string>
+				<string>public.heic</string>
+				<string>public.heif</string>
+			</array>
+		</dict>
+	</array>
+
+	<key>UTExportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.zenitgroup.zenitpdf.project</string>
+			<key>UTTypeDescription</key>
+			<string>Zenit PDF Project</string>
+			<key>UTTypeIconFile</key>
+			<string>ProjectDocument</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>com.apple.package</string>
+				<string>public.composite-content</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>zpdfproj</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- The ledger interchange file (File ▸ Export…, Zenit JSON). Without this
+		     declaration the extension resolved to a session-local dynamic type, and the
+		     import chooser could not select the very file the export had just written
+		     (LT-22). -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.zenitgroup.zenitpdf.ledger-json</string>
+			<key>UTTypeDescription</key>
+			<string>Zenit PDF Ledger Export</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>zpdfjson</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- Feature 18: one job template as a file, moved between machines by hand. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.zenitgroup.zenitpdf.jobtemplate</string>
+			<key>UTTypeDescription</key>
+			<string>Zenit PDF Job Template</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>zpdftemplate</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- A Tool Library set (File ▸ Export Tool Set…). Undeclared until 2026-09-23:
+		     the panels then ran on a session-local dyn.* type, the LT-22
+		     failure mode. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.zenitgroup.zenitpdf.toolset</string>
+			<key>UTTypeDescription</key>
+			<string>Zenit PDF Tool Set</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>zpdftools</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- NL-PLAT-08: an export profile for a receiving system's CSV import. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.zenitgroup.zenitpdf.export-profile</string>
+			<key>UTTypeDescription</key>
+			<string>Zenit PDF Export Profile</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>zpdfprofile</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- NL-PLAT-23: a pack of tool sets, job templates and export profiles. A zip of data
+		     files; nothing in it runs. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.zenitgroup.zenitpdf.pack</string>
+			<key>UTTypeDescription</key>
+			<string>Zenit PDF Pack</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.zip-archive</string>
+				<string>public.data</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>zpdfpack</string>
+				</array>
+			</dict>
+		</dict>
+		<!-- Feature 6: the measurements of one drawing, carried to another copy of it. -->
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>com.zenitgroup.zenitpdf.overlay</string>
+			<key>UTTypeDescription</key>
+			<string>Zenit PDF Measurement Overlay</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.json</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>zpdfoverlay</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+
+	<!-- NL-UX-18 (nl-ux): Finder ▸ Services ▸ "Open as Quick Takeoff in Zenit PDF" on selected PDFs.
+	     Served by ZenitServicesProvider.openAsQuickTakeoff(_:userData:error:); local only. -->
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Open as Quick Takeoff in Zenit PDF</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>openAsQuickTakeoff</string>
+			<key>NSPortName</key>
+			<string>Zenit PDF</string>
+			<key>NSRequiredContext</key>
+			<dict/>
+			<key>NSSendFileTypes</key>
+			<array>
+				<string>com.adobe.pdf</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- No updater keys: Zenit PDF has no updater and makes no network connection. A newer
+	     version is installed by downloading it from the project's GitHub releases page.
+	     Scripts/verify-no-network.sh fails the build if an SU* key reappears here. -->
+
+	<!-- NL-PLAT-11: the AppleScript dictionary (Contents/Resources/ZenitPDF.sdef). A sandboxed
+	     application may receive Apple events without extra entitlements; Zenit sends none. -->
+	<key>NSAppleScriptEnabled</key>
+	<true/>
+	<key>OSAScriptingDefinition</key>
+	<string>ZenitPDF.sdef</string>
+
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.zenitgroup.zenitpdf.url</string>
+			<key>CFBundleTypeRole</key>
+			<string>Viewer</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>zenitpdf</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>

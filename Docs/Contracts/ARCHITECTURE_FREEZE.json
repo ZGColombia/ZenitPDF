@@ -1,0 +1,953 @@
+{
+  "contract" : "ARCHITECTURE_FREEZE",
+  "contractVersion" : 2,
+  "frozenAt" : "2026-09-01T23:28:48Z",
+  "generator" : "zpdf-contract-freeze (ZPDFContracts v2)",
+  "invariants" : [
+    "ZPDFContracts has zero dependencies: no remote SwiftPM package, and no ZPDFUI* package. Dependency direction is UI -> core, never core -> UI.",
+    "swift-tools-version:6.0, platforms [.macOS(.v14)], every target in Swift language mode 6.",
+    "Everything crossing an API boundary is Sendable. There is no @unchecked Sendable in this package.",
+    "Geometry is Double; aggregates and money are Decimal (spec 11.4).",
+    "No internal display rounding. Rounding happens at the view and export boundary only.",
+    "Incompatible dimensions are never added; the attempt is a typed DimensionError.",
+    "Decimal overflow is a typed NumericError, never a NaN Decimal travelling on as a value.",
+    "A dimension that decodes from persisted data is validated; the length power and any currency code must be in range.",
+    "Large Double sums use Kahan-Babuska-Neumaier or pairwise summation before Decimal normalisation.",
+    "No fatalError, no force-unwrap and no precondition on user data: every failure is a typed Swift error.",
+    "Pure calculations are deterministic: no Date() and no UUID() inside them; clocks and id generators are injected via TimestampProviding and IdentifierGenerating.",
+    "PDF page space is 72 dpi with a bottom-left origin, crop box by default, rotation explicit."
+  ],
+  "specSections" : [
+    "9.1",
+    "9.2",
+    "9.3",
+    "11.1",
+    "11.2",
+    "11.3",
+    "11.4",
+    "11.5"
+  ],
+  "summary" : "The frozen vocabulary of Zenit PDF: identity, page geometry, the coordinate boundary, dimensional algebra, units and the numeric policy. Every later package compiles against these types.",
+  "tables" : [
+    {
+      "columns" : [
+        "case",
+        "symbol",
+        "factorTo_m",
+        "exactness"
+      ],
+      "name" : "lengthConversionFactors",
+      "rows" : [
+        [
+          "cm",
+          "cm",
+          "0.01",
+          "exact"
+        ],
+        [
+          "ft",
+          "ft",
+          "0.3048",
+          "exact"
+        ],
+        [
+          "in",
+          "in",
+          "0.0254",
+          "exact"
+        ],
+        [
+          "km",
+          "km",
+          "1000",
+          "exact"
+        ],
+        [
+          "m",
+          "m",
+          "1",
+          "exact"
+        ],
+        [
+          "mi",
+          "mi",
+          "1609.344",
+          "exact"
+        ],
+        [
+          "mm",
+          "mm",
+          "0.001",
+          "exact"
+        ],
+        [
+          "yd",
+          "yd",
+          "0.9144",
+          "exact"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "case",
+        "symbol",
+        "factorTo_m2",
+        "exactness"
+      ],
+      "name" : "areaConversionFactors",
+      "rows" : [
+        [
+          "acre",
+          "acre",
+          "4046.8564224",
+          "exact"
+        ],
+        [
+          "cm2",
+          "cm²",
+          "0.0001",
+          "exact"
+        ],
+        [
+          "ft2",
+          "ft²",
+          "0.09290304",
+          "exact"
+        ],
+        [
+          "ha",
+          "ha",
+          "10000",
+          "exact"
+        ],
+        [
+          "in2",
+          "in²",
+          "0.00064516",
+          "exact"
+        ],
+        [
+          "km2",
+          "km²",
+          "1000000",
+          "exact"
+        ],
+        [
+          "m2",
+          "m²",
+          "1",
+          "exact"
+        ],
+        [
+          "mi2",
+          "mi²",
+          "2589988.110336",
+          "exact"
+        ],
+        [
+          "mm2",
+          "mm²",
+          "0.000001",
+          "exact"
+        ],
+        [
+          "yd2",
+          "yd²",
+          "0.83612736",
+          "exact"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "case",
+        "symbol",
+        "factorTo_m3",
+        "exactness"
+      ],
+      "name" : "volumeConversionFactors",
+      "rows" : [
+        [
+          "cm3",
+          "cm³",
+          "0.000001",
+          "exact"
+        ],
+        [
+          "ft3",
+          "ft³",
+          "0.028316846592",
+          "exact"
+        ],
+        [
+          "in3",
+          "in³",
+          "0.000016387064",
+          "exact"
+        ],
+        [
+          "l",
+          "L",
+          "0.001",
+          "exact"
+        ],
+        [
+          "m3",
+          "m³",
+          "1",
+          "exact"
+        ],
+        [
+          "yd3",
+          "yd³",
+          "0.764554857984",
+          "exact"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "case",
+        "symbol",
+        "factorTo_rad",
+        "exactness"
+      ],
+      "name" : "angleConversionFactors",
+      "rows" : [
+        [
+          "deg",
+          "°",
+          "0.0174532925199432957692369076848861271344",
+          "approximate"
+        ],
+        [
+          "gon",
+          "gon",
+          "0.015707963267948966192313216916397514421",
+          "approximate"
+        ],
+        [
+          "rad",
+          "rad",
+          "1",
+          "exact"
+        ],
+        [
+          "turn",
+          "turn",
+          "6.2831853071795864769252867665590057684",
+          "approximate"
+        ]
+      ]
+    }
+  ],
+  "types" : [
+    {
+      "cases" : [
+        {
+          "name" : "DocumentID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "PageID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "MarkupID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "LayerID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "ZoneID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "ScaleID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "ScaleRegionID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "ColumnID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "RowID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "ChoiceOptionID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "CountGroupID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "CountPointID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        },
+        {
+          "name" : "SymbolID",
+          "note" : "conforming type",
+          "rawValue" : "UUID"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "An identifier is minted by an injected IdentifierGenerating, never by UUID() inside a calculation.",
+        "Encoded form is the uppercase UUID string, single-value encoded.",
+        "Identifiers are never reused after a delete."
+      ],
+      "kind" : "protocol",
+      "name" : "ContractIdentifier",
+      "summary" : "UUID-backed identity for every persisted entity. Conformers encode as a single JSON string and can be used directly as Codable dictionary keys."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite; measured from the page box left edge",
+          "name" : "x",
+          "type" : "Double",
+          "unit" : "PDF point (1/72 in)"
+        },
+        {
+          "invariant" : "finite; measured upwards from the page box bottom edge",
+          "name" : "y",
+          "type" : "Double",
+          "unit" : "PDF point (1/72 in)"
+        }
+      ],
+      "invariants" : [
+        "Origin is bottom-left; y increases upwards.",
+        "Never carries zoom, scroll offset or screen backing scale."
+      ],
+      "kind" : "struct",
+      "name" : "PDFPoint",
+      "summary" : "A point in canonical PDF page space."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite",
+          "name" : "width",
+          "type" : "Double",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "finite",
+          "name" : "height",
+          "type" : "Double",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "PDFSize",
+      "summary" : "A size in PDF points."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite",
+          "name" : "origin",
+          "type" : "PDFPoint",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "may be negative as stored; `standardized` is the canonical form",
+          "name" : "size",
+          "type" : "PDFSize",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+        "Comparisons and containment always use the standardized form.",
+        "PDFRect is used wherever the spec sketches CGRect for page-space geometry; CGRect is a view-space type."
+      ],
+      "kind" : "struct",
+      "name" : "PDFRect",
+      "summary" : "An axis-aligned rectangle in PDF page space, bottom-left origin."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "degrees0",
+          "note" : "keeps axes",
+          "rawValue" : "0"
+        },
+        {
+          "name" : "degrees90",
+          "note" : "swaps axes",
+          "rawValue" : "90"
+        },
+        {
+          "name" : "degrees180",
+          "note" : "keeps axes",
+          "rawValue" : "180"
+        },
+        {
+          "name" : "degrees270",
+          "note" : "swaps axes",
+          "rawValue" : "270"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Only 0, 90, 180 and 270 exist. normalizing(degrees:) folds any multiple of 90 into them (-90 is 270, 450 is 90, as PDF readers treat /Rotate) and refuses a value that is not a multiple of 90 with a typed error; nothing else is ever normalised.",
+        "90 and 270 swap the displayed width and height (`swapsAxes`)."
+      ],
+      "kind" : "enum",
+      "name" : "PageRotation",
+      "summary" : "The PDF /Rotate entry."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "positive extents; finite",
+          "name" : "media",
+          "type" : "PDFRect",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "positive extents; must be contained by media",
+          "name" : "crop",
+          "type" : "PDFRect",
+          "unit" : "PDF point"
+        }
+      ],
+      "invariants" : [
+        "crop is contained by media, or validate() throws cropBoxOutsideMediaBox.",
+        "A file without /CropBox has crop == media, substituted by the importer."
+      ],
+      "kind" : "struct",
+      "name" : "PageBoxes",
+      "summary" : "The media and crop boxes of one page."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable across sessions",
+          "name" : "id",
+          "type" : "PageID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "owning document",
+          "name" : "documentID",
+          "type" : "DocumentID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "zero-based index of the page in its own PDF (its /Pages order), fixed at import; the page's place in a set is the set order, persisted as page_set_entry.position (ADR-0022)",
+          "name" : "index",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the PDF /PageLabels value, which is frequently not String(index + 1)",
+          "name" : "label",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "validated by PageBoxes.validate()",
+          "name" : "boxes",
+          "type" : "PageBoxes",
+          "unit" : "PDF point"
+        },
+        {
+          "invariant" : "multiple of 90",
+          "name" : "rotation",
+          "type" : "PageRotation",
+          "unit" : "degrees"
+        },
+        {
+          "invariant" : "finite and strictly positive; a preset drawing ratio multiplies its metres-per-point by it (ScaleTransform.preset), and a calibration carries it implicitly because the calibration points live in the same user space as the content",
+          "name" : "userUnit",
+          "type" : "Double",
+          "unit" : "multiplier on 1/72 in"
+        }
+      ],
+      "invariants" : [
+        "Page geometry never leaks a PDFKit or PDFium type.",
+        "The ledger shows `label`, never the raw index, unless explicitly asked.",
+        "Reordering pages never rewrites `index`: rendering, text, OCR, vector extraction and stored page identity all key on it (ADR-0022)."
+      ],
+      "kind" : "struct",
+      "name" : "PageDescriptor",
+      "summary" : "Everything the engine needs to know about one page's geometry."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "viewToPage(_:pageID:)",
+          "rawValue" : "(CGPoint, PageID) throws -> PDFPoint"
+        },
+        {
+          "name" : "pageToView(_:pageID:)",
+          "rawValue" : "(PDFPoint, PageID) throws -> CGPoint"
+        },
+        {
+          "name" : "screenToleranceToPage(pixels:pageID:)",
+          "rawValue" : "(CGFloat, PageID) throws -> CGFloat"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "The measurement engine never sees a screen pixel or a zoom value.",
+        "An unknown page is CoordinateError.unknownPage, never a guess.",
+        "Screen tolerances are re-converted on every event, because zoom can change between events."
+      ],
+      "kind" : "protocol",
+      "name" : "PageCoordinateConverting",
+      "summary" : "The only bridge between view coordinates and page space (spec 9.2)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "-3...3; 0 count, 1 length, 2 area, 3 volume",
+          "name" : "lengthPower",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "true means the value is in radians",
+          "name" : "angle",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "nil, or exactly three uppercase A-Z letters",
+          "name" : "currencyCode",
+          "type" : "String?",
+          "unit" : "ISO 4217"
+        },
+        {
+          "invariant" : "true marks a dimensionless factor (slope ratio, percentage, waste factor) as distinct from a count; valid only when lengthPower == 0, angle == false and currencyCode == nil; encoded only when true, so a payload without the key is a count",
+          "name" : "ratio",
+          "type" : "Bool",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Addition and subtraction require identical dimensions (spec 11.4).",
+        "count and ratio are both dimensionless and never additive with each other: a slope ratio or a waste factor cannot sum into a count total (ADR-0014).",
+        "A ratio is absorbed by any product (area x ratio = area, count x ratio = count); only ratio x ratio stays a ratio. A like-for-like quotient (m / m, SEK / SEK, count / count, ratio / ratio) is a ratio; count / ratio and ratio / count are counts (ADR-0014).",
+        "angle x angle is rejected.",
+        "money x money is rejected; money / same money cancels to a ratio.",
+        "Dividing a non-money quantity by money is rejected."
+      ],
+      "kind" : "struct",
+      "name" : "QuantityDimension",
+      "summary" : "The dimension of a quantity: a length power, an angle flag, an optional currency, and a ratio tag for the dimensionless case (ADR-0014)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "never rounded in storage",
+          "name" : "value",
+          "type" : "Decimal",
+          "unit" : "SI base unit (m, m^2, m^3, rad, 1, currency major unit)"
+        },
+        {
+          "invariant" : "names the SI base unit the value is in",
+          "name" : "dimension",
+          "type" : "QuantityDimension",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Stored values carry no display rounding; PrecisionMode is applied at the view and export boundary only.",
+        "+ and - throw DimensionError.incompatibleDimensions on a mismatch.",
+        "* and / apply the QuantityDimension product and quotient rules.",
+        "Division by a zero quantity throws DimensionError.divisionByZero."
+      ],
+      "kind" : "struct",
+      "name" : "DecimalQuantity",
+      "summary" : "A dimensioned Decimal, always stored in the SI base unit of its dimension."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "finite",
+          "name" : "red",
+          "type" : "Double",
+          "unit" : "0...1"
+        },
+        {
+          "invariant" : "finite",
+          "name" : "green",
+          "type" : "Double",
+          "unit" : "0...1"
+        },
+        {
+          "invariant" : "finite",
+          "name" : "blue",
+          "type" : "Double",
+          "unit" : "0...1"
+        },
+        {
+          "invariant" : "finite; 0 is fully transparent",
+          "name" : "alpha",
+          "type" : "Double",
+          "unit" : "0...1"
+        }
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "struct",
+      "name" : "RGBAColor",
+      "summary" : "Device-independent sRGB colour with straight alpha. The contracts package owns its own colour type because it may not import AppKit or any ZPDFUI package."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "millimetre",
+          "note" : "0.001 m",
+          "rawValue" : "mm"
+        },
+        {
+          "name" : "centimetre",
+          "note" : "0.01 m",
+          "rawValue" : "cm"
+        },
+        {
+          "name" : "metre",
+          "note" : "1 m",
+          "rawValue" : "m"
+        },
+        {
+          "name" : "kilometre",
+          "note" : "1000 m",
+          "rawValue" : "km"
+        },
+        {
+          "name" : "inch",
+          "note" : "0.0254 m",
+          "rawValue" : "in"
+        },
+        {
+          "name" : "foot",
+          "note" : "0.3048 m",
+          "rawValue" : "ft"
+        },
+        {
+          "name" : "yard",
+          "note" : "0.9144 m",
+          "rawValue" : "yd"
+        },
+        {
+          "name" : "mile",
+          "note" : "1609.344 m",
+          "rawValue" : "mi"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "1 in = 0.0254 m, 1 ft = 0.3048 m, 1 yd = 0.9144 m, 1 mi = 1609.344 m, exactly.",
+        "Every factor is built from an integer significand and a power of ten; no factor is born from a binary floating-point literal."
+      ],
+      "kind" : "enum",
+      "name" : "LengthUnit",
+      "summary" : "Display units for length. SI base unit: metre."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "squareMillimetre",
+          "note" : "0.000001 m2",
+          "rawValue" : "mm2"
+        },
+        {
+          "name" : "squareCentimetre",
+          "note" : "0.0001 m2",
+          "rawValue" : "cm2"
+        },
+        {
+          "name" : "squareMetre",
+          "note" : "1 m2",
+          "rawValue" : "m2"
+        },
+        {
+          "name" : "hectare",
+          "note" : "10000 m2",
+          "rawValue" : "ha"
+        },
+        {
+          "name" : "squareKilometre",
+          "note" : "1000000 m2",
+          "rawValue" : "km2"
+        },
+        {
+          "name" : "squareInch",
+          "note" : "0.00064516 m2",
+          "rawValue" : "in2"
+        },
+        {
+          "name" : "squareFoot",
+          "note" : "0.09290304 m2",
+          "rawValue" : "ft2"
+        },
+        {
+          "name" : "squareYard",
+          "note" : "0.83612736 m2",
+          "rawValue" : "yd2"
+        },
+        {
+          "name" : "acre",
+          "note" : "4046.8564224 m2",
+          "rawValue" : "acre"
+        },
+        {
+          "name" : "squareMile",
+          "note" : "2589988.110336 m2",
+          "rawValue" : "mi2"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "1 acre = 4046.8564224 m^2 and 1 mi^2 = 2589988.110336 m^2, exactly.",
+        "The squared imperial factors agree with LengthUnit squared: 1 ft^2 = 0.3048^2 m^2."
+      ],
+      "kind" : "enum",
+      "name" : "AreaUnit",
+      "summary" : "Display units for area. SI base unit: square metre."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "cubicCentimetre",
+          "note" : "0.000001 m3",
+          "rawValue" : "cm3"
+        },
+        {
+          "name" : "cubicMetre",
+          "note" : "1 m3",
+          "rawValue" : "m3"
+        },
+        {
+          "name" : "cubicInch",
+          "note" : "0.000016387064 m3",
+          "rawValue" : "in3"
+        },
+        {
+          "name" : "cubicFoot",
+          "note" : "0.028316846592 m3",
+          "rawValue" : "ft3"
+        },
+        {
+          "name" : "cubicYard",
+          "note" : "0.764554857984 m3",
+          "rawValue" : "yd3"
+        },
+        {
+          "name" : "litre",
+          "note" : "0.001 m3",
+          "rawValue" : "l"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "1 litre = 0.001 m^3 exactly.",
+        "The cubed imperial factors agree with LengthUnit cubed: 1 ft^3 = 0.3048^3 m^3."
+      ],
+      "kind" : "enum",
+      "name" : "VolumeUnit",
+      "summary" : "Display units for volume. SI base unit: cubic metre."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "radian",
+          "note" : "exact",
+          "rawValue" : "rad"
+        },
+        {
+          "name" : "degree",
+          "note" : "approximate (pi)",
+          "rawValue" : "deg"
+        },
+        {
+          "name" : "gradian",
+          "note" : "approximate (pi)",
+          "rawValue" : "gon"
+        },
+        {
+          "name" : "turn",
+          "note" : "approximate (pi)",
+          "rawValue" : "turn"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Only the radian is exact. Degree, gradian and turn depend on pi and are recorded as approximate.",
+        "The Decimal pi constant is a 37-decimal truncation assembled from two exact 19-digit chunks."
+      ],
+      "kind" : "enum",
+      "name" : "AngleUnit",
+      "summary" : "Display units for angle. SI base unit: radian."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "ratioOneToN",
+          "note" : "1:n",
+          "rawValue" : "Decimal"
+        },
+        {
+          "name" : "ratioNToOne",
+          "note" : "n:1",
+          "rawValue" : "Decimal"
+        },
+        {
+          "name" : "decimalRatio",
+          "note" : "rise/run",
+          "rawValue" : "Decimal"
+        },
+        {
+          "name" : "percent",
+          "note" : "100 * rise/run",
+          "rawValue" : "Decimal"
+        },
+        {
+          "name" : "degrees",
+          "note" : "from horizontal",
+          "rawValue" : "Decimal"
+        },
+        {
+          "name" : "riseOverRun",
+          "note" : "same length unit on both terms",
+          "rawValue" : "(rise: Decimal, run: Decimal)"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "run == 0 is vertical and throws SlopeError.verticalSlopeUndefined; it never yields an infinity (spec 12.8).",
+        "angleRadians() still answers for a vertical slope, because the angle is defined even when the ratio is not.",
+        "trueLengthFactor() is sqrt(1 + ratio^2)."
+      ],
+      "kind" : "enum",
+      "name" : "SlopeExpression",
+      "summary" : "The six ways a slope is written down (spec 11.3, 12.8). All reduce to a dimensionless rise/run."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "kahanSum(_:)",
+          "note" : "Kahan-Babuska-Neumaier",
+          "rawValue" : "[Double] -> Double"
+        },
+        {
+          "name" : "pairwiseSum(_:)",
+          "note" : "cascade, block size 8",
+          "rawValue" : "[Double] -> Double"
+        },
+        {
+          "name" : "sum(_:)",
+          "note" : "compensated at or above 64 terms",
+          "rawValue" : "[Double] -> Double"
+        },
+        {
+          "name" : "decimal(from:significantDigits:)",
+          "note" : "default 15 significant digits",
+          "rawValue" : "(Double, Int) throws -> Decimal"
+        },
+        {
+          "name" : "double(from:)",
+          "note" : "explicitly lossy",
+          "rawValue" : "Decimal -> Double"
+        },
+        {
+          "name" : "exact(_:_:)",
+          "note" : "integer significand x power of ten",
+          "rawValue" : "(UInt64, Int) -> Decimal"
+        },
+        {
+          "name" : "rounded(_:decimalPlaces:)",
+          "note" : "view/export boundary only",
+          "rawValue" : "(Decimal, Int) -> Decimal"
+        },
+        {
+          "name" : "roundedToFraction(_:denominator:)",
+          "note" : "view/export boundary only",
+          "rawValue" : "(Decimal, Int) -> Decimal"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Geometry is Double; aggregates and money are Decimal.",
+        "The Double -> Decimal crossing happens at a defined significance, never implicitly.",
+        "NaN and infinity throw NumericError.nonFiniteValue rather than producing Decimal.nan.",
+        "Sums of 64 or more Doubles use compensated summation before Decimal normalisation.",
+        "There is no internal display rounding anywhere in the core packages."
+      ],
+      "kind" : "enum",
+      "name" : "NumericPolicy",
+      "summary" : "The single implementation of the spec 11.4 numeric policy."
+    }
+  ]
+}

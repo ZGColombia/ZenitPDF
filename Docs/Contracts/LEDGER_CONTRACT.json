@@ -1,0 +1,907 @@
+{
+  "contract" : "LEDGER_CONTRACT",
+  "contractVersion" : 1,
+  "frozenAt" : "2026-09-01T23:28:48Z",
+  "generator" : "zpdf-contract-freeze (ZPDFContracts v2)",
+  "invariants" : [
+    "The primary implementation is NSOutlineView / NSTableView with virtualized rows and background queries; SwiftUI Table may only replace it after a benchmark against 100 000 rows (spec 15.1).",
+    "Columns are identified by a stable key, never by position.",
+    "Derived quantity columns are read-only.",
+    "Choice options carry values, colours, order, a default and retired values (spec 15.3).",
+    "Numbers stored in cells are SI base units without display rounding; PrecisionMode applies at the view and export boundary only."
+  ],
+  "specSections" : [
+    "15.1",
+    "15.2",
+    "15.3",
+    "15.5"
+  ],
+  "summary" : "The Quantity Ledger's data model: the standard columns, the custom column kinds, the cell value union and the flattened row tree the outline view renders.",
+  "tables" : [
+    {
+      "columns" : [
+        "column",
+        "kind",
+        "measurementField",
+        "userEditable"
+      ],
+      "name" : "standardColumns",
+      "rows" : [
+        [
+          "icon",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "subject",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "label",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "comment",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "pageLabel",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "pageIndex",
+          "number",
+          "-",
+          "false"
+        ],
+        [
+          "projectZone",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "scaleRegion",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "layer",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "status",
+          "choice",
+          "-",
+          "true"
+        ],
+        [
+          "author",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "created",
+          "date",
+          "-",
+          "false"
+        ],
+        [
+          "modified",
+          "date",
+          "-",
+          "false"
+        ],
+        [
+          "color",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "count",
+          "number",
+          "count",
+          "false"
+        ],
+        [
+          "planLength",
+          "number",
+          "planLength",
+          "false"
+        ],
+        [
+          "trueLength",
+          "number",
+          "trueLength",
+          "false"
+        ],
+        [
+          "perimeter",
+          "number",
+          "perimeter",
+          "false"
+        ],
+        [
+          "planArea",
+          "number",
+          "netArea",
+          "false"
+        ],
+        [
+          "trueArea",
+          "number",
+          "trueArea",
+          "false"
+        ],
+        [
+          "wallArea",
+          "number",
+          "netWallArea",
+          "false"
+        ],
+        [
+          "volume",
+          "number",
+          "volume",
+          "false"
+        ],
+        [
+          "rise",
+          "number",
+          "rise",
+          "false"
+        ],
+        [
+          "run",
+          "number",
+          "run",
+          "false"
+        ],
+        [
+          "slopeRatio",
+          "number",
+          "slopeRatio",
+          "false"
+        ],
+        [
+          "slopePercent",
+          "number",
+          "slopePercent",
+          "false"
+        ],
+        [
+          "slopeAngle",
+          "number",
+          "slopeAngle",
+          "false"
+        ],
+        [
+          "depth",
+          "number",
+          "depth",
+          "false"
+        ],
+        [
+          "height",
+          "number",
+          "height",
+          "false"
+        ],
+        [
+          "radius",
+          "number",
+          "radius",
+          "false"
+        ],
+        [
+          "diameter",
+          "number",
+          "diameter",
+          "false"
+        ],
+        [
+          "displayUnit",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "scale",
+          "text",
+          "-",
+          "false"
+        ],
+        [
+          "costCode",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "trade",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "phase",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "material",
+          "text",
+          "-",
+          "true"
+        ],
+        [
+          "unitCost",
+          "currency",
+          "-",
+          "true"
+        ],
+        [
+          "totalCost",
+          "currency",
+          "-",
+          "false"
+        ],
+        [
+          "grossArea",
+          "number",
+          "planArea",
+          "false"
+        ],
+        [
+          "cutoutArea",
+          "number",
+          "cutoutArea",
+          "false"
+        ]
+      ]
+    },
+    {
+      "columns" : [
+        "kind",
+        "note"
+      ],
+      "name" : "customColumnKinds",
+      "rows" : [
+        [
+          "text",
+          "free text"
+        ],
+        [
+          "number",
+          "dimensioned Decimal in SI base units"
+        ],
+        [
+          "currency",
+          "Decimal amount plus ISO 4217 code"
+        ],
+        [
+          "date",
+          "Date"
+        ],
+        [
+          "checkbox",
+          "Bool"
+        ],
+        [
+          "choice",
+          "values, colours, order, default, retired values"
+        ],
+        [
+          "formula",
+          "FormulaExpression, see FORMULA_CONTRACT"
+        ]
+      ]
+    }
+  ],
+  "types" : [
+    {
+      "cases" : [
+        {
+          "name" : "icon",
+          "note" : "text, read-only",
+          "rawValue" : "icon"
+        },
+        {
+          "name" : "subject",
+          "note" : "text, editable",
+          "rawValue" : "subject"
+        },
+        {
+          "name" : "label",
+          "note" : "text, editable",
+          "rawValue" : "label"
+        },
+        {
+          "name" : "comment",
+          "note" : "text, editable",
+          "rawValue" : "comment"
+        },
+        {
+          "name" : "pageLabel",
+          "note" : "text, read-only",
+          "rawValue" : "pageLabel"
+        },
+        {
+          "name" : "pageIndex",
+          "note" : "number, read-only",
+          "rawValue" : "pageIndex"
+        },
+        {
+          "name" : "projectZone",
+          "note" : "text, read-only",
+          "rawValue" : "projectZone"
+        },
+        {
+          "name" : "scaleRegion",
+          "note" : "text, read-only",
+          "rawValue" : "scaleRegion"
+        },
+        {
+          "name" : "layer",
+          "note" : "text, read-only",
+          "rawValue" : "layer"
+        },
+        {
+          "name" : "status",
+          "note" : "choice, editable",
+          "rawValue" : "status"
+        },
+        {
+          "name" : "author",
+          "note" : "text, read-only",
+          "rawValue" : "author"
+        },
+        {
+          "name" : "created",
+          "note" : "date, read-only",
+          "rawValue" : "created"
+        },
+        {
+          "name" : "modified",
+          "note" : "date, read-only",
+          "rawValue" : "modified"
+        },
+        {
+          "name" : "color",
+          "note" : "text, read-only",
+          "rawValue" : "color"
+        },
+        {
+          "name" : "count",
+          "note" : "number, read-only",
+          "rawValue" : "count"
+        },
+        {
+          "name" : "planLength",
+          "note" : "number, read-only",
+          "rawValue" : "planLength"
+        },
+        {
+          "name" : "trueLength",
+          "note" : "number, read-only",
+          "rawValue" : "trueLength"
+        },
+        {
+          "name" : "perimeter",
+          "note" : "number, read-only",
+          "rawValue" : "perimeter"
+        },
+        {
+          "name" : "planArea",
+          "note" : "number, read-only",
+          "rawValue" : "planArea"
+        },
+        {
+          "name" : "trueArea",
+          "note" : "number, read-only",
+          "rawValue" : "trueArea"
+        },
+        {
+          "name" : "wallArea",
+          "note" : "number, read-only",
+          "rawValue" : "wallArea"
+        },
+        {
+          "name" : "volume",
+          "note" : "number, read-only",
+          "rawValue" : "volume"
+        },
+        {
+          "name" : "rise",
+          "note" : "number, read-only",
+          "rawValue" : "rise"
+        },
+        {
+          "name" : "run",
+          "note" : "number, read-only",
+          "rawValue" : "run"
+        },
+        {
+          "name" : "slopeRatio",
+          "note" : "number, read-only",
+          "rawValue" : "slopeRatio"
+        },
+        {
+          "name" : "slopePercent",
+          "note" : "number, read-only",
+          "rawValue" : "slopePercent"
+        },
+        {
+          "name" : "slopeAngle",
+          "note" : "number, read-only",
+          "rawValue" : "slopeAngle"
+        },
+        {
+          "name" : "depth",
+          "note" : "number, read-only",
+          "rawValue" : "depth"
+        },
+        {
+          "name" : "height",
+          "note" : "number, read-only",
+          "rawValue" : "height"
+        },
+        {
+          "name" : "radius",
+          "note" : "number, read-only",
+          "rawValue" : "radius"
+        },
+        {
+          "name" : "diameter",
+          "note" : "number, read-only",
+          "rawValue" : "diameter"
+        },
+        {
+          "name" : "displayUnit",
+          "note" : "text, editable",
+          "rawValue" : "displayUnit"
+        },
+        {
+          "name" : "scale",
+          "note" : "text, read-only",
+          "rawValue" : "scale"
+        },
+        {
+          "name" : "costCode",
+          "note" : "text, editable",
+          "rawValue" : "costCode"
+        },
+        {
+          "name" : "trade",
+          "note" : "text, editable",
+          "rawValue" : "trade"
+        },
+        {
+          "name" : "phase",
+          "note" : "text, editable",
+          "rawValue" : "phase"
+        },
+        {
+          "name" : "material",
+          "note" : "text, editable",
+          "rawValue" : "material"
+        },
+        {
+          "name" : "unitCost",
+          "note" : "currency, editable",
+          "rawValue" : "unitCost"
+        },
+        {
+          "name" : "totalCost",
+          "note" : "currency, read-only",
+          "rawValue" : "totalCost"
+        },
+        {
+          "name" : "grossArea",
+          "note" : "number, read-only",
+          "rawValue" : "grossArea"
+        },
+        {
+          "name" : "cutoutArea",
+          "note" : "number, read-only",
+          "rawValue" : "cutoutArea"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "Built-in columns are identified by a stable key, not by position, so re-ordering the ledger never rewrites a saved layout or a formula.",
+        "Derived quantity columns are read-only. That is the difference between a takeoff and a spreadsheet.",
+        "A quantity column reads the net field where one exists: planArea reads netArea and wallArea reads netWallArea (ADR-0016). Plan Area is therefore the quantity after cutouts, the same number Volume, True Area and the formula variable Area are built from.",
+        "Every column with a measurementField is read-only, Depth and Height included (ADR-0017): a value typed into such a cell would have nowhere to go.",
+        "grossArea reads the planArea field (the outline before cutouts) and cutoutArea reads the cutoutArea field (ADR-0018). Both are reported beside Plan Area and neither is summed into it; cutoutArea is never summed at all, because a parent and its cutout rows report the same area.",
+        "A cutout is part of its parent, never a quantity of its own (ADR-0018): every quantity cell of a cutout's own row is empty under every CutoutPolicy, so a cutout row adds nothing to and subtracts nothing from any subtotal or grand total. The one exception is cutoutArea, which shows the cutout's area when the parent's policy is subtractAndReportSeparately (showsValueOnCutoutRow(parentPolicy:))."
+      ],
+      "kind" : "enum",
+      "name" : "StandardLedgerColumn",
+      "summary" : "The standard Quantity Ledger columns (spec 15.2)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "text",
+          "rawValue" : "text"
+        },
+        {
+          "name" : "number",
+          "rawValue" : "number"
+        },
+        {
+          "name" : "currency",
+          "rawValue" : "currency"
+        },
+        {
+          "name" : "date",
+          "rawValue" : "date"
+        },
+        {
+          "name" : "checkbox",
+          "rawValue" : "checkbox"
+        },
+        {
+          "name" : "choice",
+          "rawValue" : "choice"
+        },
+        {
+          "name" : "formula",
+          "rawValue" : "formula"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "ColumnKind",
+      "summary" : "The kinds a ledger column can be (spec 15.3)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable identity; renaming the display text must not change it",
+          "name" : "id",
+          "type" : "ChoiceOptionID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the stored value",
+          "name" : "value",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "swatch; never the only carrier of meaning",
+          "name" : "color",
+          "type" : "RGBAColor?",
+          "unit" : "sRGB 0...1"
+        },
+        {
+          "invariant" : "sort position within the column",
+          "name" : "order",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "stays readable on existing rows, not offered for new ones",
+          "name" : "isRetired",
+          "type" : "Bool",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "A retired option may not be the column default.",
+        "Choice colour is decoration: the value text is always shown too."
+      ],
+      "kind" : "struct",
+      "name" : "ChoiceOption",
+      "summary" : "One option of a Choice column (spec 15.3)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable column identity",
+          "name" : "id",
+          "type" : "ColumnID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "unique within a project; used in formulas and saved layouts",
+          "name" : "key",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "header text, localised at the view boundary",
+          "name" : "title",
+          "type" : "String",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the value kind the column holds",
+          "name" : "kind",
+          "type" : "ColumnKind",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "set for built-ins, nil for custom columns",
+          "name" : "standard",
+          "type" : "StandardLedgerColumn?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the dimension of the column's values, for number and formula columns",
+          "name" : "dimension",
+          "type" : "QuantityDimension?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "display unit for the column",
+          "name" : "displayUnit",
+          "type" : "AnyDisplayUnit?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "applied at the view and export boundary only",
+          "name" : "precision",
+          "type" : "PrecisionMode?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "options, for a Choice column",
+          "name" : "choices",
+          "type" : "[ChoiceOption]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "default option, for a Choice column",
+          "name" : "defaultChoiceID",
+          "type" : "ChoiceOptionID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the expression, for a Formula column",
+          "name" : "formula",
+          "type" : "FormulaExpression?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "whether the user may type into the column",
+          "name" : "isEditable",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "whether the column is currently shown",
+          "name" : "isVisible",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "left-to-right position in the current layout",
+          "name" : "order",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "true: the values describe one row and never sum into a total (ADR-0039); nil: the standard rule decides",
+          "name" : "neverSums",
+          "type" : "Bool?",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Two columns may not share a key (LedgerError.duplicateColumnKey).",
+        "A Choice column has at least one option, and its default is not retired.",
+        "A Formula column carries a FormulaExpression that passes validate().",
+        "A standard column may not be marked editable when the contract says it is derived.",
+        "A column with neverSums set has no Sum in the standard aggregation plan, on screen or in any export; its Count stays. The key is encoded only when set, so a definition written before ADR-0039 decodes as nil and keeps its bytes."
+      ],
+      "kind" : "struct",
+      "name" : "LedgerColumnDefinition",
+      "summary" : "Definition of one Quantity Ledger column, standard or custom (spec 15.2, 15.3)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "empty",
+          "rawValue" : "-"
+        },
+        {
+          "name" : "text",
+          "rawValue" : "String"
+        },
+        {
+          "name" : "number",
+          "note" : "SI base units",
+          "rawValue" : "DecimalQuantity"
+        },
+        {
+          "name" : "currency",
+          "note" : "ISO 4217 code",
+          "rawValue" : "(amount: Decimal, code: String)"
+        },
+        {
+          "name" : "date",
+          "rawValue" : "Date"
+        },
+        {
+          "name" : "checkbox",
+          "rawValue" : "Bool"
+        },
+        {
+          "name" : "choice",
+          "rawValue" : "ChoiceOptionID"
+        },
+        {
+          "name" : "formulaResult",
+          "note" : "cached with the grammar that produced it",
+          "rawValue" : "(value: DecimalQuantity, grammarVersion: Int)"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+        "A value's kind must match its column's kind, or LedgerError.cellKindMismatch; a text value can never land in a currency column.",
+        "empty is accepted by any column.",
+        "Numbers are stored in SI base units and are not rounded."
+      ],
+      "kind" : "enum",
+      "name" : "LedgerCellValue",
+      "summary" : "One cell value (spec 15.3)."
+    },
+    {
+      "cases" : [
+
+      ],
+      "fields" : [
+        {
+          "invariant" : "stable row identity",
+          "name" : "id",
+          "type" : "RowID",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the markup this row reports on; nil for a group or aggregate row",
+          "name" : "markupID",
+          "type" : "MarkupID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the parent group row",
+          "name" : "parentRowID",
+          "type" : "RowID?",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "outline depth, 0 at top level",
+          "name" : "depth",
+          "type" : "Int",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "the grouping key values that produced the row, outermost first",
+          "name" : "groupPath",
+          "type" : "[String]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "cell values by column",
+          "name" : "cells",
+          "type" : "[ColumnID: LedgerCellValue]",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "true for a group header / aggregate row",
+          "name" : "isGroupRow",
+          "type" : "Bool",
+          "unit" : "-"
+        },
+        {
+          "invariant" : "number of markup rows underneath, for a group row",
+          "name" : "descendantCount",
+          "type" : "Int",
+          "unit" : "-"
+        }
+      ],
+      "invariants" : [
+        "Rows are a flattened tree: parentRowID and depth describe the outline the NSOutlineView draws.",
+        "groupPath records how the row was produced, so a regroup can be diffed instead of rebuilt.",
+        "Every cell's column must exist in the column set (LedgerError.unknownColumn)."
+      ],
+      "kind" : "struct",
+      "name" : "LedgerRowRecord",
+      "summary" : "One row of the Quantity Ledger (spec 15.1, 15.5)."
+    },
+    {
+      "cases" : [
+        {
+          "name" : "subject",
+          "rawValue" : "subject"
+        },
+        {
+          "name" : "label",
+          "rawValue" : "label"
+        },
+        {
+          "name" : "page",
+          "rawValue" : "page"
+        },
+        {
+          "name" : "zone",
+          "rawValue" : "zone"
+        },
+        {
+          "name" : "scaleRegion",
+          "rawValue" : "scaleRegion"
+        },
+        {
+          "name" : "layer",
+          "rawValue" : "layer"
+        },
+        {
+          "name" : "status",
+          "rawValue" : "status"
+        },
+        {
+          "name" : "trade",
+          "rawValue" : "trade"
+        },
+        {
+          "name" : "phase",
+          "rawValue" : "phase"
+        },
+        {
+          "name" : "material",
+          "rawValue" : "material"
+        },
+        {
+          "name" : "author",
+          "rawValue" : "author"
+        },
+        {
+          "name" : "customChoice",
+          "rawValue" : "customChoice"
+        }
+      ],
+      "fields" : [
+
+      ],
+      "invariants" : [
+
+      ],
+      "kind" : "enum",
+      "name" : "LedgerGroupingKey",
+      "summary" : "The grouping keys the ledger offers (spec 15.5)."
+    }
+  ]
+}

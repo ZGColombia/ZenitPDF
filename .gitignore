@@ -1,0 +1,33 @@
+ExternalResearch/
+.build/
+# Private SwiftPM scratch folders (`--scratch-path .build-<name>`), one per parallel build or release.
+.build*/
+DerivedData/
+*.xcodeproj
+.DS_Store
+
+# Xcode per-user state, and the SwiftPM workspace Xcode writes beside a package it opens. Both
+# carry the account's short name (xcuserdata/<name>.xcuserdatad/).
+.swiftpm/
+xcuserdata/
+
+# Build output at the repository root only. Anchored with a leading slash so that a source folder
+# named Builders/ or BuildSteps/ deeper in the tree is not hidden (macOS matches these patterns
+# case-insensitively).
+/build/
+# Scratch output folders in the same style (`build-<anything>/`).
+/build-*/
+# `build` is a link to `build.noindex` (Scripts/build-app.sh keeps the bundle out of Spotlight).
+/build
+/build.noindex/
+/dist/
+
+# Written into the checkout by the GitHub workflows: the CI job logs, and the release job's logs
+# and notes.
+/ci-logs/
+/release-logs/
+/release-notes.md
+
+# Working-tree claim markers (Scripts/wave-marker.sh). Machine-local and short-lived: a marker
+# says who holds this working tree right now, which is never true of another machine.
+.zenit-waves/

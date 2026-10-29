@@ -1,0 +1,23 @@
+name: Feature request
+description: Describe a task Zenit PDF could support better.
+title: "[Feature] "
+body:
+  - type: textarea
+    id: task
+    attributes:
+      label: What task are you trying to complete?
+      description: Describe the workflow and the difficulty you encounter.
+    validations:
+      required: true
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Desired outcome
+      description: Explain how you would know the feature works.
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Current workaround and constraints
+      description: Include relevant input/output formats. Do not attach private drawings or personal information.

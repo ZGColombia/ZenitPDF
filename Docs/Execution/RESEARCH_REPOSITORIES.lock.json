@@ -1,0 +1,513 @@
+{
+  "generatedAt": "2026-08-23T10:11:16Z",
+  "generatedBy": "Repository licence audit",
+  "notes": "Evidence snapshot of ExternalResearch clones. Licence classification is read from the actual licence file in each clone, not from README claims. Not a legal approval.",
+  "repositories": [
+    {
+      "name": "GRDB.swift",
+      "localPath": "ExternalResearch/grdb",
+      "remote": "https://github.com/groue/GRDB.swift.git",
+      "revision": "0d8cf958b4b66a0473ec6e6986eb9da462171da9",
+      "commitDate": "2026-08-08T10:56:30+02:00",
+      "role": "production-dependency",
+      "licenseSpdx": "MIT",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "9853f9dce81365fcc1d9b46004633354450164b8d17904e92e80c444545f7e87",
+      "commercialUseOk": true,
+      "notes": "Untitled MIT text; see LICENSE for the original copyright notice. Attribution required in About panel. GRDB compiles four files with notices of their own (embeddedNotices); each comment is reproduced verbatim in the shipped GRDB notice, which also carries the full Apache License 2.0 text (qpdf LICENSE.txt, sha256 cfc7749b...) and points to the Runtime Library Exception at https://swift.org/LICENSE.txt.",
+      "versionLabel": "v7.11.1-2-g0d8cf958 (development snapshot 2 commits after tag v7.11.1)",
+      "embeddedNotices": [
+        {
+          "file": "GRDB/Utils/Inflections+English.swift",
+          "sha256": "80b42f1c5e10d486d684a94fdd5adc923fb9aacbb004a686c666ee98b699ac37",
+          "licenseSpdx": "MIT",
+          "copyright": "Copyright (c) 2005-2019 David Heinemeier Hansson",
+          "origin": "Ruby on Rails Active Support English inflection rules",
+          "shipsInBinary": "yes"
+        },
+        {
+          "file": "GRDB/Core/Cursor.swift",
+          "sha256": "87679f629ff3b24cd747b12bf5a966f8e1dff4536253efaad785dd0975a6aad0",
+          "licenseSpdx": "Apache-2.0 WITH Swift-exception",
+          "copyright": "Copyright (c) 2014 - 2018 Apple Inc. and the Swift project authors",
+          "origin": "parts derived from the Swift.org open source project",
+          "shipsInBinary": "yes"
+        },
+        {
+          "file": "GRDB/Record/EncodableRecord.swift",
+          "sha256": "b2329647c24b327338c7deb72625430e7bfa0a76ee088208b439e41e58a5ced8",
+          "licenseSpdx": "Apache-2.0 WITH Swift-exception",
+          "copyright": "Copyright (c) 2014 - 2020 Apple Inc. and the Swift project authors",
+          "origin": "_convertToSnakeCase copied from swift-corelibs-foundation Sources/Foundation/JSONEncoder.swift at 8d6398d76eaf (indented notice inside the function)",
+          "shipsInBinary": "yes"
+        },
+        {
+          "file": "GRDB/Record/FetchableRecord.swift",
+          "sha256": "faa0d2bb012f406c8ab287ebbd8ab51c615e464414bdb124d31135de89a21cf9",
+          "licenseSpdx": "Apache-2.0 WITH Swift-exception",
+          "copyright": "Copyright (c) 2014 - 2020 Apple Inc. and the Swift project authors",
+          "origin": "_convertFromSnakeCase copied from swift-corelibs-foundation Sources/Foundation/JSONDecoder.swift at 8d6398d76eaf (indented notice inside the function)",
+          "shipsInBinary": "yes"
+        }
+      ]
+    },
+    {
+      "name": "qpdf",
+      "localPath": "ExternalResearch/qpdf",
+      "remote": "https://github.com/qpdf/qpdf.git",
+      "revision": "dfd251125cadb59fe04836f9197c3ef94f99cf55",
+      "commitDate": "2026-08-22T16:02:51-04:00",
+      "role": "production-dependency",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFile": "LICENSE.txt",
+      "licenseSha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "commercialUseOk": true,
+      "notes": "Ships a separate NOTICE.md (sha256 b207f65a9e5491195ded63b2941199b19a4d30148871f2742c88eae7bfc513a6) that MUST be reproduced: qpdf pre-v7 dual Artistic-2.0 option, bundled qtest under Artistic-2.0, Rijndael/AES basis, and the MIT licence of the embedded sphlib 3.0 SHA-2 code (Copyright (c) 2007-2011 Projet RNRT SAPHIR; the compiled sphlib files state 2007-2010). Apache-2.0 section 4(d) makes NOTICE redistribution mandatory. libqpdf/MD5_native.cc (sha256 0534460b7414e3a250f5bddb3c9906dbbfce4bc98de27ea2daf265eb318b483f), compiled by the native crypto provider, is derived from the RSA Data Security, Inc. MD5 Message-Digest Algorithm and carries the RSA MD5 licence in its header; NOTICE.md does not mention it, so that header is reproduced verbatim in the shipped qpdf notice.",
+      "versionLabel": "v12.4.0-26-gdfd25112 (untagged development snapshot; include/qpdf/DLL.h declares 12.4.1)"
+    },
+    {
+      "name": "pdfium",
+      "localPath": "ExternalResearch/pdfium-upstream",
+      "remote": "https://pdfium.googlesource.com/pdfium",
+      "revision": "e2fba6a9286aea6fdb1bb2bc70eed03870410968",
+      "commitDate": "2026-08-21T12:38:27-07:00",
+      "role": "reference-only",
+      "licenseSpdx": "BSD-3-Clause",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "1fe9dea718fbd75cf149adaf4d8a22a4335604d964ddb76d1b45383dec8668c9",
+      "commercialUseOk": true,
+      "notes": "BSD-style classification recorded as BSD-3-Clause. Vendors ~19+ third_party components (freetype, harfbuzz, lcms, libopenjpeg, libtiff, agg23, highway, dragonbox, googletest, Noto fonts, ...) each with its own licence. Per-component notices are NOT enumerated by this audit and are PENDING for dependency review. Not in the build: no SwiftPM manifest, Bridges target or source file uses it, and the assembled bundle has no FPDF_/pdfium symbols."
+    },
+    {
+      "name": "pdfium-xcframework",
+      "localPath": "ExternalResearch/pdfium-xcframework",
+      "remote": "https://github.com/espresso3389/pdfium-xcframework.git",
+      "revision": "e3b3cbd227d6b76b9a59ef60617a531b183ccaea",
+      "commitDate": "2025-11-12T04:08:22+09:00",
+      "role": "reference-only",
+      "licenseSpdx": "MIT",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "16f4c11b53a761752b6150fba4bfe9e6b99534be555611d56e09b763bca39273",
+      "commercialUseOk": "unverified",
+      "notes": "CLASSIFICATION CONFLICT. The initial inventory lists pdfium-xcframework as BSD-style alongside pdfium. The licence actually present is MIT; see LICENSE for the original copyright notice. The clone contains only build scripts (build.sh, generate-package-files.sh) and docs, no pdfium source and no vendored BSD notice. Recorded as both; commercialUseOk unverified pending human review. The repo is a packaging harness; the artefact it would produce carries pdfium BSD-3-Clause. Nothing in the build invokes it or consumes the framework it produces."
+    },
+    {
+      "name": "Clipper2",
+      "localPath": "ExternalResearch/clipper2",
+      "remote": "https://github.com/AngusJohnson/Clipper2.git",
+      "revision": "f9c5eb6e14a59f6f5d65fbfb3564519a561cf4fd",
+      "commitDate": "2026-04-20T11:18:06+10:00",
+      "role": "production-dependency",
+      "licenseSpdx": "BSL-1.0",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "c9bff75738922193e67fa726fa225535870d2aa1059f91452c411736284ad566",
+      "commercialUseOk": true,
+      "notes": "Boost Software License 1.0. Notice obligation is waived for machine-executable object code, but source-form reuse must carry the notice.",
+      "versionLabel": "Clipper2_2.0.1-16-gf9c5eb6 (development snapshot 16 commits after tag Clipper2_2.0.1; clipper.version.h declares 2.0.1)",
+      "copyrightHolder": "Angus Johnson (source headers: 2010-2023 to 2010-2026; the upstream LICENSE names no holder)"
+    },
+    {
+      "name": "Sparkle",
+      "localPath": "ExternalResearch/sparkle",
+      "remote": "https://github.com/sparkle-project/Sparkle.git",
+      "revision": "14d644c7811dbe9ee309951e430626a9421d3322",
+      "commitDate": "2026-08-22T10:09:00-07:00",
+      "role": "removed",
+      "licenseSpdx": "MIT",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "389a4e4e9a32f059775b13a06e25a591445ba229d2838d26dd3e7c0c45127cfe",
+      "commercialUseOk": true,
+      "notes": "Removed 2026-10-27 together with the auto-update feature; nothing from it ships. Kept as a record of the licence evidence: MIT for Sparkle itself. The same file carries an EXTERNAL LICENSES section covering bsdiff/bspatch 4.3 (BSD-2-Clause), sais-lite (MIT) and a portable Ed25519 implementation. All would have to be reproduced in the About panel if it ever returned."
+    },
+    {
+      "name": "libxlsxwriter",
+      "localPath": "ExternalResearch/libxlsxwriter",
+      "remote": "https://github.com/jmcnamara/libxlsxwriter.git",
+      "revision": "3227eb0c1556ba41d94605a7abee0e097782d10a",
+      "commitDate": "2026-07-07T23:15:56+01:00",
+      "role": "production-dependency",
+      "licenseSpdx": "BSD-2-Clause AND BSD-3-Clause AND Zlib",
+      "licenseFile": "License.txt",
+      "licenseSha256": "be1d70d4ec6e0388522bdd584e747971c9e1b16960539c7140929d63dd2130bc",
+      "commercialUseOk": true,
+      "notes": "Self-described FreeBSD licence, which is BSD-2-Clause, in License.txt. Bundles queue.h (FreeBSD; The Regents of the University of California; BSD-3-Clause), tree.h (FreeBSD; Niels Provos; BSD-2-Clause), minizip (Zlib; altered source versions), md5 (public-domain dedication with a permissive fallback grant) and emyg_dtoa (MIT). licenseSpdx describes what is vendored and shipped; cloneLicenseSpdx describes the whole clone. CORRECTION 2026-08-23: the bundled tmpfileplus (DI Management Services) is MPL-2.0, not BSD as the initial inventory and the first pass of this file stated. It has no standalone licence file; the MPL header sits in third_party/tmpfileplus/tmpfileplus.c (sha256 bad61b21f48ef26fa82ad95cd01431334774ed528342d9a559de014f14ad7eb7) and tmpfileplus.h (sha256 eb4bc0ebc4332b6be6f5a0d42451c685047b5de9f3aba68dc3d63f8a5d19af8d). MPL-2.0 is file-level weak copyleft: MPL section 3.3 permits distribution inside a larger MIT work, while section 3.2 obliges us to make the source of those files available to recipients. Building with USE_STANDARD_TMPFILE excludes the component and removes the obligation; that build-flag decision was later taken: the bridge builds with USE_STANDARD_TMPFILE and vendors no tmpfileplus file (Bridges/LibXlsxWriterBridge/VENDORED.md).",
+      "bundledComponents": [
+        {
+          "name": "tmpfileplus",
+          "licenseSpdx": "MPL-2.0",
+          "evidencePath": "third_party/tmpfileplus/tmpfileplus.c",
+          "sourceSha256": "bad61b21f48ef26fa82ad95cd01431334774ed528342d9a559de014f14ad7eb7",
+          "headerSha256": "eb4bc0ebc4332b6be6f5a0d42451c685047b5de9f3aba68dc3d63f8a5d19af8d",
+          "shipsInBinary": "no — excluded by USE_STANDARD_TMPFILE; not vendored",
+          "obligation": "none while excluded; compiled in, MPL-2.0 section 3.2 would require making the source of these files available to recipients"
+        },
+        {
+          "name": "minizip",
+          "licenseSpdx": "Zlib",
+          "evidencePath": "License.txt",
+          "shipsInBinary": "yes — USE_SYSTEM_MINIZIP is not defined; the writer half is vendored and statically linked",
+          "note": "Altered source versions (MiniZip as altered in zlib contrib/minizip and further by libxlsxwriter); see Bridges/LibXlsxWriterBridge/VENDORED.md."
+        },
+        {
+          "name": "md5",
+          "licenseSpdx": "LicenseRef-Openwall-MD5-PublicDomain",
+          "evidencePath": "License.txt",
+          "shipsInBinary": "no — excluded by USE_NO_MD5; not vendored",
+          "licenseNote": "Public-domain dedication with a permissive fallback grant; upstream calls it a heavily cut-down BSD licence."
+        },
+        {
+          "name": "emyg_dtoa",
+          "licenseSpdx": "MIT",
+          "evidencePath": "License.txt",
+          "shipsInBinary": "no — USE_DTOA_LIBRARY is not defined; not vendored"
+        },
+        {
+          "name": "queue.h",
+          "licenseSpdx": "BSD-3-Clause",
+          "copyrightHolder": "The Regents of the University of California",
+          "evidencePath": "License.txt",
+          "shipsInBinary": "yes"
+        },
+        {
+          "name": "tree.h",
+          "licenseSpdx": "BSD-2-Clause",
+          "copyrightHolder": "Niels Provos",
+          "evidencePath": "License.txt",
+          "shipsInBinary": "yes"
+        }
+      ],
+      "versionLabel": "v1.2.4-8-g3227eb0",
+      "cloneLicenseSpdx": "BSD-2-Clause AND BSD-3-Clause AND Zlib AND MIT AND MPL-2.0 AND LicenseRef-Openwall-MD5-PublicDomain"
+    },
+    {
+      "name": "opencv",
+      "localPath": "ExternalResearch/opencv",
+      "remote": "https://github.com/opencv/opencv.git",
+      "revision": "c36dd6a35ee9b38ed0df4c5bce4b5b9f05a109be",
+      "commitDate": "2026-08-22T15:37:32+03:00",
+      "role": "reference-only",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "commercialUseOk": true,
+      "notes": "Optional module in the initial inventory. Plain Apache-2.0 text, byte-identical to qpdf/LICENSE.txt. No root NOTICE file in this clone; opencv_contrib and third-party modules are NOT covered by this entry and are PENDING for dependency review if any are linked. Not in the build: the optional alignment path uses Apple Vision (Packages/ZPDFCompare); no manifest or source references opencv."
+    },
+    {
+      "name": "XcodeGen",
+      "localPath": "ExternalResearch/xcodegen",
+      "remote": "https://github.com/yonaskolb/XcodeGen.git",
+      "revision": "8445e778451c7e44237b90281bde622d764b0084",
+      "commitDate": "2026-07-16T16:26:01+10:00",
+      "role": "unused",
+      "licenseSpdx": "MIT",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "1e210fcab168d549f41a7495d11a7092836bc38c742baa5e21c0883cd0f1d1a1",
+      "commercialUseOk": true,
+      "notes": "MIT; see LICENSE for the original copyright notice. Not used: there is no project.yml or .xcodeproj and no script invokes it; nothing from it is used or distributed, so no notice is owed."
+    },
+    {
+      "name": "swift-snapshot-testing",
+      "localPath": "ExternalResearch/swift-snapshot-testing",
+      "remote": "https://github.com/pointfreeco/swift-snapshot-testing.git",
+      "revision": "59a99c458de4d2dee580529b61b4f78dca7b7fa6",
+      "commitDate": "2026-07-27T11:41:22-05:00",
+      "role": "unused",
+      "licenseSpdx": "MIT",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "5b31e3500e1add0ccd688abaa98c9a4086200a4a738e780760b57be97f5f6a4d",
+      "commercialUseOk": true,
+      "notes": "MIT, Copyright (c) 2019 Point-Free, Inc. Not used: no manifest names it and no test imports SnapshotTesting; nothing from it is used or distributed, so no notice is owed."
+    },
+    {
+      "name": "skim-pdf",
+      "localPath": "ExternalResearch/skim-pdf",
+      "remote": "https://github.com/scris/skim-pdf.git",
+      "revision": "6cdd41f649feff689f3cb230ed099665e8ed1a8c",
+      "commitDate": "2024-01-03T10:41:05Z",
+      "role": "reference-only",
+      "licenseSpdx": "BSD-3-Clause",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "34caf48d911d801266fe82bf238f0e00364fe15ba85bc735371ec5b993dca646",
+      "commercialUseOk": true,
+      "notes": "BSD-3-Clause; see LICENSE for the original copyright notice. The initial inventory asserts no licence for reference-only repos, so no conflict. Oldest clone in the set (2024). Reference-only: no code copied, therefore no attribution obligation unless that changes."
+    },
+    {
+      "name": "PageFlow",
+      "localPath": "ExternalResearch/pageflow",
+      "remote": "https://github.com/pinchen147/PageFlow.git",
+      "revision": "aa81842dc5a108e9235b8a43c0ccb92b0fd18157",
+      "commitDate": "2026-06-24T21:43:39+08:00",
+      "role": "reference-only",
+      "licenseSpdx": "Apache-2.0",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "e2559390d90f172e1b20c6566b62a406d16942c999be174cde91046aa5285c62",
+      "commercialUseOk": true,
+      "notes": "Apache-2.0. Reference-only: no code copied. If any code is ever reused, Apache-2.0 sections 4(a)-(d) attribution and change-notice duties attach."
+    },
+    {
+      "name": "Galley",
+      "localPath": "ExternalResearch/galley",
+      "remote": "https://github.com/munepi/Galley.git",
+      "revision": "d5b812efd0980afe521b5dfbd6a7d62bf1685647",
+      "commitDate": "2026-08-10T21:44:48+09:00",
+      "role": "reference-only",
+      "licenseSpdx": "BSD-3-Clause",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "cb27d5848493ff21188ff34ea32a034a6b80aefc24f78873f8ac7b62d9feef0e",
+      "commercialUseOk": true,
+      "notes": "BSD-3-Clause; see LICENSE for the original copyright notice. Reference-only: no code copied."
+    },
+    {
+      "name": "Qedit",
+      "localPath": "ExternalResearch/qedit",
+      "remote": "https://github.com/ArioMoniri/Qedit.git",
+      "revision": "ecc97fc9291eb65aa70618e88d510c6c8c971714",
+      "commitDate": "2026-06-25T19:01:36+03:00",
+      "role": "reference-only",
+      "licenseSpdx": "MIT",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "c9f1029f33b927f1efc530c61b681e2f2d300f772911c5568c20f9908d6a2d05",
+      "commercialUseOk": true,
+      "notes": "MIT; see LICENSE for the original copyright notice. Reference-only: no code copied."
+    },
+    {
+      "name": "SnapShotKit",
+      "localPath": "ExternalResearch/snapshotkit",
+      "remote": "https://github.com/bheemrc/SnapShotKit.git",
+      "revision": "d13699b1c60188d4d45164db4af5cd6579decddf",
+      "commitDate": "2026-06-27T23:11:48+05:30",
+      "role": "reference-only",
+      "licenseSpdx": "MIT",
+      "licenseFile": "LICENSE",
+      "licenseSha256": "58384afba298b00edcd7141b0bdc25b23dc7a7e39e76fe7c33e170d8672cac65",
+      "commercialUseOk": true,
+      "notes": "MIT; see LICENSE for the original copyright notice. Reference-only: no code copied. Distinct from swift-snapshot-testing; do not conflate the two in the About panel."
+    },
+    {
+      "name": "Contributor Covenant",
+      "localPath": null,
+      "remote": "https://www.contributor-covenant.org/version/2/1/code_of_conduct.html",
+      "revision": null,
+      "versionLabel": "2.1",
+      "commitDate": null,
+      "role": "repository-only",
+      "licenseSpdx": "CC-BY-4.0",
+      "licenseFile": null,
+      "licenseSha256": null,
+      "commercialUseOk": true,
+      "notes": "Not cloned; CC-BY-4.0 is the licensor's declared licence. Adapted, with modifications, in CODE_OF_CONDUCT.md, whose Attribution section carries the credit, link, licence name and URI, modification statement and Mozilla credit that CC BY 4.0 section 3(a)(1) requires. Nothing from it ships in the app."
+    },
+    {
+      "name": "acroromi",
+      "localPath": "ExternalResearch/acroromi",
+      "remote": "https://github.com/romizone/acroromi.git",
+      "revision": "2a4e46b443d9b338ebc88c6d591de20cace62015",
+      "commitDate": "2026-03-08T19:35:15+07:00",
+      "role": "reference-only",
+      "licenseSpdx": "NOASSERTION",
+      "licenseFile": null,
+      "licenseSha256": null,
+      "commercialUseOk": "unverified",
+      "notes": "CONFLICT. No licence, COPYING or NOTICE file exists anywhere in the clone (checked to depth 3, excluding .git). README.md line 301 claims MIT and links to a LICENSE file that is not present; README.md line 6 carries an MIT shields.io badge. A README claim without licence text is not a grant. Treat as all-rights-reserved until the upstream author adds a licence file. Reference-only, no code copied."
+    },
+    {
+      "name": "Drawbridge",
+      "localPath": "ExternalResearch/drawbridge",
+      "remote": "https://github.com/dansc89/Drawbridge.git",
+      "revision": "9694d90589b726bf6e73761debb86fb3bc32e14b",
+      "commitDate": "2026-05-04T13:29:35-07:00",
+      "role": "blocked",
+      "licenseSpdx": "NOASSERTION",
+      "licenseFile": null,
+      "licenseSha256": null,
+      "commercialUseOk": false,
+      "notes": "BLOCKED FROM CODE REUSE in the initial inventory, and independently confirmed: no licence, COPYING or NOTICE file at any depth, and no licence statement in README.md, DEVELOPMENT.md or USER_MANUAL.md. All rights reserved by default. Visual product reference only. Zero code copied. Do not add to Package.swift or any target."
+    },
+    {
+      "name": "pdfClaw",
+      "localPath": null,
+      "remote": "https://github.com/victorantos/pdfClaw",
+      "revision": null,
+      "commitDate": null,
+      "role": "blocked",
+      "licenseSpdx": "GPL-3.0-only",
+      "licenseFile": null,
+      "licenseSha256": null,
+      "commercialUseOk": false,
+      "notes": "Blocked, not cloned. Licence recorded from the initial dependency inventory only; no licence text was read by this audit, so the SPDX id is declared and not verified. GPL-3.0: not used; incompatible with this project's MIT licensing of the combined app. Do not clone, read for implementation, or reuse."
+    },
+    {
+      "name": "MuPDF",
+      "localPath": null,
+      "remote": "https://github.com/ArtifexSoftware/mupdf",
+      "revision": null,
+      "commitDate": null,
+      "role": "blocked",
+      "licenseSpdx": "AGPL-3.0-only",
+      "licenseFile": null,
+      "licenseSha256": null,
+      "commercialUseOk": false,
+      "notes": "Blocked, not cloned. Licence recorded from the initial dependency inventory only; not verified by this audit. AGPL-3.0: not used; incompatible with this project's MIT licensing of the combined app."
+    },
+    {
+      "name": "PyMuPDF",
+      "localPath": null,
+      "remote": "https://github.com/pymupdf/PyMuPDF",
+      "revision": null,
+      "commitDate": null,
+      "role": "blocked",
+      "licenseSpdx": "AGPL-3.0-only",
+      "licenseFile": null,
+      "licenseSha256": null,
+      "commercialUseOk": false,
+      "notes": "Blocked, not cloned. Licence recorded from the initial dependency inventory only; not verified by this audit. Inherits MuPDF AGPL terms. Do not clone or reuse."
+    }
+  ],
+  "corrections": [
+    {
+      "date": "2026-08-23",
+      "field": "libxlsxwriter.licenseSpdx",
+      "from": "BSD-2-Clause",
+      "to": "BSD-2-Clause AND MPL-2.0",
+      "reason": "Bundled tmpfileplus carries an MPL-2.0 header; the first pass recorded it as BSD from the initial inventory without reading the file."
+    },
+    {
+      "date": "2026-10-27",
+      "field": "Sparkle.role",
+      "from": "production-dependency",
+      "to": "removed",
+      "reason": "The auto-update feature was removed; Sparkle is no longer a dependency and no notice is owed."
+    },
+    {
+      "date": "2026-10-28",
+      "field": "libxlsxwriter.bundledComponents[].shipsInBinary",
+      "from": "tmpfileplus, minizip and md5 conditional on build flags; emyg_dtoa yes",
+      "to": "minizip and queue.h / tree.h yes; tmpfileplus, md5 and emyg_dtoa no",
+      "reason": "Records the flags Bridges/LibXlsxWriterBridge/Package.swift sets: USE_STANDARD_TMPFILE and USE_NO_MD5 are defined, USE_DTOA_LIBRARY and USE_SYSTEM_MINIZIP are not."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "GRDB.swift.embeddedNotices",
+      "from": "absent",
+      "to": "Rails Active Support (MIT) and three Swift.org (Apache-2.0 with Runtime Library Exception) notices",
+      "reason": "GRDB/Utils/Inflections+English.swift, GRDB/Core/Cursor.swift, GRDB/Record/EncodableRecord.swift and GRDB/Record/FetchableRecord.swift are compiled into the GRDB product and carry notices GRDB's LICENSE does not reproduce; the shipped GRDB notice now reproduces them."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "qpdf.notes",
+      "from": "NOTICE summary without sphlib",
+      "to": "NOTICE summary includes the sphlib MIT notice",
+      "reason": "qpdf's NOTICE.md reproduces the sphlib MIT licence; the summary omitted it."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "qpdf.versionLabel",
+      "from": "12.4.1",
+      "to": "v12.4.0-26-gdfd25112 (DLL.h 12.4.1)",
+      "reason": "There is no v12.4.1 tag at the pinned revision; git describe --tags gives v12.4.0-26-gdfd25112."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "pdfium.role",
+      "from": "production-dependency",
+      "to": "reference-only",
+      "reason": "Initial-inventory role; nothing in the build links, compiles or invokes it (checked 2026-10-29)."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "pdfium-xcframework.role",
+      "from": "build-dependency",
+      "to": "reference-only",
+      "reason": "Initial-inventory role; nothing in the build links, compiles or invokes it (checked 2026-10-29)."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "opencv.role",
+      "from": "production-dependency",
+      "to": "reference-only",
+      "reason": "Initial-inventory role; nothing in the build links, compiles or invokes it (checked 2026-10-29)."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "XcodeGen.role",
+      "from": "build-dependency",
+      "to": "unused",
+      "reason": "No build script, manifest or project file uses it; the instruction to keep its notice in Docs/Licences is withdrawn because no notice is owed."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "swift-snapshot-testing.role",
+      "from": "test-dependency",
+      "to": "unused",
+      "reason": "No test target depends on it."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "Clipper2.copyrightHolder",
+      "from": "absent",
+      "to": "Angus Johnson",
+      "reason": "The holder is stated only in the source headers."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "libxlsxwriter.licenseSpdx",
+      "from": "BSD-2-Clause AND MPL-2.0",
+      "to": "BSD-2-Clause AND BSD-3-Clause AND Zlib",
+      "reason": "The field now describes what is vendored and shipped (tmpfileplus is excluded); the whole clone is in cloneLicenseSpdx."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "libxlsxwriter.bundledComponents[queue.h / tree.h]",
+      "from": "queue.h / tree.h, BSD-3-Clause",
+      "to": "queue.h BSD-3-Clause (The Regents of the University of California); tree.h BSD-2-Clause (Niels Provos)",
+      "reason": "tree.h's own header gives a 2-clause licence held by Niels Provos."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "libxlsxwriter.bundledComponents[md5].licenseSpdx",
+      "from": "BSD-2-Clause-like",
+      "to": "LicenseRef-Openwall-MD5-PublicDomain",
+      "reason": "The md5 notice is a public-domain dedication with a permissive fallback."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "designSources",
+      "from": "absent",
+      "to": "hilbert_curves (public domain, ported) and flatbush (ISC, design reference only)",
+      "reason": "Records algorithm and design sources outside ExternalResearch."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "repositories[Contributor Covenant]",
+      "from": "absent",
+      "to": "repository-only, CC-BY-4.0",
+      "reason": "LICENSE_EVIDENCE.md records the Code of Conduct adaptation; this file is its machine-readable companion."
+    },
+    {
+      "date": "2026-10-29",
+      "field": "libxlsxwriter vendored minizip",
+      "from": "crypt.h vendored (never compiled)",
+      "to": "crypt.h not vendored",
+      "reason": "crypt.h is Info-ZIP-derived encryption code that zip.h's NOCRYPT keeps out of the build; removing it means no Info-ZIP-derived code is redistributed."
+    }
+  ],
+  "designSources": [
+    {
+      "name": "hilbert_curves",
+      "remote": "https://github.com/rawrunprotected/hilbert_curves",
+      "cloned": false,
+      "licenseSpdx": "LicenseRef-PublicDomain",
+      "evidence": "README: \"The code in this repository is released into the public domain.\"",
+      "use": "hilbertXYToIndex ported into Packages/ZPDFGeometry/Sources/ZPDFGeometry/Index/HilbertCurve.swift (ships in the app binary)",
+      "obligation": "none"
+    },
+    {
+      "name": "flatbush",
+      "remote": "https://github.com/mourner/flatbush",
+      "cloned": false,
+      "licenseSpdx": "ISC",
+      "use": "design reference for Packages/ZPDFGeometry/Sources/ZPDFGeometry/Index/PackedRTree.swift; independent implementation, no code copied",
+      "obligation": "none while no code is copied"
+    }
+  ]
+}

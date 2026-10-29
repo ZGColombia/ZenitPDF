@@ -1,0 +1,588 @@
+# Continuous integration for Zenit PDF.
+#
+# Independent jobs, one per gate, so a red names its cause: the UI packages, the
+# portable tier on iOS, the core packages, the application package, the release
+# performance suites, the assembled bundle (it starts, it carries its licence
+# notices, it has no network capability), the shell scripts, hook wiring and the
+# author scrub. A missing build script is a hard failure, never a silent skip — a
+# workflow that reports success for work it did not do is worse than no workflow.
+#
+# Every build here is signed ad-hoc (ZENIT_RELEASE_SIGNING is never set in CI), so
+# no job needs a certificate or a keychain. The one secret read is ZENIT_SCRUB_NAMES,
+# by the author-scrub job; on the project's own repository that job fails when the
+# secret is missing, and on a fork it warns and skips.
+#
+# The performance budgets were measured on the reference Mac; none has been measured
+# on a hosted runner, a shared virtual machine. So the release performance job is
+# advisory here (continue-on-error): it shows as a failed job with a warning and does
+# not fail the workflow run, and it must not be made a required status check. The
+# app-package job runs with ZENIT_TIMING_ADVISORY=1, so the viewer's debug millisecond
+# budgets inside its suite report a miss as a warning; the core-packages job sets it too,
+# for the ledger's concurrent-versus-serial ratio (IM-081). Every other assertion, the
+# correctness tests included, is blocking.
+#
+# The runner image is pinned to xcode-27, the GitHub image whose default Xcode is the
+# 27.1 the project is built and tested with (TOOLCHAIN.md). When the image or the pin
+# changes, check what the image actually carries before trusting XCODE_VERSION below.
+
+name: CI
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+# Read-only. Nothing here publishes anything.
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Pinned by TOOLCHAIN.md. If the runner image does not carry this exact
+  # version, the select step warns and continues with the image default rather
+  # than reporting a toolchain it did not use.
+  XCODE_VERSION: "27.1"
+
+jobs:
+  ui-packages:
+    name: UI packages (Scripts/build-ui-packages.sh)
+    runs-on: xcode-27
+    timeout-minutes: 45
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          echo "Available Xcode installations:"
+          ls -d /Applications/Xcode*.app 2>/dev/null || echo "  (none found)"
+
+          CANDIDATE="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ -d "${CANDIDATE}" ]; then
+            sudo xcode-select --switch "${CANDIDATE}"
+          else
+            echo "::warning title=Xcode ${XCODE_VERSION} not on this runner::Falling back to the image default. TOOLCHAIN.md pins Xcode ${XCODE_VERSION}; this run did not use it."
+          fi
+
+          echo "--- selected toolchain ---"
+          xcode-select -p
+          xcodebuild -version || true
+          swift --version
+
+      - name: Restore SwiftPM build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            Packages/*/.build
+          key: swiftpm-ui-${{ runner.os }}-${{ env.XCODE_VERSION }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved') }}
+          restore-keys: |
+            swiftpm-ui-${{ runner.os }}-${{ env.XCODE_VERSION }}-
+            swiftpm-ui-${{ runner.os }}-
+
+      - name: Verify the build script exists
+        run: |
+          set -euo pipefail
+          SCRIPT="Scripts/build-ui-packages.sh"
+          if [ ! -f "${SCRIPT}" ]; then
+            echo "::error title=Missing build script::${SCRIPT} does not exist. CI cannot verify the UI packages and will not pretend otherwise."
+            exit 1
+          fi
+          chmod +x "${SCRIPT}"
+
+      - name: Build and test the UI packages
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          set -o pipefail
+          Scripts/build-ui-packages.sh 2>&1 | tee ci-logs/ui-packages.log
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-packages-logs
+          path: |
+            ci-logs/
+            Packages/*/.build/*.yaml
+          if-no-files-found: warn
+          retention-days: 14
+
+  multiplatform:
+    # ADR-0005 keeps the portable packages free of AppKit, UIKit and Cocoa and names
+    # Scripts/verify-multiplatform.sh as the check of that boundary; this job runs it. It builds
+    # every portable package, ZPDFAppCore included, for arm64 iOS 17 and fails on a windowing
+    # import or a platform type.
+    name: Portable tier builds for iOS (Scripts/verify-multiplatform.sh)
+    runs-on: xcode-27
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          CANDIDATE="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ -d "${CANDIDATE}" ]; then
+            sudo xcode-select --switch "${CANDIDATE}"
+          else
+            echo "::warning title=Xcode ${XCODE_VERSION} not on this runner::Falling back to the image default."
+          fi
+          xcrun --sdk iphoneos --show-sdk-path
+
+      - name: Verify the portable tier
+        run: |
+          set -euo pipefail
+          test -x Scripts/verify-multiplatform.sh \
+            || { echo "::error::Scripts/verify-multiplatform.sh is missing or not executable."; exit 1; }
+          Scripts/verify-multiplatform.sh
+
+  core-packages:
+    name: Core packages (Scripts/build-core-packages.sh)
+    runs-on: xcode-27
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          CANDIDATE="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ -d "${CANDIDATE}" ]; then
+            sudo xcode-select --switch "${CANDIDATE}"
+          else
+            echo "::warning title=Xcode ${XCODE_VERSION} not on this runner::Falling back to the image default."
+          fi
+          xcode-select -p
+          swift --version
+
+      - name: Restore SwiftPM build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            Packages/*/.build
+            .build
+          key: swiftpm-core-${{ runner.os }}-${{ env.XCODE_VERSION }}-${{ hashFiles('Packages/*/Package.swift', 'Package.swift', 'Package.resolved') }}
+          restore-keys: |
+            swiftpm-core-${{ runner.os }}-${{ env.XCODE_VERSION }}-
+            swiftpm-core-${{ runner.os }}-
+
+      - name: Verify the build script exists
+        run: |
+          set -euo pipefail
+          SCRIPT="Scripts/build-core-packages.sh"
+          if [ ! -f "${SCRIPT}" ]; then
+            echo "::error title=Missing build script::${SCRIPT} does not exist."
+            echo "It builds and unit-tests the core packages and exits non-zero on the"
+            echo "first failure. Do not make this job skip instead of fail: a green CI"
+            echo "badge over an unverified core is a lie."
+            exit 1
+          fi
+          chmod +x "${SCRIPT}"
+
+      - name: Build and test the core packages
+        env:
+          # IM-081's concurrent-versus-serial ratio needs idle cores (see the header).
+          ZENIT_TIMING_ADVISORY: "1"
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          set -o pipefail
+          Scripts/build-core-packages.sh 2>&1 | tee ci-logs/core-packages.log
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: core-packages-logs
+          path: ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  app-package:
+    # Twelve green package gates once coexisted with a dead ⌘Z because no
+    # gate ran the application package's own tests. This job runs them with the same
+    # xunit accounting as everything else, plus a hard floor on the executed count.
+    name: App package (Scripts/build-app-package.sh)
+    runs-on: xcode-27
+    # Two release slices for the bundle, then the debug suite (about 22 min on the reference
+    # Mac, run one test at a time, so a hosted runner takes two to three times as long).
+    timeout-minutes: 180
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          CANDIDATE="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ -d "${CANDIDATE}" ]; then
+            sudo xcode-select --switch "${CANDIDATE}"
+          else
+            echo "::warning title=Xcode ${XCODE_VERSION} not on this runner::Falling back to the image default."
+          fi
+          xcode-select -p
+          swift --version
+
+      - name: Restore SwiftPM build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            Apps/ZenitPDF/.build
+            Packages/*/.build
+          key: swiftpm-app-${{ runner.os }}-${{ env.XCODE_VERSION }}-${{ hashFiles('Apps/ZenitPDF/Package.swift', 'Packages/*/Package.swift') }}
+          restore-keys: |
+            swiftpm-app-${{ runner.os }}-${{ env.XCODE_VERSION }}-
+            swiftpm-app-${{ runner.os }}-
+
+      - name: Verify the build script exists
+        run: |
+          set -euo pipefail
+          SCRIPT="Scripts/build-app-package.sh"
+          if [ ! -f "${SCRIPT}" ]; then
+            echo "::error title=Missing build script::${SCRIPT} does not exist."
+            echo "The application package's tests are the only ones that exercise the"
+            echo "document lifecycle, the tabbed window and the menu routing. A CI that"
+            echo "does not run them already shipped one dead ⌘Z."
+            exit 1
+          fi
+          chmod +x "${SCRIPT}"
+
+      # One test in the suite reads the licence notices of the assembled bundle, and
+      # build-app-package.sh stops before building when build/Zenit PDF.app is missing.
+      # --skip-verify skips only the codesign and spctl checks; build-app.sh still runs its
+      # four bundle gates, which the app-launches job runs as well.
+      - name: Assemble the bundle the suite reads
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          Scripts/build-app.sh --skip-verify 2>&1 | tee ci-logs/build-app.log
+
+      - name: Build and test the application package
+        env:
+          # The viewer's millisecond budgets are advisory on a hosted runner (see the header).
+          ZENIT_TIMING_ADVISORY: "1"
+          # The script's 3600 s cap is sized for the reference Mac; the 300 s no-progress
+          # watchdog, which is what catches a hung modal, stays as it is.
+          ZENIT_TEST_TIMEOUT_SECONDS: "6000"
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          set -o pipefail
+          Scripts/build-app-package.sh 2>&1 | tee ci-logs/app-package.log
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-package-logs
+          path: ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  perf-release:
+    # Every performance `#expect` in the renderer and snap suites sits
+    # behind a release check, so a debug-only CI asserts nothing about speed. This job runs
+    # exactly those suites, optimised, and fails if the suite itself reports a debug build.
+    # The suites assert the same budgets here as on the reference Mac, where they were
+    # measured; no measurement on a hosted runner backs them. The job is therefore advisory
+    # (continue-on-error). Its steps run as they would in a blocking job, so a failing suite
+    # still skips the suites after it. Any failure, a missed budget, a build error or a missing
+    # verdict, marks the job failed and adds a warning, but it does not fail the workflow run;
+    # the job's own check still shows as failed, so it must not be a required check. The same budgets block in the local gates: build-renderer-package.sh,
+    # build-snap-package.sh, build-io-packages.sh and verify-viewer-budgets.sh.
+    name: Performance suites (release, advisory on hosted runners)
+    runs-on: xcode-27
+    timeout-minutes: 60
+    continue-on-error: true
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          CANDIDATE="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ -d "${CANDIDATE}" ]; then
+            sudo xcode-select --switch "${CANDIDATE}"
+          else
+            echo "::warning title=Xcode ${XCODE_VERSION} not on this runner::Falling back to the image default."
+          fi
+          xcode-select -p
+          swift --version
+
+      - name: Renderer performance suite (release, isolated)
+        run: |
+          set -euo pipefail
+          cd Packages/ZPDFRenderer
+          # `swift test` builds release with testability on; `swift build -c release
+          # --build-tests` does not, and the package's other test target uses @testable import.
+          LOG="$(mktemp)"
+          swift test -c release --filter ZPDFRendererPerformanceTests 2>&1 | tee "${LOG}"
+          # Non-vacuity: the suite must confirm it measured an optimised binary, and the
+          # 60 fps verdict block must have been printed. A green run without either is a
+          # perf gate that asserted nothing.
+          grep -qF 'build: release' "${LOG}" || {
+            echo "::error title=Debug binary in the perf job::the suite did not report 'build: release'"
+            exit 1
+          }
+          grep -qF -- '--- 60 fps at 100 000 markups, stated plainly ---' "${LOG}" || {
+            echo "::error title=Missing verdict::the 60 fps verdict block was not printed"
+            exit 1
+          }
+
+      - name: Snap performance suite (release, isolated)
+        run: |
+          set -euo pipefail
+          cd Packages/ZPDFSnapEngine
+          # Same reason as the renderer step: the other test target uses @testable import.
+          swift test -c release --filter ZPDFSnapPerformanceTests
+
+      - name: Persistence performance suite (release, isolated)
+        run: |
+          set -euo pipefail
+          cd Packages/ZPDFPersistence
+          swift package resolve
+          swift build -c release --build-tests
+          swift test -c release --skip-build --filter PerformanceTests
+
+      # The same disease one tier up. `ViewerZoomGateTests` lives in the application package,
+      # and Z1's blit p50, Z3's warm p50 and p95 and Z4's cold p95 sat behind a release-build
+      # guard while every gate built debug — so they had never once been evaluated, and a debug
+      # run was already measuring 12.965 ms against a 12 ms budget with nothing able to see it.
+      # The suite asserts a measured debug budget locally, and in the app-package job above
+      # (ZENIT_TIMING_ADVISORY=1) a miss there is only a warning; this step
+      # asserts the release budgets on optimised code. The script's own non-vacuity checks are
+      # what make it a gate rather than a run: it fails if the suite reports a debug build, if
+      # any of the named verdict lines is missing, or if one of them says NOT MET.
+      #
+      # Every budget is measured on the generated Synthetic Roof Plan of ZPDFTestingSupport, the
+      # same bytes on every clone, so this runner measures the same work. The script has no skip
+      # exit: anything other than 0 fails this step (and, like the rest of this job, is advisory).
+      - name: Viewer millisecond budgets (release, isolated)
+        run: |
+          set -uo pipefail
+          mkdir -p ci-logs
+          chmod +x Scripts/verify-viewer-budgets.sh
+          Scripts/verify-viewer-budgets.sh 2>&1 | tee ci-logs/viewer-budgets.log
+          status="${PIPESTATUS[0]}"
+          case "${status}" in
+            0)
+              # Non-vacuity for the pass: a zero exit must be accompanied by a met verdict for
+              # each of the 14 budgets the script names in REQUIRED_BUDGETS.
+              met="$(grep -cE '^Z-BUDGET .* verdict=MET$' ci-logs/viewer-budgets.log || true)"
+              if [ "${met}" -lt 14 ]; then
+                echo "::error title=Viewer budgets exited 0 with ${met} of 14 verdicts::a green run must carry every verdict"
+                exit 1
+              fi
+              echo "Viewer budgets measured and met: ${met} (at least 14 required)."
+              ;;
+            *)
+              echo "::error title=Viewer budget gate failed::exit ${status}"
+              exit "${status}"
+              ;;
+          esac
+
+      - name: Upload viewer budget log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: viewer-budget-logs
+          path: ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+      - name: Warn that the advisory job failed
+        if: failure()
+        run: |
+          echo "::warning title=Advisory performance job failed::Budgets were measured on the reference Mac, so a missed budget here is advisory; a build error or a missing verdict in the log is a real defect. Read the log to tell which, and run the local gates on the reference Mac before treating a missed budget as a regression."
+
+  app-launches:
+    # Static linkage analysis is not the same as starting. On 2026-08-24 `Scripts/build-app.sh`
+    # reported success on a bundle that died in dyld before main(); every gate was green and a
+    # human found out from a crash dialog. `Scripts/verify-bundle-linkage.sh` closed the specific
+    # hole — it resolves every dependency the way dyld would — but it launches nothing, and a
+    # bundle can pass every static check and still be dead on arrival.
+    #
+    # This job assembles the bundle and starts it. It reads three markers out of the unified log:
+    # the delegate was entered, the delegate returned, and a block scheduled during launch was
+    # actually serviced by the main run loop. The third one is the responsiveness check, and it is
+    # a check rather than a sleep: a process that started and deadlocked its main thread passes
+    # `pgrep` and fails here. Then it quits the application and proves nothing was left running.
+    name: The bundle launches (Scripts/verify-app-launches.sh)
+    runs-on: xcode-27
+    timeout-minutes: 60
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          set -euo pipefail
+          CANDIDATE="/Applications/Xcode_${XCODE_VERSION}.app"
+          if [ -d "${CANDIDATE}" ]; then
+            sudo xcode-select --switch "${CANDIDATE}"
+          else
+            echo "::warning title=Xcode ${XCODE_VERSION} not on this runner::Falling back to the image default."
+          fi
+          xcode-select -p
+          swift --version
+
+      - name: Restore SwiftPM build cache
+        uses: actions/cache@v4
+        with:
+          path: |
+            Apps/*/.build
+            Packages/*/.build
+          key: swiftpm-launch-${{ runner.os }}-${{ env.XCODE_VERSION }}-${{ hashFiles('Apps/ZenitPDF/Package.swift', 'Packages/*/Package.swift') }}
+          restore-keys: |
+            swiftpm-launch-${{ runner.os }}-${{ env.XCODE_VERSION }}-
+            swiftpm-launch-${{ runner.os }}-
+
+      - name: Verify the gate exists
+        run: |
+          set -euo pipefail
+          SCRIPT="Scripts/verify-app-launches.sh"
+          if [ ! -f "${SCRIPT}" ]; then
+            echo "::error title=Missing launch gate::${SCRIPT} does not exist."
+            echo "Checking the inputs to a launch is not checking the launch."
+            exit 1
+          fi
+          chmod +x "${SCRIPT}"
+
+      - name: Assemble and start the bundle
+        run: |
+          set -euo pipefail
+          mkdir -p ci-logs
+          set -o pipefail
+          Scripts/verify-app-launches.sh --build 2>&1 | tee ci-logs/app-launches.log
+
+      # `Scripts/build-app.sh` already runs this gate, so a bundle that reached the step above
+      # has passed it. It is repeated here by name for one reason: the compliance check that
+      # only ever appears inside another script's output is the one nobody notices has stopped
+      # running. qpdf's Apache-2.0 §4(d) is not a nicety, and this is the step whose red says so.
+      - name: Licence notices ship inside the bundle
+        run: |
+          set -euo pipefail
+          chmod +x Scripts/verify-licence-notices.sh
+          Scripts/verify-licence-notices.sh "build/Zenit PDF.app" 2>&1 \
+            | tee ci-logs/licence-notices.log
+
+      # Also inside build-app.sh, repeated by name for the same reason as the step above:
+      # "no network connection, no updater" is a promise to every user, and this is the step
+      # whose red says it was broken.
+      - name: The bundle has no network capability
+        run: |
+          set -euo pipefail
+          chmod +x Scripts/verify-no-network.sh
+          Scripts/verify-no-network.sh --app "build/Zenit PDF.app" 2>&1 \
+            | tee ci-logs/no-network.log
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-launch-logs
+          path: ci-logs/
+          if-no-files-found: warn
+          retention-days: 14
+
+  shell-scripts:
+    name: Shell scripts
+    runs-on: xcode-27
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Syntax check every script
+        run: |
+          set -euo pipefail
+          status=0
+          for script in Scripts/*.sh; do
+            [ -f "${script}" ] || continue
+            if bash -n "${script}"; then
+              echo "ok   ${script}"
+            else
+              echo "::error file=${script}::bash -n failed"
+              status=1
+            fi
+          done
+          exit "${status}"
+
+      - name: ShellCheck
+        run: |
+          set -euo pipefail
+          if ! command -v shellcheck >/dev/null 2>&1; then
+            brew install shellcheck
+          fi
+          shellcheck --version
+
+          # Advisory pass: everything shellcheck has to say, failing on nothing.
+          echo "--- advisory (style and up, non-blocking) ---"
+          shellcheck --severity=style --shell=bash Scripts/*.sh || true
+
+          # Blocking pass: only genuine errors fail the build. Style and warning
+          # findings are visible above but do not turn the repository red for a
+          # matter of taste, and do not punish a script another author owns.
+          echo "--- blocking (errors only) ---"
+          shellcheck --severity=error --shell=bash Scripts/*.sh
+
+  hook-wiring:
+    # The third form of one disease: first engines with no caller, then
+    # mocks in a shipping path, now a `public var onSomething` closure the declaring type calls
+    # and nobody ever installs. That compiles, every package test passes, and the feature is a
+    # no-op at runtime — `AppCanvasPresenter.onScrollTo` changed page for a search hit and never
+    # scrolled to the word. This job fails on any such hook that is not allow-listed with a
+    # reason in the script, and on any allow-list entry that is no longer needed.
+    name: Hook wiring (Scripts/verify-hook-wiring.sh)
+    runs-on: xcode-27
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Every declared hook has an assignment
+        run: |
+          set -euo pipefail
+          chmod +x Scripts/verify-hook-wiring.sh
+          Scripts/verify-hook-wiring.sh
+
+  author-scrub:
+    # No real person's name in source, fixtures, or docs. The names to look for are never
+    # written in the repository: the script reads them from the ZENIT_SCRUB_NAMES repository
+    # secret, reports offenders as file:line only so the log never prints a name, and proves
+    # it scanned a non-zero number of files. ZENIT_SCRUB_REQUIRED is true for pushes and
+    # same-repository pull requests on ZGColombia/ZenitPDF, where a missing secret fails the
+    # job; on a fork or a fork's pull request, which receive no repository secrets, it is false
+    # and the script warns that it was skipped.
+    name: Author scrub (Scripts/verify-author-scrub.sh)
+    runs-on: xcode-27
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Look for the names the repository must not contain
+        env:
+          ZENIT_SCRUB_NAMES: ${{ secrets.ZENIT_SCRUB_NAMES }}
+          ZENIT_SCRUB_REQUIRED: ${{ github.repository == 'ZGColombia/ZenitPDF' && github.actor != 'dependabot[bot]' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository) }}
+        run: |
+          set -euo pipefail
+          chmod +x Scripts/verify-author-scrub.sh
+          Scripts/verify-author-scrub.sh

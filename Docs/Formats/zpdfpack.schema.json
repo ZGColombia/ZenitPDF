@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://zenitgroup.com.co/schemas/zpdfpack-manifest/1",
+  "title": "Zenit PDF pack manifest (pack.json inside a .zpdfpack), format version 1",
+  "description": "A .zpdfpack is a zip holding this manifest and the data files it lists: tool sets (.zpdftools), job templates (.zpdftemplate) and export profiles (.zpdfprofile), each validated by its own importer. A pack holding anything else, or a file the manifest does not list, is refused whole. Nothing in a pack runs.",
+  "type": "object",
+  "required": ["format", "formatVersion", "name", "version", "items"],
+  "properties": {
+    "format": { "const": "zenit-pack" },
+    "formatVersion": { "const": 1 },
+    "name": { "type": "string", "minLength": 1 },
+    "version": { "type": "string" },
+    "author": { "type": ["string", "null"] },
+    "summary": { "type": ["string", "null"] },
+    "items": {
+      "type": "array", "minItems": 1, "maxItems": 256,
+      "items": {
+        "type": "object",
+        "required": ["path", "kind"],
+        "properties": {
+          "path": { "type": "string", "pattern": "^(?!/)(?!.*\\.\\./)[^\\\\]+\\.(zpdftools|zpdftemplate|zpdfprofile)$" },
+          "kind": { "enum": ["toolSet", "jobTemplate", "exportProfile"] }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
