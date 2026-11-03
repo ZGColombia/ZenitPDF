@@ -247,9 +247,25 @@ struct L8LedgerShellTests {
         #expect(valueField.convert(valueField.bounds, to: hosting).width >= 60, "the value field has room to type in")
         // Every canvas choice is a whole, clickable control: one radio button per choice, each
         // name drawn beside its button inside the panel.
-        let radios = controls.filter { String(describing: type(of: $0.superview ?? $0)).contains("<Radio>") }
-        #expect(radios.count == LedgerCanvasFilterBehavior.allCases.count, "\(radios.count) radio buttons")
         func allViews(_ view: NSView) -> [NSView] { view.subviews + view.subviews.flatMap(allViews) }
+        let radios = controls.filter { String(describing: type(of: $0.superview ?? $0)).contains("<Radio>") }
+        if radios.isEmpty {
+            // macOS 27 draws a radio group's choices in SwiftUI itself, with no AppKit control
+            // per choice (seen on GitHub's 27.0.1 runner), so there is no button to count; the
+            // loop below still keeps every view it does host inside the panel. What L-84 broke
+            // is checked from the names instead: each fits whole beside its button on a line of
+            // its own at the panel's inset.
+            let hosted = allViews(hosting).map { String(describing: type(of: $0)) }
+            #expect(!hosted.contains { $0.contains("Radio") }, "radio hosts without a radio control: \(hosted)")
+            let font = NSFont.systemFont(ofSize: NSFont.systemFontSize)
+            let line = width - 2 * ZPDFSpacing.l
+            for behavior in LedgerCanvasFilterBehavior.allCases {
+                let name = (behavior.displayName as NSString).size(withAttributes: [.font: font]).width
+                #expect(16 + ZPDFSpacing.s + name <= line, "\"\(behavior.displayName)\" needs \(name) pt beside its button on a \(line) pt line")
+            }
+        } else {
+            #expect(radios.count == LedgerCanvasFilterBehavior.allCases.count, "\(radios.count) radio buttons")
+        }
         for view in allViews(hosting) where !(view is NSScroller) {
             let frame = view.convert(view.bounds, to: hosting)
             #expect(frame.maxX <= width + 0.5, "\(type(of: view)) at \(frame) runs off the \(width) pt panel")
