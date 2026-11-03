@@ -143,6 +143,60 @@ struct StampArtworkCanvasWiringTests {
         #expect(stamp.artworkKind == .vector)
     }
 
+    /// What the stand-in resolver saw of the first artwork read it was asked for.
+    @MainActor private final class FirstArtworkRead { var digest: String? }
+
+    /// Re-fix (CI, the 1× VM): a scene pass superseded while it read a stamp's artwork got `nil`
+    /// from the store, whose reads throw on a cancelled task, and the canvas remembered the
+    /// digest as missing, so the stamp drew its fallback for the life of the window. The first
+    /// pass to ask is cancelled on purpose and answered as the store answers a cancelled read,
+    /// with no suspension in between, so the order is the same on every machine. Old output:
+    /// the frame and the text, no artwork.
+    @Test("A scene pass superseded while it reads a stamp's artwork leaves it to the next pass, not to the fallback")
+    func supersededArtworkReadIsAskedAgain() async throws {
+        let url = try AppTestSupport.writeFixturePDF(named: "Stamp Superseded.pdf")
+        let directory = url.deletingLastPathComponent()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let (document, controller) = try await openWindow(on: url)
+        defer { document.close() }
+        try await saveAsProject(
+            document, to: directory.appendingPathComponent("StampSuperseded.zpdfproj")
+        )
+        let outcome = await document.importPresetArtwork(.pdfPage(url: url, pageIndex: 0))
+        guard case let .imported(descriptor) = outcome else {
+            Issue.record("the fixture page was refused: \(outcome)")
+            return
+        }
+        let canvas = try #require(controller.canvasController(for: document))
+        let resolve = try #require(canvas.onResolveArtwork)
+        let first = FirstArtworkRead()
+        canvas.onResolveArtwork = { digest in
+            guard first.digest == nil else { return await resolve(digest) }
+            first.digest = digest
+            // Superseded, as `rebuildScene`'s cancel leaves a pass.
+            withUnsafeCurrentTask { $0?.cancel() }
+            return nil
+        }
+
+        try await placeStamp(in: document, digest: descriptor.digest, kind: .vector)
+        // Twice: if the first pass here was the one cancelled, the second asks on a live task.
+        canvas.refresh()
+        await canvas.settleScene()
+        canvas.refresh()
+        await canvas.settleScene()
+
+        #expect(first.digest == descriptor.digest, "no scene pass asked for the stamp's artwork")
+        let shape = try #require(canvas.canvasShapes.first { $0.stamp != nil })
+        #expect(shape.stamp?.artwork != nil, "the superseded read was remembered as missing")
+
+        // The premise: the window's own resolver answers a read on a cancelled task with `nil`.
+        let cancelledRead = Task { @MainActor in
+            withUnsafeCurrentTask { $0?.cancel() }
+            return await resolve(descriptor.digest) == nil
+        }
+        #expect(await cancelledRead.value, "a cancelled read returned artwork")
+    }
+
     @Test("A digest the project no longer has leaves the stamp visible, not blank")
     func aMissingDigestFallsBackVisibly() async throws {
         let url = try AppTestSupport.writeFixturePDF(named: "Stamp Missing.pdf")
