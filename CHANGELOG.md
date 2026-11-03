@@ -27,7 +27,7 @@ Copyright ZENIT GROUP S.A.S.
   and clears the quarantine flag on the installed app only. `--version`, `--dest`, `--dmg`,
   `--dry-run`.
 - The disk image carries a *How to open Zenit PDF the first time* note with the Gatekeeper steps
-  for macOS 14 and for macOS 15 and 26. Each release also ships a zip of the app, and
+  for macOS 14 and for macOS 15 and later. Each release also ships a zip of the app, and
   `SHA256SUMS.txt` covers both.
 - `uninstall.sh` is attached to every release, refuses while the app is open, and removes a copy
   in another folder with `--app`. See [Installing Zenit PDF](Docs/INSTALL.md).

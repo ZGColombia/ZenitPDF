@@ -18,7 +18,7 @@ Open a drawing, calibrate its scale, measure quantities, and export a summary.
    [GitHub Releases](https://github.com/ZGColombia/ZenitPDF/releases/latest), open it and drag
    **Zenit PDF** onto **Applications**.
 3. **First launch from the disk image:** macOS asks you to confirm once, because the app is not
-   notarized. On macOS 15 and 26, double-click the app, click **Done**, then go to
+   notarized. On macOS 15 and later, double-click the app, click **Done**, then go to
    **System Settings → Privacy & Security** and click **Open Anyway**. On macOS 14,
    Control-click the app, choose **Open**, then click **Open**.
 

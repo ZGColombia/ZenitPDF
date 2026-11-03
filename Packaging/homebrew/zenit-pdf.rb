@@ -35,6 +35,9 @@ cask "zenit-pdf" do
   # Zenit PDF's own data only, the same list as Scripts/uninstall.sh. Projects, drawings and
   # exports live wherever the person saved them and are never listed here.
   zap trash: [
+    "~/Library/Application Scripts/com.zenitgroup.zenitpdf",
+    "~/Library/Application Scripts/com.zenitgroup.zenitpdf.*",
+    "~/Library/Application Scripts/group.com.zenitgroup.zenitpdf",
     "~/Library/Application Support/com.zenitgroup.zenitpdf",
     "~/Library/Application Support/Zenit PDF",
     "~/Library/Caches/com.zenitgroup.zenitpdf",

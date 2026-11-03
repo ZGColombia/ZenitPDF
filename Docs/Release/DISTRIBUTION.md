@@ -109,7 +109,7 @@ notes that link `CHANGELOG.md` and `Docs/KNOWN_LIMITATIONS.md` at the tag. The a
 a suffix (`v1.2.0-beta.1`) becomes a pre-release, whose notes point the one-liner at that tag
 with `--version`. A manual run (`workflow_dispatch`) does everything except the changelog check,
 the attestation and publishing. The release workflow uses no repository secrets; the CI
-workflow reads one. Before the first push, create the `ZENIT_SCRUB_NAMES` repository secret (Settings > Secrets and
+workflow reads one. Before enabling Actions, create the `ZENIT_SCRUB_NAMES` repository secret (Settings > Secrets and
 variables > Actions) holding the names the author scrub must keep out of the repository; on
 ZGColombia/ZenitPDF the CI author-scrub job fails without it. If Dependabot is ever enabled, its
 runs skip that check.
@@ -129,6 +129,37 @@ Confirm the uploaded assets correspond to the checked bundle and the published c
 Keep previous release artifacts available so users can select a known version
 (`install.sh --version X.Y.Z`); project schema migrations may prevent an older version from
 opening a newer save, so recommend backups.
+
+### Publishing a release
+
+1. **Actions are enabled for the repository.** In Settings > Actions > General, allow actions,
+   at least those created by GitHub (an organization policy can override this setting). The
+   workflows use only `actions/checkout`, `actions/cache`, `actions/upload-artifact` and
+   `actions/attest-build-provenance`. With Actions disabled, a pushed tag publishes nothing and
+   `releases/latest/download/install.sh` returns 404. A tag pushed while Actions was disabled
+   never starts a run later: delete it with `git push origin :refs/tags/vX.Y.Z` and push it
+   again.
+2. **The `ZENIT_SCRUB_NAMES` secret exists**, as described above. Only CI reads it.
+3. **`CHANGELOG.md` has the `## X.Y.Z` line** on the commit to release.
+4. **Tag that commit and push the tag.** Optionally, run Release by hand from the Actions tab
+   first; it builds, packages and smoke-tests without publishing.
+
+   ```sh
+   git tag vX.Y.Z <commit>
+   git push origin vX.Y.Z
+   ```
+
+5. **Watch the Release run** in the Actions tab until it finishes, then check that the release
+   carries the five assets.
+6. **Run the one-liner** with `--dry-run`, then for real:
+
+   ```sh
+   curl -fsSL https://github.com/ZGColombia/ZenitPDF/releases/latest/download/install.sh | bash -s -- --dry-run
+   curl -fsSL https://github.com/ZGColombia/ZenitPDF/releases/latest/download/install.sh | bash
+   ```
+
+Both workflows run on the standard `xcode-27` runner, which GitHub does not bill for public
+repositories. Do not move them to the `xcode-27-xlarge` larger runner, which is billed.
 
 ### Homebrew
 
@@ -150,7 +181,7 @@ the disk image, the zip and the checksums were exercised locally against a built
 
 [Installing Zenit PDF](../INSTALL.md) is the user-facing guide, and the disk image's note and
 the release notes repeat its steps. Explain neutrally that the app is not notarized. On macOS 15
-and macOS 26, the first attempt is refused ("Zenit PDF" Not Opened, then **Done**), and
+and later, the first attempt is refused ("Zenit PDF" Not Opened, then **Done**), and
 **System Settings > Privacy & Security > Open Anyway** followed by a confirmation opens it;
 Control-click > Open no longer bypasses this. On macOS 14, Control-click > **Open** and then
 **Open** in the confirmation works, with **Open Anyway** as the fallback. The one-line installer

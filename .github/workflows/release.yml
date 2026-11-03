@@ -28,9 +28,9 @@
 # stops before building when it is missing, and the release notes link that file and
 # Docs/KNOWN_LIMITATIONS.md as they are at the tag.
 #
-# Toolchain: the release is built with exactly the Xcode that TOOLCHAIN.md pins, or not at
-# all. The "Select Xcode" step FAILS when that Xcode is absent; a green release job on an
-# unpinned toolchain would be an unreproducible release.
+# Toolchain: the release is built with the Xcode that TOOLCHAIN.md pins (or a patch release of
+# it, X.Y.Z for a pinned X.Y), or not at all. The "Select Xcode" step FAILS when that Xcode is
+# absent; a green release job on an unpinned toolchain would be an unreproducible release.
 #
 # Code identity (NL-PLAT-01): this job builds with ZENIT_RELEASE_SIGNING off, so
 # Scripts/build-app.sh signs ad-hoc with the stable requirement
@@ -141,10 +141,15 @@ jobs:
           ACTUAL="$(xcodebuild -version)"
           ACTUAL="${ACTUAL%%$'\n'*}"
           echo "${ACTUAL}"
-          if [ "${ACTUAL}" != "Xcode ${XCODE_VERSION}" ]; then
-            echo "::error title=Wrong Xcode::selected '${ACTUAL}', pinned 'Xcode ${XCODE_VERSION}'."
-            exit 1
-          fi
+          # The runner image may move the pinned path to a patch release, so a patch release of
+          # the pinned version passes; 27.10 or 27.2 does not.
+          case "${ACTUAL}" in
+            "Xcode ${XCODE_VERSION}"|"Xcode ${XCODE_VERSION}".*) ;;
+            *)
+              echo "::error title=Wrong Xcode::selected '${ACTUAL}', pinned 'Xcode ${XCODE_VERSION}' (patch releases ${XCODE_VERSION}.x are accepted)."
+              exit 1
+              ;;
+          esac
           swift --version
 
       - name: Verify the release scripts exist
@@ -350,7 +355,7 @@ jobs:
           Zenit PDF is not signed with an Apple Developer ID and not notarized, so macOS asks you to
           confirm once:
 
-          - **macOS 15 Sequoia and macOS 26 Tahoe:** double-click Zenit PDF in Applications and click
+          - **macOS 15 Sequoia and later:** double-click Zenit PDF in Applications and click
             **Done**. Open **System Settings > Privacy & Security**, scroll down to **Security** and
             click **Open Anyway** next to "Zenit PDF" was blocked to protect your Mac. Confirm with
             **Open Anyway** and your password or Touch ID.

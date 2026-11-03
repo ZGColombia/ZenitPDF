@@ -41,7 +41,8 @@
 # download cut short cannot run half an installer.
 #
 # Testing without a release: --dmg PATH installs from a local disk image with no network, and
-# checks a SHA256SUMS.txt that sits beside it.
+# checks a SHA256SUMS.txt that sits beside it (by digest too, so a copy the browser renamed is
+# still recognised). It attaches a private copy, so the image may already be open in Finder.
 #
 # Requires: bash 3.2, curl, shasum, hdiutil, ditto, xattr, codesign, plutil — all part of macOS.
 
@@ -298,8 +299,10 @@ resolve_tag() {
     fi
     step "Finding the newest release of Zenit PDF..."
     local location="" rc=0 json
-    location="$(curl "${CURL_BASE[@]}" --silent --show-error -o /dev/null -w '%{redirect_url}' \
-        "https://github.com/${ZENIT_REPO}/releases/latest" </dev/null)" || rc=$?
+    # --no-location overrides a `location` (-L) line in ~/.curlrc, which would follow the
+    # redirect and lose the tag; the rest of that file (a proxy, a CA) still applies.
+    location="$(curl "${CURL_BASE[@]}" --no-location --silent --show-error -o /dev/null \
+        -w '%{redirect_url}' "https://github.com/${ZENIT_REPO}/releases/latest" </dev/null)" || rc=$?
     [ "${rc}" -eq 0 ] || network_failure "${rc}" "the list of releases" "https://github.com/${ZENIT_REPO}/releases/latest"
     case "${location}" in
         */releases/tag/*) TAG="${location##*/releases/tag/}"; TAG="${TAG%%[?#]*}" ;;
@@ -336,6 +339,15 @@ pick_dmg() {
           if (native == "" && index(name, "-" arch ".dmg") > 0) native = name
           if (any == "") any = name }
         END { if (wanted != "") print wanted; else if (universal != "") print universal; else if (native != "") print native; else if (any != "") print any }' "$1"
+}
+
+# listed_universal_dmg <sums file> <digest> — the universal image name (pick_dmg's filter)
+# whose line carries that digest, for a copy saved under another name.
+listed_universal_dmg() {
+    awk -v want="$2" '
+        { name = $2; sub(/^\*/, "", name)
+          if (name !~ /^[A-Za-z0-9._-]+\.dmg$/ || name !~ /-universal\.dmg$/) next
+          if (tolower($1) == want) { print name; exit } }' "$1"
 }
 
 # check_signature <sums file> <signature file or empty>
@@ -422,10 +434,13 @@ Installed as root, the app would belong to root and later updates would fail."
 Update macOS in System Settings > General > Software Update, then run the installer again."
     fi
 
-    if [ "$(sysctl -n hw.optional.arm64 2>/dev/null || echo 0)" = "1" ]; then
+    # By full path: /usr/sbin is not always on PATH. sysctl comes first because under Rosetta
+    # uname -m says x86_64 on Apple silicon too.
+    if [ "$(/usr/sbin/sysctl -n hw.optional.arm64 2>/dev/null || echo 0)" = "1" ]; then
         ARCH="arm64"
     else
         case "$(uname -m)" in
+            arm64)  ARCH="arm64" ;;
             x86_64) ARCH="x86_64" ;;
             *) die "This Mac's processor ($(uname -m)) is not one Zenit PDF supports." ;;
         esac
@@ -446,17 +461,45 @@ CHECKSUM_STATE=""
 obtain_image() {
     local sums sig_file=""
     if [ -n "${LOCAL_DMG}" ]; then
+        local src size_kb actual="" listed=""
         [ -f "${LOCAL_DMG}" ] || die "There is no file at ${LOCAL_DMG}."
         case "${LOCAL_DMG}" in *.dmg) ;; *) die "${LOCAL_DMG} is not a disk image (.dmg)." ;; esac
-        DMG_FILE="$(cd "$(dirname "${LOCAL_DMG}")" && pwd)/$(basename "${LOCAL_DMG}")"
-        ASSET_NAME="$(basename "${DMG_FILE}")"
-        sums="$(dirname "${DMG_FILE}")/${CHECKSUM_FILE}"
+        src="$(cd "$(dirname "${LOCAL_DMG}")" && pwd)/$(basename "${LOCAL_DMG}")"
+        ASSET_NAME="$(basename "${src}")"
+        sums="$(dirname "${src}")/${CHECKSUM_FILE}"
         step "Checking ${ASSET_NAME}..."
+        # A private copy is checked and attached: the original may already be open in Finder,
+        # and hdiutil then refuses a second attach ("Resource busy"). The copy is a clone, which
+        # takes no space, where the disk allows it. A dry run never attaches, so it reads the
+        # original.
+        DMG_FILE="${src}"
+        if [ "${DRY_RUN}" != "yes" ]; then
+            DMG_FILE="${WORK_DIR}/${ASSET_NAME}"
+            if ! cp -c "${src}" "${DMG_FILE}" 2>/dev/null; then
+                rm -f "${DMG_FILE}"
+                size_kb="$(du -sk "${src}" | awk '{ print $1 }')"
+                need_space "${WORK_DIR}" $(( ${size_kb:-0} + 10 * 1024 ))
+                cp "${src}" "${DMG_FILE}" 2>/dev/null \
+                    || die "${ASSET_NAME} could not be copied into a temporary folder. Nothing was changed."
+            fi
+        fi
         if [ -f "${sums}" ]; then
             [ -f "${sums}.sig" ] && sig_file="${sums}.sig"
             check_signature "${sums}" "${sig_file}"
-            verify_checksum "${DMG_FILE}" "${sums}" "${ASSET_NAME}"
             CHECKSUM_STATE="SHA-256 matches ${CHECKSUM_FILE} beside the disk image"
+            # A browser may have saved a second download as "... (1).dmg". When the name is not
+            # listed, the file is accepted if its digest is the one published for a universal
+            # image; otherwise verify_checksum refuses it as before.
+            if [ -z "$(expected_sum "${sums}" "${ASSET_NAME}")" ]; then
+                actual="$(shasum -a 256 "${DMG_FILE}" | awk '{ print $1 }')"
+                listed="$(listed_universal_dmg "${sums}" "${actual}")"
+            fi
+            if [ -n "${listed}" ]; then
+                note "SHA-256 matches the line for ${listed} (this copy is named ${ASSET_NAME}): ${actual}"
+                CHECKSUM_STATE="SHA-256 matches ${listed} in ${CHECKSUM_FILE} beside the disk image"
+            else
+                verify_checksum "${DMG_FILE}" "${sums}" "${ASSET_NAME}"
+            fi
         else
             warn "there is no ${CHECKSUM_FILE} beside ${ASSET_NAME}, so its checksum cannot be checked.
       It is installed anyway because you chose this file yourself."
@@ -638,6 +681,10 @@ install_app() {
     step "Opening the disk image (read-only, no Finder window)..."
     if ! hdiutil attach "${DMG_FILE}" -readonly -nobrowse -noautoopen -mountpoint "${MOUNT_POINT}" -quiet </dev/null >/dev/null 2>&1; then
         MOUNT_POINT=""
+        if [ -n "${LOCAL_DMG}" ]; then
+            die "The disk image ${ASSET_NAME} could not be opened. It may be damaged; download it
+again from https://github.com/${ZENIT_REPO}/releases. Nothing was changed."
+        fi
         die "The disk image ${ASSET_NAME} could not be opened. It may be damaged; run the
 installer again to download a fresh copy. Nothing was changed."
     fi

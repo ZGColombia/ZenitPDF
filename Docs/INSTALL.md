@@ -1,8 +1,8 @@
 # Installing Zenit PDF
 
-Zenit PDF runs on **macOS 14 Sonoma, macOS 15 Sequoia and macOS 26 Tahoe**, on Apple silicon
-and Intel Macs. Installing needs about 400 MB of free disk space; the installed app uses about
-300 MB. The internet is needed only to download it: the app itself makes no network connections.
+Zenit PDF runs on **macOS 14 Sonoma or later**, on Apple silicon and Intel Macs. Installing
+needs about 400 MB of free disk space; the installed app uses about 300 MB. The internet is
+needed only to download it: the app itself makes no network connections.
 
 To see which macOS you have, choose **Apple menu > About This Mac**.
 
@@ -107,7 +107,7 @@ Zenit PDF is free, open-source software. It is not signed with an Apple Develope
 notarized by Apple, so macOS asks you to confirm the first time you open a downloaded copy. You
 do this once per downloaded copy. Do not turn off Gatekeeper for the whole Mac; it is not needed.
 
-### macOS 15 Sequoia and macOS 26 Tahoe
+### macOS 15 Sequoia and later
 
 1. Open the **Applications** folder and double-click **Zenit PDF**.
    macOS shows **"Zenit PDF" Not Opened** and *Apple could not verify "Zenit PDF" is free of
@@ -164,6 +164,17 @@ caches) and deletes nothing until you type **DELETE**. It never touches your pro
 drawings or exports. Quit Zenit PDF first; the uninstaller stops while the app is open. If you
 installed into another folder with `--dest`, add `-s -- --app "/that/folder/Zenit PDF.app"`
 after `bash`, as the installer told you.
+
+macOS may refuse to let Terminal delete Zenit PDF's settings folders in ~/Library/Containers
+(and ~/Library/Group Containers). The uninstaller then removes everything else, lists those
+folders under **Could NOT be removed**, and stops with an error. `sudo` does not help with
+this. To finish, do one of these:
+
+- In Finder, press **Shift-Command-G**, paste a listed path and press **Return**. Finder opens
+  that folder; choose **Go > Enclosing Folder**, which shows it selected, and move it to the
+  Trash. Do this for each listed folder.
+- Or give Terminal Full Disk Access (**Apple menu > System Settings > Privacy & Security > Full
+  Disk Access**), quit and reopen Terminal, and run the uninstaller again.
 
 To remove only the app, drag **Zenit PDF** from Applications to the Trash. Its settings then
 stay in your Library folder until you run the uninstaller.
@@ -229,12 +240,33 @@ settings and projects are kept.
 
 ### The installer stopped with a message
 
+Messages from the installer itself start with **Zenit PDF was not installed.**, followed by what
+went wrong and what to do. The most common ones are in the table below.
+
+If Terminal prints only one line that starts with `curl:` and then shows the prompt again, for
+example `curl: (22) The requested URL returned error: 404` or
+`curl: (56) The requested URL returned error: 404`, the installer was never downloaded and
+nothing on the Mac changed. The number in brackets differs between curl versions; go by the
+words after it:
+
+- **The requested URL returned error: 404.** Open the
+  [releases page](https://github.com/ZGColombia/ZenitPDF/releases). If it lists no release,
+  there is nothing to install yet. If it does, check that you pasted the whole line exactly as
+  shown, or install from the [disk image](#2-disk-image).
+- **Could not resolve host, Failed to connect or timed out.** Check that the Mac is online (open
+  any website) and that the line was pasted whole, then run it again, or try another network.
+- **SSL certificate problem.** Check the Mac's date and time; a company network filter may be
+  in the way.
+
+The same applies to the uninstaller line.
+
 | Message | What to do |
 | --- | --- |
 | Could not find GitHub on the internet | Check that the Mac is online (open any website), then run it again. |
 | The connection to GitHub failed or timed out | Try again in a few minutes, or on another network. |
 | A secure connection to GitHub could not be confirmed | Check the Mac's date and time; a company network filter may be in the way. |
 | No published release of Zenit PDF was found | The releases page has nothing to download yet. |
+| GitHub could not provide … (HTTP 404) | That version, or one of its files, is not on the releases page; check the number given with `--version`. |
 | There is not enough free disk space | Empty the Trash or delete files, then run it again. |
 | does not match its published checksum | Run it again. If it repeats, do not install that file; report it on the project's Issues page. |
 | Zenit PDF is still open | Quit Zenit PDF (Zenit PDF menu > Quit Zenit PDF), then run it again. |

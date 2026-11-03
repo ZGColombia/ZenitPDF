@@ -113,7 +113,7 @@ write_first_launch_note() {
 \pard\sa240\f0\fs36\b How to open Zenit PDF the first time\b0\par
 \pard\sa160\fs24 {\b First}, drag {\b Zenit PDF} onto the {\b Applications} folder in this window.\par
 Zenit PDF is free, open-source software. It is not signed with an Apple Developer ID and not notarized by Apple, so macOS asks you to confirm the first time you open it. You only do this once. To see which macOS you have, choose {\b Apple menu > About This Mac}.\par
-\pard\sb200\sa120\fs28\b macOS 15 Sequoia and macOS 26 Tahoe\b0\fs24\par
+\pard\sb200\sa120\fs28\b macOS 15 Sequoia and later\b0\fs24\par
 \pard\sa120 1.  Open the {\b Applications} folder and double-click {\b Zenit PDF}. macOS says \ldblquote Zenit PDF\rdblquote  Not Opened. Click {\b Done} (not Move to Trash).\par
 2.  Choose {\b Apple menu > System Settings}, then click {\b Privacy & Security} in the sidebar.\par
 3.  Scroll down to {\b Security}. Next to \ldblquote Zenit PDF\rdblquote  was blocked to protect your Mac, click {\b Open Anyway}.\par

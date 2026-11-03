@@ -13,7 +13,8 @@
 #                   be a Zenit PDF app bundle, checked by its bundle identifier
 #   --help, -h      show the options
 #
-# It removes the app and Zenit PDF's own data only: its sandbox containers, preferences, caches,
+# It removes the app and Zenit PDF's own data only: its sandbox containers, the (empty)
+# Application Scripts folders macOS creates for each sandboxed bundle, preferences, caches,
 # saved window state and logs. It lists every path first, refuses while Zenit PDF is open
 # (a copy it is about to remove, by path, or any copy, by bundle identifier through lsappinfo),
 # and deletes nothing until DELETE is typed at the keyboard. It never touches your own documents:
@@ -22,7 +23,9 @@
 # The path list is derived from the bundle identifier and from where macOS places
 # per-application state, and was checked against a real, exercised installation. Each embedded
 # XPC service gets a sandbox container of its own; both are named explicitly, and a sweep of
-# ${BUNDLE_ID}.* containers catches any service or extension a later version embeds. Per-host
+# ${BUNDLE_ID}.* containers catches any service or extension a later version embeds. The
+# Application Scripts folders follow the same rule: the app's own is named, and a sweep of
+# ${BUNDLE_ID}.* finds those of the embedded services and extensions. Per-host
 # preferences are named ${BUNDLE_ID}.<host UUID>.plist, so they are found by a sweep as well.
 #
 # A sandbox container under ~/Library/Containers is protected by macOS, not merely by file
@@ -96,7 +99,9 @@ add_extra_app() {
     identifier="$(plutil -extract CFBundleIdentifier raw -o - "${path}/Contents/Info.plist" 2>/dev/null || true)"
     [ "${identifier}" = "${BUNDLE_ID}" ] \
         || die "${path} is not Zenit PDF (its bundle identifier is '${identifier:-missing}'); refusing to remove it"
-    EXTRA_APPS+=("$(cd "$(dirname "${path}")" && pwd)/$(basename "${path}")")
+    # The physical path (pwd -P), so a copy reached through a symbolic link such as /tmp is
+    # recognised as the candidate it already is.
+    EXTRA_APPS+=("$(cd "$(dirname "${path}")" && pwd -P)/$(basename "${path}")")
 }
 
 # True when a keyboard can be asked. With `curl | bash` standard input is the script itself, so
@@ -143,6 +148,12 @@ collect_candidates() {
         "${HOME}/Library/Containers/${BUNDLE_ID}.GeometryService"
         "${HOME}/Library/Containers/${BUNDLE_ID}.RepairService"
 
+        # Application Scripts — macOS creates an empty folder here for each sandboxed bundle.
+        # The app's own is named; those of its services and extensions are swept below.
+        "${HOME}/Library/Application Scripts/${BUNDLE_ID}"
+        # The app group's folder, left by earlier builds that declared the group above.
+        "${HOME}/Library/Application Scripts/group.${BUNDLE_ID}"
+
         # Preferences (per-host files carry the host UUID in their name; swept below)
         "${HOME}/Library/Preferences/${BUNDLE_ID}.plist"
 
@@ -161,15 +172,31 @@ collect_candidates() {
         "${HOME}/Library/Logs/${BUNDLE_ID}"
         "${HOME}/Library/Logs/Zenit PDF"
     )
+
+    # Copies named with --app, skipping one that is already a candidate (the /Applications or
+    # ~/Applications copy, or the same --app given twice), so it is listed and counted once.
+    local extra match candidate known path
     if [ "${#EXTRA_APPS[@]}" -gt 0 ]; then
-        CANDIDATES+=("${EXTRA_APPS[@]}")
+        for extra in "${EXTRA_APPS[@]}"; do
+            known="no"
+            for candidate in "${CANDIDATES[@]}"; do
+                if [ "${candidate}" = "${extra}" ]; then
+                    known="yes"
+                    break
+                fi
+            done
+            if [ "${known}" = "no" ]; then
+                CANDIDATES+=("${extra}")
+            fi
+        done
     fi
 
-    # Any XPC service container a future version adds, and the per-host preference files
+    # Any XPC service container a future version adds, the Application Scripts folders of the
+    # embedded services and extensions, and the per-host preference files
     # (${BUNDLE_ID}.<host UUID>.plist). A non-matching glob stays literal in bash, which the -e
     # test rejects.
-    local match candidate known path
     for match in "${HOME}/Library/Containers/${BUNDLE_ID}."* \
+                 "${HOME}/Library/Application Scripts/${BUNDLE_ID}."* \
                  "${HOME}/Library/Preferences/ByHost/${BUNDLE_ID}."*.plist; do
         [ -e "${match}" ] || continue
         known="no"
@@ -327,7 +354,8 @@ main() {
             say "  ${path}"
         done
         say ""
-        say "If you installed it into another folder, pass that copy with --app PATH."
+        say "If you installed it into another folder, run this again and name that copy:"
+        say "  curl -fsSL https://github.com/${ZENIT_REPO}/releases/latest/download/uninstall.sh | bash -s -- --app \"/path/to/${APP_NAME}\""
         say ""
         exit 0
     fi
@@ -395,8 +423,9 @@ main() {
         say "Zenit PDF has been removed. Your own projects and PDF files are untouched."
     else
         say "Zenit PDF's own data has been removed, but no copy of the app was in the list. If the"
-        say "app is in another folder, run this again with --app PATH to remove it. Your own"
-        say "projects and PDF files are untouched."
+        say "app is in another folder, remove it with:"
+        say "  curl -fsSL https://github.com/${ZENIT_REPO}/releases/latest/download/uninstall.sh | bash -s -- --app \"/path/to/${APP_NAME}\""
+        say "Your own projects and PDF files are untouched."
     fi
     say ""
     exit 0
