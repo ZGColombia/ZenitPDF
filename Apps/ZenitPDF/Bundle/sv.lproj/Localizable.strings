@@ -1870,3 +1870,8 @@
 "Added in the revision" = "Tillagda i revisionen";
 "Confirm Pairings" = "Bekräfta parningar";
 "This sheet has no earlier revision to compare with." = "Det här bladet har ingen tidigare revision att jämföra med.";
+
+/* 1.0.1: a page that could not be read */
+"Could not be read" = "Kunde inte läsas";
+"This page could not be read this time, so search finds no new words on it. Any words an earlier reading found on it stay searchable. Try reading it again." = "Den här sidan kunde inte läsas den här gången, så sökningen hittar inga nya ord på den. Ord som en tidigare läsning hittade på den går fortfarande att söka efter. Försök läsa den igen.";
+"Finished, but some pages could not be read, so search finds no new words on them. Start reading again to retry them." = "Klart, men några sidor kunde inte läsas, så sökningen hittar inga nya ord på dem. Starta läsningen igen för att försöka på nytt.";

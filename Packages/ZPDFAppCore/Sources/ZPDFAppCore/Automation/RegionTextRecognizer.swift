@@ -1,6 +1,7 @@
 import CoreGraphics
 import Foundation
 import Vision
+import ZPDFSearch
 import ZPDFUIPresentation
 
 /// On-device text recognition of one region of a page (NL-AUTO-03), for the reads that need
@@ -29,21 +30,48 @@ public enum RegionTextRecognizer {
 
     /// Recognises the text in `image`, which shows `region` of the page (page space, origin
     /// bottom-left). Languages default to English and Swedish.
+    ///
+    /// `.accurate` at the default revision runs first, as always. Only when Vision throws is the
+    /// region read again at revision 2 `.accurate`, then at `.fast` (1.0.1,
+    /// ``TextRecognitionFallback``); it throws when every attempt threw.
     public static func recognize(
         image: CGImage,
         region: PDFRectValue,
         languages: [String] = ["en-US", "sv-SE"],
         minimumConfidence: Double = 0.3
     ) throws -> [Line] {
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = .accurate
-        request.usesLanguageCorrection = false
-        let supported = (try? request.supportedRecognitionLanguages()) ?? []
-        let chosen = languages.filter { supported.contains($0) }
-        if !chosen.isEmpty { request.recognitionLanguages = chosen }
-        let handler = VNImageRequestHandler(cgImage: image, options: [:])
-        try handler.perform([request])
-        let observations = request.results ?? []
+        try recognize(
+            image: image,
+            region: region,
+            languages: languages,
+            minimumConfidence: minimumConfidence,
+            perform: TextRecognitionFallback.performWithVision
+        )
+    }
+
+    /// Logs a region read that threw in every attempt — the error's domain and code, never the
+    /// text or the drawing — for a caller that goes on with no lines.
+    public static func logFailure(_ error: any Error) {
+        TextRecognitionFallback.logFailure(error, purpose: .region)
+    }
+
+    /// ``recognize(image:region:languages:minimumConfidence:)`` with the Vision call injectable,
+    /// so a test can make chosen attempts of the fallback chain throw.
+    static func recognize(
+        image: CGImage,
+        region: PDFRectValue,
+        languages: [String],
+        minimumConfidence: Double,
+        perform: TextRecognitionFallback.Perform
+    ) throws -> [Line] {
+        let observations = try TextRecognitionFallback.recognize(
+            image: image,
+            accurate: true,
+            languages: languages,
+            purpose: .region,
+            configure: { $0.usesLanguageCorrection = false },
+            perform: perform
+        )
         return observations.compactMap { observation -> Line? in
             guard let candidate = observation.topCandidates(1).first,
                   Double(candidate.confidence) >= minimumConfidence else { return nil }

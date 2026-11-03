@@ -293,26 +293,42 @@ struct SplitCanvasLiveContentTests {
         canvas.view.layoutSubtreeIfNeeded()
         canvas.viewDidAppear()
 
-        // The exact shape of a mode-exit token for a fitted sheet: the visible page rect
-        // is clamped to the whole page (595 × 842), and at 50 % the sheet is smaller than
-        // the 900 × 700 clip on both axes.
-        canvas.restore(zoom: 0.5, visiblePageRect: PDFRectValue(x: 0, y: 0, width: 595, height: 842))
-        let centred = try #require(canvas.pageFrameInClipForTesting)
-        let clip = canvas.view.bounds.size
-        let leftGap = centred.minX
-        let rightGap = CGFloat(clip.width) - centred.maxX
-        let bottomGap = centred.minY
-        let topGap = CGFloat(clip.height) - centred.maxY
-        #expect(abs(leftGap - rightGap) < 2,
-                "LT-27: the sheet sits \(leftGap) pt from the left but \(rightGap) pt from the right")
-        #expect(abs(topGap - bottomGap) < 2,
-                "LT-27: the sheet sits \(topGap) pt from the top but \(bottomGap) pt from the bottom")
+        // The sheet is centred in what the person sees: the clip between the scrollers, the
+        // same frame `pageFrameInClipForTesting` is measured in. Legacy scrollers (a mouse
+        // attached, or "Always show scroll bars") take their width out of the clip on both
+        // axes, because the pan margin always makes the document larger than the clip, while
+        // overlay scrollers take nothing. Both are set here rather than inherited from the
+        // machine, so either kind of person's canvas is checked on any machine.
+        let scrollView = canvas.scrollViewForTesting
+        for (style, name) in [(NSScroller.Style.overlay, "overlay"), (.legacy, "legacy")] {
+            scrollView.scrollerStyle = style
+            canvas.view.layoutSubtreeIfNeeded()
 
-        // And a rect that fills the clip restores exactly — centring must not move a view
-        // the person had actually scrolled somewhere.
-        canvas.restore(zoom: 2, visiblePageRect: PDFRectValue(x: 100, y: 200, width: 450, height: 350))
-        let exact = try #require(canvas.pageFrameInClipForTesting)
-        #expect(abs(exact.minX - (-200)) < 2,
-                "a clip-filling rect must restore to the pixel; page left edge sits at \(exact.minX)")
+            // The exact shape of a mode-exit token for a fitted sheet: the visible page rect
+            // is clamped to the whole page (595 × 842), and at 50 % the sheet is smaller than
+            // the clip on both axes.
+            canvas.restore(zoom: 0.5, visiblePageRect: PDFRectValue(x: 0, y: 0, width: 595, height: 842))
+            let centred = try #require(canvas.pageFrameInClipForTesting)
+            let clip = scrollView.documentVisibleRect.size
+            if style == .legacy {
+                #expect(clip.width < canvas.view.bounds.width && clip.height < canvas.view.bounds.height,
+                        "legacy scrollers must take room from the clip, or this pass checks nothing new: \(clip)")
+            }
+            let leftGap = centred.minX
+            let rightGap = CGFloat(clip.width) - centred.maxX
+            let bottomGap = centred.minY
+            let topGap = CGFloat(clip.height) - centred.maxY
+            #expect(abs(leftGap - rightGap) < 2,
+                    "LT-27, \(name) scrollers: the sheet sits \(leftGap) pt from the left but \(rightGap) pt from the right")
+            #expect(abs(topGap - bottomGap) < 2,
+                    "LT-27, \(name) scrollers: the sheet sits \(topGap) pt from the top but \(bottomGap) pt from the bottom")
+
+            // And a rect that fills the clip restores exactly — centring must not move a view
+            // the person had actually scrolled somewhere.
+            canvas.restore(zoom: 2, visiblePageRect: PDFRectValue(x: 100, y: 200, width: 450, height: 350))
+            let exact = try #require(canvas.pageFrameInClipForTesting)
+            #expect(abs(exact.minX - (-200)) < 2,
+                    "a clip-filling rect must restore to the pixel (\(name) scrollers); page left edge sits at \(exact.minX)")
+        }
     }
 }

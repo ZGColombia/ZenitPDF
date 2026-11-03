@@ -156,15 +156,15 @@ struct AreaPillTests {
         view.frame = CGRect(origin: .zero, size: CGSize(
             width: pageSize.width + 40, height: pageSize.height + 60
         ))
-        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-        view.cacheDisplay(in: view.bounds, to: rep)
+        // At 2x and in sRGB whatever the display: at 1x the 1.25 pt leader on a whole point
+        // covers each of the two pixels it straddles by 62 %, and neither reads as the ink.
+        let rep = AppTestSupport.renderOffscreen(view)
         return (view, rep, transform)
     }
 
     private func color(_ rep: NSBitmapImageRep, of view: NSView, atView point: CGPoint) -> NSColor {
         let scale = CGFloat(rep.pixelsWide) / view.bounds.width
-        return rep.colorAt(x: Int(point.x * scale), y: Int(point.y * scale))?
-            .usingColorSpace(.sRGB) ?? .clear
+        return rep.sRGBColorAt(x: Int(point.x * scale), y: Int(point.y * scale)) ?? .clear
     }
 
     @Test("A convex area draws its pill inside the fill, centred on the centroid")

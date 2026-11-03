@@ -72,6 +72,27 @@ struct LV5OCRSheetTests {
         #expect(Self.finishedRun([.skippedHasText, .noTextFound]).finishedOutcome == .noWordsFound)
     }
 
+    /// 1.0.1. Old output: every page failed → `.noWordsFound`, "No words were found on the pages
+    /// that were read"; some pages failed → `.wordsFound`, success, with no word of the failure.
+    @Test("L-20b, 1.0.1: a run with a page that could not be read says so, whatever the other pages gave")
+    func pagesNotReadSaySo() {
+        let allFailed = Self.finishedRun([.couldNotBeRead, .couldNotBeRead])
+        #expect(allFailed.finishedOutcome == .pagesNotRead)
+        #expect(allFailed.pagesNotRead.count == 2)
+        #expect(!allFailed.finishedOutcome.message.contains("pages that were read"))
+        #expect(allFailed.finishedOutcome.message.contains("could not be read"))
+        #expect(!allFailed.finishedOutcome.message.contains("searchable now"))
+        #expect(allFailed.finishedOutcome.displaySeverity == .warning)
+
+        let someFailed = Self.finishedRun([.indexed, .couldNotBeRead])
+        #expect(someFailed.finishedOutcome == .pagesNotRead)
+        #expect(someFailed.pagesNotRead.count == 1)
+        #expect(someFailed.finishedOutcome.displaySeverity == .warning)
+
+        // Every kind of finished page beside a failed one still ends on the failure.
+        #expect(Self.finishedRun([.skippedHasText, .noTextFound, .couldNotBeRead]).finishedOutcome == .pagesNotRead)
+    }
+
     // MARK: - L-27
 
     @Test("L-27: a recognition identifier whose region is not a region is named by its language")

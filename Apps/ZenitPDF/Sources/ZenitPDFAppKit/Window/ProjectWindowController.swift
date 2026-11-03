@@ -2007,8 +2007,9 @@ public final class ProjectWindowController: NSWindowController, NSWindowDelegate
                     // A page that produced nothing says so. Counting it as "text found" would be
                     // the search index claiming coverage it does not have. "Nothing" is the
                     // service's skip reason, not a zero token count: text Vision returned
-                    // without word boxes is indexed and searchable with no tokens (S-103).
-                    let status: OCRPageStatus = recognized.skipReason == nil ? .indexed : .noTextFound
+                    // without word boxes is indexed and searchable with no tokens (S-103). A page
+                    // macOS could not read at all says that instead of "No text found" (1.0.1).
+                    let status = OCRPageStatus(recognitionSkipReason: recognized.skipReason)
                     model.record(
                         OCRPageStatusSummary(
                             id: page.id,

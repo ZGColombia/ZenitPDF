@@ -1,5 +1,31 @@
 # Changelog
 
+## 1.0.1
+
+### Fixes
+
+- Text recognition falls back when macOS cannot run accurate recognition. On macOS versions
+  where Vision's accurate text recogniser fails, Read Text from Scanned Pages, Process PDF Files,
+  sheet naming from scanned title blocks, and region reads try the previous accurate recogniser
+  and then the fast one, instead of reading nothing. On a Mac where accurate recognition works,
+  nothing changes. Each failed attempt is logged with its error domain and code, never with page
+  text or file names.
+- A page macOS could not read is shown as such. Read Text from Scanned Pages marks it
+  *Could not be read* instead of *No text found*, counts such pages in its summary, says so in
+  its closing line, keeps any text an earlier run recognised on them, and Process PDF Files
+  retries the file on the next run. A page skipped because it already has text is labelled
+  *Skipped — already has text* instead of *No text found*.
+
+### Development
+
+- The app and UI test suites pass on GitHub's macOS 27 runner as well as on a Mac. Tests that
+  sampled pixels, measured windows or hit-tested views now pin the appearance, backing scale,
+  colour space and scroller style they assert on, or measure against the screen they run on;
+  the project-open tests run against the shipping document controller; the outline-title
+  fixture is written byte for byte instead of through PDFKit, whose macOS 27 writer drops an
+  outline set on a document opened from a file; and the storage-ordering tests hold the write
+  open with a gate instead of polling a transient state.
+
 ## 1.0.0
 
 Initial public release of Zenit PDF for macOS 14 and later, under the MIT license.

@@ -2,6 +2,7 @@ import AppKit
 import Foundation
 import SwiftUI
 import Testing
+import ZPDFDesignSystem
 import ZPDFUIPresentation
 @testable import ZPDFUILedger
 
@@ -209,8 +210,40 @@ struct L8LedgerFixTests {
         let hit = try #require(window.contentView?.superview?.hitTest(middle), "something is under Save's middle")
         #expect(!(hit is NSScroller) && !(hit is NSClipView), "a click at Save's middle lands on \(type(of: hit))")
         #expect(hit.isDescendant(of: document), "a click at Save's middle lands in the panel's content, not on \(type(of: hit))")
-        let empty = hosting.convert(NSPoint(x: strip - 2, y: save.midY), to: nil)
-        #expect(window.contentView?.superview?.hitTest(empty) is NSClipView, "the strip beside Cancel is empty")
+
+        // The 2 pt beside the scroller's strip, at Save's height, is empty. Where the hit test can
+        // tell empty padding from what SwiftUI draws, it must say so: a click there reaches the
+        // bare clip view, and a Cancel reaching for the strip would answer instead. The SwiftUI of
+        // some releases claims every point of the scroll content, padding included, so the hit
+        // test answers the same container for a button and for nothing at all. The leading padding,
+        // where nothing is drawn, says which kind of OS this is; on the second kind the gap is
+        // checked against the controls' own frames.
+        let cancel = rowButtons[1]
+        func named(_ style: NSScroller.Style) -> String { style == .overlay ? "overlay" : "legacy" }
+        let context = "strip at x \(strip), Cancel's maxX \(cancel.maxX), \(named(scrollView.scrollerStyle)) scroller "
+            + "(preferred \(named(NSScroller.preferredScrollerStyle))), macOS \(ProcessInfo.processInfo.operatingSystemVersionString)"
+        let frames = [nameFrame] + buttons + controls
+        let padding = NSPoint(x: document.convert(document.bounds, to: hosting).minX + ZPDFSpacing.l / 2, y: save.midY)
+        try #require(!frames.contains(where: { $0.contains(padding) }), "the leading padding at \(padding) holds a control; \(context)")
+        let gap = NSPoint(x: strip - 2, y: save.midY)
+        let paddingHit = window.contentView?.superview?.hitTest(hosting.convert(padding, to: nil))
+        let gapHit = window.contentView?.superview?.hitTest(hosting.convert(gap, to: nil))
+        let gapHitName = gapHit.map { "\(type(of: $0))" } ?? "nothing"
+        if paddingHit is NSClipView {
+            #expect(gapHit is NSClipView, "the strip beside Cancel is empty, yet a click there lands on \(gapHitName); \(context)")
+        } else if let paddingHit, paddingHit.isDescendant(of: document) {
+            // This OS's SwiftUI answers for empty padding itself.
+            #expect(!frames.contains(where: { $0.contains(gap) }), "a control reaches \(gap), 2 pt beside the scroller; \(context)")
+            #expect(
+                !(gapHit is NSScroller) && !(gapHit is NSControl),
+                "a click beside Cancel lands on \(gapHitName); empty padding answers \(type(of: paddingHit)); \(context)"
+            )
+        } else {
+            Issue.record("""
+                the empty leading padding hit-tests to \(paddingHit.map { "\(type(of: $0))" } ?? "nothing"), \
+                neither the clip view nor the panel's content; \(context)
+                """)
+        }
 
         // Return in the name field saves, as in any naming field.
         window.makeFirstResponder(nameField)

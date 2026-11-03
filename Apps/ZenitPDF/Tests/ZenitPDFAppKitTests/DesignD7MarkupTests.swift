@@ -54,15 +54,16 @@ struct DesignD7MarkupTests {
         )
     }
 
+    /// At 2x and in sRGB whatever the display, the scale `makeView` places rasters for. At 1x a
+    /// 1.25 pt stroke on a whole point covers each of the two pixels it straddles by 62 %, and
+    /// neither reads as the ink.
     private func render(_ view: NSView) -> NSBitmapImageRep {
-        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-        view.cacheDisplay(in: view.bounds, to: rep)
-        return rep
+        AppTestSupport.renderOffscreen(view)
     }
 
     private func color(_ rep: NSBitmapImageRep, _ view: NSView, _ point: CGPoint) -> NSColor {
         let scale = CGFloat(rep.pixelsWide) / view.bounds.width
-        return rep.colorAt(x: Int(point.x * scale), y: Int(point.y * scale))?.usingColorSpace(.sRGB) ?? .clear
+        return rep.sRGBColorAt(x: Int(point.x * scale), y: Int(point.y * scale)) ?? .clear
     }
 
     private func isPaper(_ c: NSColor) -> Bool {

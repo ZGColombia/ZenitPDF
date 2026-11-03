@@ -26,6 +26,28 @@ struct Fix3QuickTakeoffStorageTests {
         var log: [String] = []
     }
 
+    /// Holds every write at its archive step until the test opens it. A queue state sampled
+    /// while a write runs then lasts until the test moves on, not for a guessed sleep that a
+    /// slow runner's poll can outlast (the count drops and never comes back).
+    @MainActor
+    final class WriteGate {
+        private var isOpen = false
+        private var waiters: [CheckedContinuation<Void, Never>] = []
+
+        func wait() async {
+            guard !isOpen else { return }
+            await withCheckedContinuation { waiters.append($0) }
+        }
+
+        /// Releases every held write and lets later ones through. Idempotent.
+        func open() {
+            isOpen = true
+            let parked = waiters
+            waiters = []
+            for waiter in parked { waiter.resume() }
+        }
+    }
+
     private struct Fixture {
         let root: URL
         let directory: URL
@@ -33,7 +55,8 @@ struct Fix3QuickTakeoffStorageTests {
         let probe: Probe
     }
 
-    private func makeFixture(writeDelay: Duration = .milliseconds(2)) throws -> Fixture {
+    /// With a `gate`, each write is held until the gate opens instead of sleeping `writeDelay`.
+    private func makeFixture(writeDelay: Duration = .milliseconds(2), gate: WriteGate? = nil) throws -> Fixture {
         let pdf = try AppTestSupport.writeFixturePDF(named: "IM181.pdf")
         let root = pdf.deletingLastPathComponent()
         let directory = root.appendingPathComponent("container-\(UUID().uuidString)", isDirectory: true)
@@ -43,7 +66,7 @@ struct Fix3QuickTakeoffStorageTests {
             origin: { QuickTakeoffStorage.Origin(originalPDF: pdf, pageCount: 1, displayName: "IM181") },
             writeArchive: { _ in }
         )
-        storage.writeArchive = { [unowned storage, probe] package in
+        storage.writeArchive = { [unowned storage, probe, gate] package in
             probe.active += 1
             probe.maxActive = max(probe.maxActive, probe.active)
             probe.log.append("write-start")
@@ -52,7 +75,7 @@ struct Fix3QuickTakeoffStorageTests {
                 probe.writes += 1
                 probe.log.append("write-end")
             }
-            try await Task.sleep(for: writeDelay)
+            if let gate { await gate.wait() } else { try await Task.sleep(for: writeDelay) }
             if storage.package !== package { probe.stolen += 1 }
         }
         storage.didWrite = { [probe] fullSave in
@@ -94,17 +117,27 @@ struct Fix3QuickTakeoffStorageTests {
 
     @Test("IM-181: a retire waits for the autosave already writing, then removes the container")
     func retireWaitsForTheWrite() async throws {
-        let fixture = try makeFixture(writeDelay: .milliseconds(150))
-        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let gate = WriteGate()
+        let fixture = try makeFixture(gate: gate)
+        defer { gate.open(); try? FileManager.default.removeItem(at: fixture.root) }
         let flush = Task { @MainActor in try await fixture.storage.flush() }
         #expect(await AppTestSupport.wait(upTo: 5) { fixture.probe.active == 1 })
 
-        await fixture.storage.retire()
-        fixture.probe.log.append("retired")
+        // Logged when the retire returns, so the order below says when that was.
+        let retire = Task { @MainActor in
+            await fixture.storage.retire()
+            fixture.probe.log.append("retired")
+        }
+        #expect(await AppTestSupport.wait(upTo: 5) { fixture.storage.pendingOperations == 2 })
+        // Queued behind the held write, the retire has touched nothing yet.
+        #expect(fixture.probe.log == ["write-start"])
+        #expect(FileManager.default.fileExists(atPath: fixture.directory.path))
+        gate.open()
 
         // Old: the retire closed the package and deleted the directory under the running
         // write, whose `package.save()` then failed against a closed database.
         _ = try await flush.value
+        await retire.value
         #expect(fixture.probe.log == ["write-start", "write-end", "retired"])
         #expect(fixture.probe.stolen == 0)
         #expect(fixture.storage.package == nil && !fixture.storage.holdsStorage)
@@ -113,12 +146,17 @@ struct Fix3QuickTakeoffStorageTests {
 
     @Test("IM-181: a shutdown waits for the autosave already writing and keeps the container on disk")
     func shutdownWaitsForTheWriteAndKeepsTheContainer() async throws {
-        let fixture = try makeFixture(writeDelay: .milliseconds(150))
-        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let gate = WriteGate()
+        let fixture = try makeFixture(gate: gate)
+        defer { gate.open(); try? FileManager.default.removeItem(at: fixture.root) }
         let flush = Task { @MainActor in try await fixture.storage.flush() }
         #expect(await AppTestSupport.wait(upTo: 5) { fixture.probe.active == 1 })
 
-        await fixture.storage.shutDown()
+        // Started in a task: the shutdown waits for the write, which the gate holds.
+        let shutdown = Task { @MainActor in await fixture.storage.shutDown() }
+        #expect(await AppTestSupport.wait(upTo: 5) { fixture.storage.pendingOperations == 2 })
+        gate.open()
+        await shutdown.value
         _ = try await flush.value
         #expect(fixture.probe.stolen == 0)
         #expect(!fixture.storage.holdsStorage, "every container handle is closed")
@@ -129,15 +167,20 @@ struct Fix3QuickTakeoffStorageTests {
 
     @Test("IM-181: a shutdown waits for autosaves only; a history open it overtakes closes its own database")
     func shutdownOvertakesAQueuedHistoryOpen() async throws {
-        let fixture = try makeFixture(writeDelay: .milliseconds(150))
-        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let gate = WriteGate()
+        let fixture = try makeFixture(gate: gate)
+        defer { gate.open(); try? FileManager.default.removeItem(at: fixture.root) }
         let flush = Task { @MainActor in try await fixture.storage.flush() }
         #expect(await AppTestSupport.wait(upTo: 5) { fixture.probe.active == 1 })
         let history = Task { @MainActor in try await fixture.storage.openHistoryDatabase() }
         #expect(await AppTestSupport.wait(upTo: 5) { fixture.storage.pendingOperations == 2 })
 
         // Quit waits on this: it must not also wait for a database nobody will read again.
-        await fixture.storage.shutDown()
+        // Started in a task: it waits for the write, which the gate holds.
+        let shutdown = Task { @MainActor in await fixture.storage.shutDown() }
+        #expect(await AppTestSupport.wait(upTo: 5) { fixture.storage.pendingOperations == 3 })
+        gate.open()
+        await shutdown.value
         _ = try await flush.value
         #expect(fixture.probe.stolen == 0, "the write queued before the shutdown finished first")
         let opened = await history.result
@@ -151,17 +194,21 @@ struct Fix3QuickTakeoffStorageTests {
 
     @Test("IM-181: the history database opens in queue order — after a retire queued before it, never into its removal")
     func historyOpenQueuesBehindRetire() async throws {
-        let fixture = try makeFixture(writeDelay: .milliseconds(100))
-        defer { try? FileManager.default.removeItem(at: fixture.root) }
+        let gate = WriteGate()
+        let fixture = try makeFixture(gate: gate)
+        defer { gate.open(); try? FileManager.default.removeItem(at: fixture.root) }
         let flush = Task { @MainActor in try await fixture.storage.flush() }
         #expect(await AppTestSupport.wait(upTo: 5) { fixture.probe.active == 1 })
         let retire = Task { @MainActor in await fixture.storage.retire() }
         // The retire is queued behind the running write before the history open is.
         #expect(await AppTestSupport.wait(upTo: 5) { fixture.storage.pendingOperations == 2 })
-        let history = try await fixture.storage.openHistoryDatabase()
+        let history = Task { @MainActor in try await fixture.storage.openHistoryDatabase() }
+        // All three are queued at once, in that order, while the write is held.
+        #expect(await AppTestSupport.wait(upTo: 5) { fixture.storage.pendingOperations == 3 })
+        gate.open()
         _ = try await flush.value
         await retire.value
-        _ = history
+        _ = try await history.value
         #expect(fixture.storage.historyDatabase != nil)
         #expect(FileManager.default.fileExists(
             atPath: fixture.directory.appendingPathComponent("history.sqlite").path

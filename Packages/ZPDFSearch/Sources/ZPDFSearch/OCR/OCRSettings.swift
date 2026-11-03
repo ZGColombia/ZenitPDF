@@ -160,6 +160,20 @@ public enum OCRSkipReason: String, Sendable, Hashable, Codable, CaseIterable {
     case nothingRecognised
     /// The page could not be rasterised — over the pixel budget, or a degenerate box.
     case notRenderable
+    /// The page was rendered and macOS could not read it: Vision threw in every attempt of
+    /// ``TextRecognitionFallback`` (1.0.1). Not ``nothingRecognised``: the page was never read.
+    /// The app tier maps this raw value to its own "could not be read" status.
+    case recognitionFailed
+
+    /// Whether the page failed to be read — not rasterised, or not readable by Vision — as
+    /// against read and found empty, or skipped for its text layer. A failed page keeps what an
+    /// earlier run stored (BH-205), and a batch rerun retries its file (V-078).
+    public var isFailure: Bool {
+        switch self {
+        case .notRenderable, .recognitionFailed: return true
+        case .hasTextLayer, .nothingRecognised: return false
+        }
+    }
 }
 
 /// What recognition did to one page.

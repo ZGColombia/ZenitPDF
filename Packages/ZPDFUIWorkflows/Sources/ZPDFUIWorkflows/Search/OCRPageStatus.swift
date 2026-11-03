@@ -20,12 +20,54 @@ public enum OCRPageStatus: String, Codable, Hashable, Sendable, CaseIterable, Id
     /// a vector drawing full of real text came back as page after page of "No text found",
     /// each with a warning glyph. Findings BH-310, IM-150. It counts as done for progress.
     case skippedHasText
+    /// The page could not be read this time (1.0.1): macOS text recognition threw in every way
+    /// Zenit runs it, or the page could not be rendered for it.
+    ///
+    /// The host reported it as `.noTextFound`, which told the person the page had been read and
+    /// held nothing legible. Words an earlier run recognised on it stay searchable. It counts as
+    /// done for progress; a new run reads it again.
+    case couldNotBeRead
 
     /// Stable identity.
     public var id: String { rawValue }
 
+    /// The status of a page a recognition run came back with, from the engine's skip reason:
+    /// `OCRSkipReason.rawValue` in ZPDFSearch, carried as text so this tier imports no engine.
+    ///
+    /// No reason is a page that was read and gave text. A page skipped because it already has
+    /// real text is `.skippedHasText` (BH-310, IM-150). A page macOS could not read, or could not
+    /// render to read, is `.couldNotBeRead` instead of "No text found" (1.0.1). Only a page the
+    /// recogniser read and found nothing on is `.noTextFound`.
+    ///
+    /// Each engine reason is mapped by name, and ZPDFSearch's tests pin those names and their
+    /// number, so a reason the engine adds has to be mapped here on purpose.
+    public init(recognitionSkipReason skipReason: String?) {
+        guard let skipReason else {
+            self = .indexed
+            return
+        }
+        switch skipReason {
+        case Self.hasTextLayerSkipReason:
+            self = .skippedHasText
+        case Self.recognitionFailedSkipReason, Self.notRenderableSkipReason:
+            self = .couldNotBeRead
+        default:
+            // `OCRSkipReason.nothingRecognised`.
+            self = .noTextFound
+        }
+    }
+
+    /// `OCRSkipReason.hasTextLayer.rawValue`. ZPDFSearch's tests pin the engine's raw values.
+    static let hasTextLayerSkipReason = "hasTextLayer"
+    /// `OCRSkipReason.notRenderable.rawValue`.
+    static let notRenderableSkipReason = "notRenderable"
+    /// `OCRSkipReason.recognitionFailed.rawValue`.
+    static let recognitionFailedSkipReason = "recognitionFailed"
+
     /// Whether the run is finished with this page, whatever it found.
-    public var isDone: Bool { self == .indexed || self == .noTextFound || self == .skippedHasText }
+    public var isDone: Bool {
+        self == .indexed || self == .noTextFound || self == .skippedHasText || self == .couldNotBeRead
+    }
 
     /// A localized status name.
     public var displayName: String {
@@ -40,6 +82,11 @@ public enum OCRPageStatus: String, Codable, Hashable, Sendable, CaseIterable, Id
             return NSLocalizedString("No text found", comment: "OCR page status")
         case .skippedHasText:
             return NSLocalizedString("Skipped — already has text", comment: "OCR page status")
+        case .couldNotBeRead:
+            return NSLocalizedString(
+                "Could not be read",
+                comment: "OCR page status: macOS text recognition failed on the page, or the page could not be rendered for it"
+            )
         }
     }
 
@@ -71,6 +118,13 @@ public enum OCRPageStatus: String, Codable, Hashable, Sendable, CaseIterable, Id
                 "This page already carries real text, so it was not read. Search finds its words through that text.",
                 comment: "OCR page status explanation"
             )
+        case .couldNotBeRead:
+            // True for a recognition failure and a render failure alike, and for a page an
+            // earlier run read: its words stay searchable (BH-205).
+            return NSLocalizedString(
+                "This page could not be read this time, so search finds no new words on it. Any words an earlier reading found on it stay searchable. Try reading it again.",
+                comment: "OCR page status explanation: the page could not be read this run"
+            )
         }
     }
 
@@ -82,6 +136,7 @@ public enum OCRPageStatus: String, Codable, Hashable, Sendable, CaseIterable, Id
         case .indexed: return .success
         case .noTextFound: return .warning
         case .skippedHasText: return .neutral
+        case .couldNotBeRead: return .danger
         }
     }
 
@@ -93,6 +148,7 @@ public enum OCRPageStatus: String, Codable, Hashable, Sendable, CaseIterable, Id
         case .indexed: return .symbol(.success)
         case .noTextFound: return .symbol(.warning)
         case .skippedHasText: return .symbol(.text)
+        case .couldNotBeRead: return .symbol(.error)
         }
     }
 }
@@ -204,6 +260,9 @@ public enum OCRConfidenceBand: String, Hashable, Sendable, CaseIterable, Identif
 /// words that were never read. The line now follows what the pages actually returned.
 public enum OCRRunOutcome: Hashable, Sendable {
 
+    /// At least one page could not be read (1.0.1). Checked first: whatever the other pages
+    /// gave, the person has pages to read again.
+    case pagesNotRead
     /// At least one page was read and gave words; they are searchable now.
     case wordsFound
     /// No page gave a word: those that were read found nothing legible.
@@ -213,7 +272,9 @@ public enum OCRRunOutcome: Hashable, Sendable {
 
     /// The outcome of a run's page results.
     public init(pageResults: [OCRPageStatusSummary]) {
-        if pageResults.contains(where: { $0.status == .indexed }) {
+        if pageResults.contains(where: { $0.status == .couldNotBeRead }) {
+            self = .pagesNotRead
+        } else if pageResults.contains(where: { $0.status == .indexed }) {
             self = .wordsFound
         } else if !pageResults.isEmpty, pageResults.allSatisfy({ $0.status == .skippedHasText }) {
             self = .allPagesSkipped
@@ -225,6 +286,11 @@ public enum OCRRunOutcome: Hashable, Sendable {
     /// The sentence the sheet shows when the run has finished.
     public var message: String {
         switch self {
+        case .pagesNotRead:
+            return NSLocalizedString(
+                "Finished, but some pages could not be read, so search finds no new words on them. Start reading again to retry them.",
+                comment: "OCR sheet: run finished, and one or more pages could not be read"
+            )
         case .wordsFound:
             return NSLocalizedString(
                 "Finished. Recognised words are searchable now, and are still a search aid rather than a transcription.",
@@ -246,6 +312,7 @@ public enum OCRRunOutcome: Hashable, Sendable {
     /// The design-system severity, so the outcome is legible without colour.
     public var displaySeverity: ZPDFSeverity {
         switch self {
+        case .pagesNotRead: return .warning
         case .wordsFound: return .success
         case .noWordsFound: return .warning
         case .allPagesSkipped: return .info

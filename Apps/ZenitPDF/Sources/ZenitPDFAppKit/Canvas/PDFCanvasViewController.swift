@@ -160,16 +160,29 @@ public final class PDFCanvasViewController: NSViewController {
 
     /// Whether the visible sheet is covered entirely by rasters made for the current zoom and
     /// placed 1:1 on whole device pixels. Gate Z13's end condition.
+    ///
+    /// Measured over what a raster can cover of the visible sheet: the planner snaps a
+    /// fractional sheet edge inward to whole device pixels and leaves the sliver beyond it to
+    /// the paper and the base raster. Counting that sliver made the answer depend on where the
+    /// sheet landed: a 0.9 pt sliver at ½× on a 1x display, or ⅓× at 2x, fell under the first
+    /// sample column and read 99.5 %. The snap is the planner's own, so the two cannot drift.
     var viewportIsSharpForTesting: Bool {
         guard liveZoom == nil, let transform = pageView.transform else { return false }
-        let visibleSheet = scrollView.documentVisibleRect.intersection(transform.pageFrame)
+        let visible = scrollView.documentVisibleRect
+        let visibleSheet = visible.intersection(transform.pageFrame)
         guard !visibleSheet.isNull, visibleSheet.width > 0 else { return false }
         let scale = pageView.effectiveBackingScale
+        guard let deliverable = try? ViewportRasterPlanner.plan(
+            transform: transform, visibleViewRect: visible, backingScale: scale,
+            overscanViewPoints: 0, pixelBudget: .max
+        ) else { return false }
+        let target = visibleSheet.intersection(deliverable.destination)
+        guard !target.isNull, target.width > 0, target.height > 0 else { return false }
         let exact = pageView.tileRasters
             .map { $0.placement(in: transform, backingScale: scale) }
             .filter(\.isPixelExact)
             .map(\.destination)
-        return CanvasPageView.coveredFraction(of: visibleSheet, by: exact) >= 0.999
+        return CanvasPageView.coveredFraction(of: target, by: exact) >= 0.999
     }
     /// The plan whose raster is on screen, so a pan inside its margin costs nothing and a
     /// zoom always costs a re-render. It replaces the old `renderedScale` five-per-cent band,

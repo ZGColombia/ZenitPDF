@@ -218,8 +218,15 @@ extension ProjectWindowController {
                 region: PDFRect(x: region.minX, y: region.minY, width: region.size.width, height: region.size.height),
                 pixelsPerPoint: scale
             ) else { continue }
-            let lines = await Task.detached(priority: .userInitiated) {
-                (try? RegionTextRecognizer.recognize(image: image, region: region)) ?? []
+            let lines = await Task.detached(priority: .userInitiated) { () -> [RegionTextRecognizer.Line] in
+                do {
+                    return try RegionTextRecognizer.recognize(image: image, region: region)
+                } catch {
+                    // Every recognition attempt threw: the log says why (domain and code, never
+                    // the text), and this box reads nothing, as it always has.
+                    RegionTextRecognizer.logFailure(error)
+                    return []
+                }
             }.value
             recognised += lines
         }

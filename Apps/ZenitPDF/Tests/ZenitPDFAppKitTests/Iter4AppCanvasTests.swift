@@ -352,17 +352,19 @@ struct Iter4AppCanvasTests {
         let stem = PDFPointValue(x: 160, y: 160 + Double(CanvasPageView.stampRotationHandleGapViewPoints) / 2)
         /// The pixel nearest the selection ink in a small window across the stem, and how far
         /// from the ink it is (summed RGB difference, transparent counts as far).
+        ///
+        /// Rendered at 2x whatever the display, for both halves of the test: at 1x the 1.25 pt
+        /// stem on a whole point covers each of the two pixels it straddles by 62 %, so a drawn
+        /// stem reads about 0.7 from the ink and could not be told from no stem at all.
         func nearestInk() throws -> (colour: NSColor, distance: CGFloat) {
-            let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
-            view.cacheDisplay(in: view.bounds, to: rep)
+            let rep = AppTestSupport.renderOffscreen(view)
             let scale = CGFloat(rep.pixelsWide) / size.width
             let p = view.transform!.viewPoint(from: stem)
             let ink = CanvasMarkupStyle.selectionInk.usingColorSpace(.sRGB)!
             var best: (colour: NSColor, distance: CGFloat) = (.clear, .greatestFiniteMagnitude)
             for dx in -2...2 {
                 for dy in -1...1 {
-                    guard let colour = rep.colorAt(x: Int(p.x * scale) + dx, y: Int(p.y * scale) + dy)?
-                        .usingColorSpace(.sRGB) else { continue }
+                    guard let colour = rep.sRGBColorAt(x: Int(p.x * scale) + dx, y: Int(p.y * scale) + dy) else { continue }
                     let distance = colour.alphaComponent < 0.5 ? 3 : abs(colour.redComponent - ink.redComponent)
                         + abs(colour.greenComponent - ink.greenComponent) + abs(colour.blueComponent - ink.blueComponent)
                     if distance < best.distance { best = (colour, distance) }

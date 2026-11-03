@@ -240,8 +240,8 @@ public actor OCRService {
     /// The one window both ``recognize(documentId:handle:pageRange:progress:)`` and
     /// ``recogniseFile(handle:provider:settings:limits:normalization:)`` run (R-150: they
     /// carried two copies of it). A page that fails on its own comes back as a
-    /// ``OCRSkipReason/notRenderable`` recognition from ``recognisePage``, so only cancellation
-    /// and run-wide failures leave the window early.
+    /// ``OCRSkipReason/notRenderable`` or ``OCRSkipReason/recognitionFailed`` recognition from
+    /// ``recognisePage``, so only cancellation and run-wide failures leave the window early.
     static func recognisePages(
         _ jobs: [PageJob],
         handle: DocumentHandle,
@@ -325,13 +325,13 @@ public actor OCRService {
     }
 
     /// Renders and recognises one page, and reports a page that fails on its own as
-    /// ``OCRSkipReason/notRenderable`` instead of throwing.
+    /// ``OCRSkipReason/notRenderable`` or ``OCRSkipReason/recognitionFailed`` instead of throwing.
     ///
     /// R-150: a render refusal, a Vision failure or an engine error on one page used to be
     /// thrown out of the task group, dropping every page still queued behind it — one damaged
     /// sheet in a long scan threw away the rest of the run. Cancellation still throws, and so
     /// does anything that is not about this page. `commit` leaves an earlier recognition of a
-    /// `.notRenderable` page in place (BH-205).
+    /// page that failed in place (BH-205).
     static func recognisePage(
         job: PageJob,
         handle: DocumentHandle,
@@ -348,18 +348,31 @@ public actor OCRService {
                 normalization: normalization, maximumTokens: maximumTokens, startedAt: startedAt
             )
         } catch let error as ZPDFSearchError {
-            switch error {
-            case .pageRenderFailed, .recognitionFailed, .engine:
-                return PageRecognition(
-                    job: job, tokens: [], lineCount: 0, content: "", skipReason: .notRenderable,
-                    elapsedSeconds: Double(
-                        DispatchTime.now().uptimeNanoseconds &- startedAt.uptimeNanoseconds
-                    ) / 1e9,
-                    effectiveDPI: 0
-                )
-            default:
-                throw error
-            }
+            guard let reason = skipReason(forPageError: error) else { throw error }
+            return PageRecognition(
+                job: job, tokens: [], lineCount: 0, content: "", skipReason: reason,
+                elapsedSeconds: Double(
+                    DispatchTime.now().uptimeNanoseconds &- startedAt.uptimeNanoseconds
+                ) / 1e9,
+                effectiveDPI: 0
+            )
+        }
+    }
+
+    /// The skip reason of a page that failed on its own, or `nil` for an error that is not
+    /// about this page and must leave the run.
+    ///
+    /// A Vision failure is ``OCRSkipReason/recognitionFailed``, not ``OCRSkipReason/notRenderable``
+    /// (1.0.1): the page rendered and macOS could not read it, and the OCR sheet said
+    /// "No text found" for it. Both are failures a rerun retries.
+    static func skipReason(forPageError error: ZPDFSearchError) -> OCRSkipReason? {
+        switch error {
+        case .recognitionFailed:
+            return .recognitionFailed
+        case .pageRenderFailed, .engine:
+            return .notRenderable
+        default:
+            return nil
         }
     }
 
@@ -965,14 +978,17 @@ public actor OCRService {
         pageIndex: Int,
         settings: OCRSettings
     ) async throws -> [RecognisedLine] {
-        try await withCheckedThrowingContinuation { continuation in
+        // Read here, in the task: a task-local does not reach a block on a dispatch queue.
+        let perform = pagePerform
+        return try await withCheckedThrowingContinuation { continuation in
             recognitionQueue.async {
                 do {
                     continuation.resume(
                         returning: try recogniseSynchronously(
                             image: image,
                             pageIndex: pageIndex,
-                            settings: settings
+                            settings: settings,
+                            perform: perform
                         )
                     )
                 } catch {
@@ -990,29 +1006,48 @@ public actor OCRService {
         attributes: .concurrent
     )
 
+    /// One Vision call of a page read, as ``TextRecognitionFallback/recognize(image:accurate:languages:purpose:configure:perform:)``
+    /// runs it. `@Sendable`, because the call is made on ``recognitionQueue``.
+    typealias PagePerform = @Sendable (
+        TextRecognitionFallback.Attempt, VNRecognizeTextRequest, CGImage
+    ) throws -> Void
+
+    /// The Vision call every page read of the current task makes: Vision itself, unless a test
+    /// binds its own with `$pagePerform.withValue` to make chosen attempts throw.
+    ///
+    /// A task-local rather than a stored override, so it reaches only the run that bound it,
+    /// and the child tasks of its window, never a run another test has going at the same time.
+    /// No caller outside the tests binds it.
+    @TaskLocal static var pagePerform: PagePerform = { attempt, request, image in
+        try TextRecognitionFallback.performWithVision(attempt, request, image)
+    }
+
     private static func recogniseSynchronously(
         image: CGImage,
         pageIndex: Int,
-        settings: OCRSettings
+        settings: OCRSettings,
+        perform: PagePerform
     ) throws -> [RecognisedLine] {
-        let request = VNRecognizeTextRequest()
-        request.recognitionLevel = settings.usesAccurateRecognition ? .accurate : .fast
-        request.usesLanguageCorrection = settings.usesLanguageCorrection
-        if settings.usesLanguageCorrection, !settings.customWords.isEmpty {
-            request.customWords = settings.customWords
-        }
-        if !settings.recognitionLanguages.isEmpty {
-            // Keep only the codes this OS has. A drawing set in a language the machine
-            // does not carry must still be recognised in the languages it does.
-            let supported = Set((try? request.supportedRecognitionLanguages()) ?? [])
-            let usable = settings.recognitionLanguages.filter { supported.contains($0) }
-            if !usable.isEmpty { request.recognitionLanguages = usable }
-        }
-
-        let handler = VNImageRequestHandler(cgImage: image, options: [:])
+        // The configured request first, as always; revision 2 `.accurate` and then `.fast` only
+        // when Vision throws (1.0.1). Each attempt keeps the languages it supports, so a drawing
+        // set in a language the machine does not carry is still read in the languages it does.
+        let observations: [VNRecognizedTextObservation]
         do {
-            try handler.perform([request])
+            observations = try TextRecognitionFallback.recognize(
+                image: image,
+                accurate: settings.usesAccurateRecognition,
+                languages: settings.recognitionLanguages,
+                purpose: .page,
+                configure: { request in
+                    request.usesLanguageCorrection = settings.usesLanguageCorrection
+                    if settings.usesLanguageCorrection, !settings.customWords.isEmpty {
+                        request.customWords = settings.customWords
+                    }
+                },
+                perform: perform
+            )
         } catch {
+            TextRecognitionFallback.logFailure(error, purpose: .page)
             // The message is Vision's, about the request; it carries no page content.
             throw ZPDFSearchError.recognitionFailed(
                 pageIndex: pageIndex,
@@ -1020,7 +1055,6 @@ public actor OCRService {
             )
         }
 
-        guard let observations = request.results else { return [] }
         var lines: [RecognisedLine] = []
         lines.reserveCapacity(observations.count)
 
@@ -1085,14 +1119,15 @@ public actor OCRService {
         let content = recognition.content
 
         // BH-205: a page that was not recognised this run — skipped because it has a text
-        // layer, or because it could not be rasterised — has no new answer to replace the
-        // old one with. Deleting its tokens anyway silently erased an earlier recognition
-        // (run eagerly, then re-run with the default skip on). Only a page the recogniser
-        // actually looked at (`nil`, or `.nothingRecognised`) replaces what was stored.
+        // layer, because it could not be rasterised, or because Vision could not read it — has
+        // no new answer to replace the old one with. Deleting its tokens anyway silently erased
+        // an earlier recognition (run eagerly, then re-run with the default skip on). Only a
+        // page the recogniser actually read (`nil`, or `.nothingRecognised`) replaces what was
+        // stored.
         let wasRecognised: Bool
         switch recognition.skipReason {
         case .none, .nothingRecognised?: wasRecognised = true
-        case .hasTextLayer?, .notRenderable?: wasRecognised = false
+        case .hasTextLayer?, .notRenderable?, .recognitionFailed?: wasRecognised = false
         }
 
         if wasRecognised { try await write { db in

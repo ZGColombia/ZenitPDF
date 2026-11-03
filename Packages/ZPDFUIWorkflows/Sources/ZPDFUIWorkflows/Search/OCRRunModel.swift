@@ -349,6 +349,11 @@ public final class OCRRunModel {
         pageResults.filter { $0.status == .noTextFound }
     }
 
+    /// Pages that could not be read this time (1.0.1); a new run reads them again.
+    public var pagesNotRead: [OCRPageStatusSummary] {
+        pageResults.filter { $0.status == .couldNotBeRead }
+    }
+
     /// What the pages of the last run returned, for the sheet's "Finished" line (L-20b).
     public var finishedOutcome: OCRRunOutcome {
         OCRRunOutcome(pageResults: pageResults)

@@ -208,12 +208,11 @@ struct Iter3AppCanvasTests {
         view.focusedVertex = CanvasPageView.FocusedVertex(markupID: id, index: 1)
         let size = CGSize(width: 240, height: 120)
         view.frame = CGRect(origin: .zero, size: size)
-        let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
-        view.cacheDisplay(in: view.bounds, to: rep)
+        let rep = AppTestSupport.renderOffscreen(view)
         let scale = CGFloat(rep.pixelsWide) / size.width
         func colour(_ page: PDFPointValue) -> NSColor {
             let p = view.transform!.viewPoint(from: page)
-            return rep.colorAt(x: Int(p.x * scale), y: Int(p.y * scale))?.usingColorSpace(.sRGB) ?? .clear
+            return rep.sRGBColorAt(x: Int(p.x * scale), y: Int(p.y * scale)) ?? .clear
         }
         func distance(_ a: NSColor, _ b: NSColor) -> CGFloat {
             let a = a.usingColorSpace(.sRGB) ?? a, b = b.usingColorSpace(.sRGB) ?? b
@@ -448,15 +447,16 @@ struct Iter3AppCanvasTests {
         view.ledgerHoverMarkupID = shape.id
         let size = CGSize(width: 400, height: 300)
         view.frame = CGRect(origin: .zero, size: size)
-        let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
-        view.cacheDisplay(in: view.bounds, to: rep)
+        // At 2x whatever the display: at 1x the 1.5 pt edge on a whole point covers each of the
+        // two pixels it straddles by 75 %, and neither reads as the ink.
+        let rep = AppTestSupport.renderOffscreen(view)
         let scale = CGFloat(rep.pixelsWide) / size.width
         let ink = try #require(CanvasMarkupStyle.selectionInk.usingColorSpace(.sRGB))
         func inkNear(x: CGFloat, y: CGFloat) -> Bool {
             // The outline is antialiased: any pixel within 1.5 pt of the edge that reads as ink.
             var column = (x - 1.5) * scale
             while column <= (x + 1.5) * scale {
-                if let c = rep.colorAt(x: Int(column), y: Int(y * scale))?.usingColorSpace(.sRGB),
+                if let c = rep.sRGBColorAt(x: Int(column), y: Int(y * scale)),
                    abs(c.redComponent - ink.redComponent) + abs(c.greenComponent - ink.greenComponent)
                     + abs(c.blueComponent - ink.blueComponent) < 0.35 {
                     return true

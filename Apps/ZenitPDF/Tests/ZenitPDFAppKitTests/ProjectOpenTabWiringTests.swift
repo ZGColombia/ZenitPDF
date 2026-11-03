@@ -55,29 +55,28 @@ struct ProjectOpenTabWiringTests {
 
     /// Opens a URL through the shipping document controller — the ⌘O / Open Recent path.
     ///
-    /// `openDocument(withContentsOf:display:)` itself cannot run here: its LaunchServices
-    /// preflight asks whether *this process* claims the type, and `swiftpm-testing-helper`
-    /// claims nothing, so a `.zpdfproj` is refused before any Zenit code runs (the
-    /// assembled bundle passes that check through its Info.plist). What follows the
-    /// preflight is documented and driven verbatim: `typeForContents` → `makeDocument` →
-    /// `addDocument` → `makeWindowControllers`. `showWindows()` is deliberately not
-    /// called — it only fronts the window, and a test may never order one in.
+    /// Both reach `NSDocumentController.shared`, which the application delegate makes a
+    /// `ZenitDocumentController` at launch and ``AppTierSerialisation`` makes one for this
+    /// process. A plain controller in its place names no document class for the project type and
+    /// resolves a `.zpdfproj` only through LaunchServices, which knows the type only on a Mac
+    /// where the app is registered: the open passed there and loaded the package as a PDF on a
+    /// clean runner. So the controller's class and the type it resolves are required, not
+    /// assumed. What `openDocument(withContentsOf:display:)` does for a file it does not reroute
+    /// is documented and driven verbatim: `typeForContents` → `makeDocument` → `addDocument` →
+    /// `makeWindowControllers`. `showWindows()` is deliberately not called — it only fronts the
+    /// window, and a test may never order one in.
     private func openThroughTheRealController(
-        _ controller: NSDocumentController,
-        url: URL
+        _ url: URL,
+        expectingType expectedType: String
     ) async throws -> ZenitPDFProjectDocument {
-        let type = try controller.typeForContents(of: url)
-        let made: NSDocument
-        do {
-            made = try controller.makeDocument(withContentsOf: url, ofType: type)
-        } catch let error as NSError where error.domain == NSCocoaErrorDomain && error.code == 256 {
-            // `makeDocument` consults `NSDocumentController.shared` for the process's own
-            // type claims, and whichever earlier suite touched the shared controller first
-            // decided its class for the whole process. When that preflight refuses the
-            // package type, the documented remainder of `makeDocument` is driven directly:
-            // allocate the class `documentClass(forType:)` names, `init(contentsOf:ofType:)`.
-            made = try ZenitPDFProjectDocument(contentsOf: url, ofType: type)
-        }
+        let controller = NSDocumentController.shared
+        try #require(
+            controller is ZenitDocumentController,
+            "NSDocumentController.shared is a \(type(of: controller)); the shipping controller is not under test"
+        )
+        let resolved = try controller.typeForContents(of: url)
+        try #require(resolved == expectedType, "typeForContents answered \(resolved) for \(url.lastPathComponent)")
+        let made = try controller.makeDocument(withContentsOf: url, ofType: resolved)
         let document = try #require(made as? ZenitPDFProjectDocument)
         controller.addDocument(document)
         document.makeWindowControllers()
@@ -113,8 +112,10 @@ struct ProjectOpenTabWiringTests {
         ProjectWindowController.hostWindowVisibilityForTesting = { $0 === host }
         #expect(ProjectWindowController.tabHost === host)
 
-        let documentController = ZenitDocumentController()
-        let project = try await openThroughTheRealController(documentController, url: packageURL)
+        let project = try await openThroughTheRealController(
+            packageURL,
+            expectingType: ZenitAppInfo.projectTypeIdentifier
+        )
         defer {
             host.window?.close()
             project.close()
@@ -197,8 +198,10 @@ struct ProjectOpenTabWiringTests {
         ephemeral.window?.close()
 
         // The exact live open: ⌘O / Open Recent on the .zpdfproj.
-        let documentController = ZenitDocumentController()
-        let project = try await openThroughTheRealController(documentController, url: packageURL)
+        let project = try await openThroughTheRealController(
+            packageURL,
+            expectingType: ZenitAppInfo.projectTypeIdentifier
+        )
         defer {
             host.window?.close()
             project.close()
@@ -243,8 +246,7 @@ struct ProjectOpenTabWiringTests {
         )
         defer { try? FileManager.default.removeItem(at: lockedURL.deletingLastPathComponent()) }
 
-        let documentController = ZenitDocumentController()
-        let locked = try await openThroughTheRealController(documentController, url: lockedURL)
+        let locked = try await openThroughTheRealController(lockedURL, expectingType: UTType.pdf.identifier)
         defer {
             host.window?.close()
             locked.close()

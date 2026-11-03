@@ -274,7 +274,19 @@ struct Live8AppShellTests {
     func secondWindowOpensAtTheMainWindowsSize() async throws {
         let harness = try await Fix2Harness.make("L96 Second Window.pdf", calibrate: false)
         let main = try #require(harness.controller.window)
-        main.setFrame(NSRect(x: 80, y: 160, width: 1_120, height: 700), display: false)
+        // A person's main window, as large as the screen it is on can show and never below its
+        // minimum: 1120 × 700 on a laptop, 1040 × 674 on a 1024 × 768 display. The second window
+        // keeps to that screen's visible frame (the rule pinned by hand below), so a main window
+        // set larger than the screen compares the rule's clamp, not L-96. Placed first, so the
+        // screen read here is the one `openNewWindow` reads.
+        let origin = NSPoint(x: 80, y: 160)
+        let wanted = NSSize(width: 1_120, height: 700)
+        main.setFrame(NSRect(origin: origin, size: wanted), display: false)
+        let visible = (main.screen ?? NSScreen.main)?.visibleFrame.size
+        main.setFrame(NSRect(origin: origin, size: NSSize(
+            width: max(main.minSize.width, min(wanted.width, visible?.width ?? wanted.width)),
+            height: max(main.minSize.height, min(wanted.height, visible?.height ?? wanted.height))
+        )), display: false)
         let second = try #require(await harness.controller.openNewWindow(for: harness.document))
         defer {
             harness.document.unsavedTakeoffReview = { _, answer in answer(.discard) }
@@ -287,7 +299,7 @@ struct Live8AppShellTests {
         // Old: 1 × 1 here (864 × 526 in the installed build) — the frame the loading
         // placeholder's zero fitting size gave it, because the frame autosave name it would
         // have restored from is held by the first window.
-        #expect(window.frame.size == main.frame.size)
+        #expect(window.frame.size == main.frame.size, "screen's visible size \(String(describing: visible))")
         #expect(window.frame.width >= 1_040 && window.frame.height >= 640)
         #expect(window.minSize.width >= 1_040 && window.minSize.height >= 640)
         // Cascaded from the main window, not stacked exactly over it.

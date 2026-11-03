@@ -20,7 +20,16 @@ enum PageTextLoader {
             pageIndex: page.index,
             region: PDFRect(x: region.minX, y: region.minY, width: region.size.width, height: region.size.height),
             pixelsPerPoint: scale) else { return [] }
-        let lines = await Task.detached(priority: .userInitiated) { (try? RegionTextRecognizer.recognize(image: image, region: region)) ?? [] }.value
+        let lines = await Task.detached(priority: .userInitiated) { () -> [RegionTextRecognizer.Line] in
+            do {
+                return try RegionTextRecognizer.recognize(image: image, region: region)
+            } catch {
+                // Every recognition attempt threw: the log says why (domain and code, never the
+                // text), and the command reads no lines here, as it always has.
+                RegionTextRecognizer.logFailure(error)
+                return []
+            }
+        }.value
         return lines.map { SourcedTextLine(text: $0.text, boundsInPageSpace: $0.boundsInPageSpace, confidence: $0.confidence, source: .regionOCR) }
     }
 

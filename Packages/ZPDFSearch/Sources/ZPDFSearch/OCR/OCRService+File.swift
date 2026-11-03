@@ -65,7 +65,9 @@ extension OCRService {
             tokens[recognition.job.pageIndex] = recognition.tokens.map {
                 OCRRecognisedToken(text: $0.text, confidence: $0.confidence, bounds: $0.bounds)
             }
-            if recognition.skipReason == .notRenderable { unreadable.append(recognition.job.pageIndex) }
+            // Not rasterised, or not readable by Vision (1.0.1): either way the file is not
+            // finished, and a rerun retries it.
+            if recognition.skipReason?.isFailure == true { unreadable.append(recognition.job.pageIndex) }
         }
         return OCRFileRecognition(tokens: tokens, unreadablePages: unreadable)
     }

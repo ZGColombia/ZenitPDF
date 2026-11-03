@@ -2,6 +2,7 @@ import AppKit
 import CoreGraphics
 import Foundation
 import Testing
+import ZPDFDesignSystem
 import ZPDFUIPresentation
 @testable import ZenitPDFAppKit
 
@@ -41,23 +42,31 @@ struct CanvasDrawingTests {
 
     /// One rendered canvas, plus the pixels-per-point the rep was cached at.
     ///
-    /// `bitmapImageRepForCachingDisplay` allocates at the display's backing scale, so on a Retina
-    /// machine the rep is twice the view's size in points. Sampling has to go through that factor
-    /// or every assertion silently reads a point a quarter of the way into the image.
+    /// The rep is twice the view's size in points (`AppTestSupport.renderOffscreen`'s 2x).
+    /// Sampling has to go through that factor or every assertion silently reads a point a
+    /// quarter of the way into the image.
     private struct Rendered {
         let rep: NSBitmapImageRep
         let scale: CGFloat
 
         /// The colour at a point in the *view's* coordinates.
         func color(atViewX x: CGFloat, y: CGFloat) -> NSColor {
-            rep.colorAt(x: Int(x * scale), y: Int(y * scale))?.usingColorSpace(.sRGB) ?? .clear
+            rep.sRGBColorAt(x: Int(x * scale), y: Int(y * scale)) ?? .clear
         }
     }
 
-    private func render(_ view: CanvasPageView, size: CGSize) -> Rendered {
+    /// Renders in `appearance`, the product's default unless a test says otherwise. The backdrop
+    /// is a dynamic token, and a view left without an appearance resolves it from the machine's
+    /// system setting: the product installs Dark at launch (`ZenitApplicationDelegate`), but a
+    /// test process never runs that delegate.
+    private func render(
+        _ view: CanvasPageView,
+        size: CGSize,
+        appearance: ZenitAppearancePreference = .defaultValue
+    ) -> Rendered {
         view.frame = CGRect(origin: .zero, size: size)
-        let rep = view.bitmapImageRepForCachingDisplay(in: view.bounds)!
-        view.cacheDisplay(in: view.bounds, to: rep)
+        view.appearance = appearance.nsAppearance
+        let rep = AppTestSupport.renderOffscreen(view)
         return Rendered(rep: rep, scale: CGFloat(rep.pixelsWide) / size.width)
     }
 
@@ -82,7 +91,8 @@ struct CanvasDrawingTests {
         let block = rep.color(atViewX: 30, y: 100)
         #expect(abs(block.brightnessComponent - 0.5) < 0.15, "the grey block should be here, got \(block)")
 
-        // Outside the sheet is the dark canvas backdrop, not white.
+        // Outside the sheet is the dark canvas backdrop (the product's default appearance), not
+        // white.
         let backdrop = rep.color(atViewX: 5, y: 5)
         #expect(backdrop.brightnessComponent < 0.5, "the backdrop should be dark, got \(backdrop)")
     }
@@ -154,5 +164,40 @@ struct CanvasDrawingTests {
         let rep = render(view, size: CGSize(width: 120, height: 80))
         let anywhere = rep.color(atViewX: 60, y: 40)
         #expect(anywhere.brightnessComponent < 0.5, "an empty canvas is backdrop, got \(anywhere)")
+    }
+
+    /// The tests above pin the product's default, Dark. Light is a first-class choice, so the
+    /// backdrop must come out as the token of whichever appearance the view is in, whatever
+    /// the machine's own setting, and an empty canvas must still be backdrop and nothing else.
+    @Test("The backdrop is the canvas token of the view's appearance, in Dark and in Light")
+    func backdropFollowsTheAppearance() throws {
+        for preference in [ZenitAppearancePreference.dark, .light] {
+            let appearance = try #require(preference.nsAppearance)
+            let token = ZPDFColor.rgba(.canvasBackdrop, ZPDFAppearanceVariant.matching(appearance))
+            func isToken(_ c: NSColor) -> Bool {
+                abs(c.redComponent - token.red) < 0.01 && abs(c.greenComponent - token.green) < 0.01
+                    && abs(c.blueComponent - token.blue) < 0.01
+            }
+
+            let view = CanvasPageView()
+            view.transform = PageDisplayTransform(
+                pageBox: pageBox,
+                rotation: 0,
+                zoom: 1,
+                origin: CGPoint(x: 20, y: 10)
+            )
+            view.pageImage = pageRaster()
+            let rep = render(view, size: CGSize(width: 240, height: 120), appearance: preference)
+            let backdrop = rep.color(atViewX: 5, y: 5)
+            #expect(isToken(backdrop), "\(preference): the backdrop should be \(token.hexString), got \(backdrop)")
+            let sheet = rep.color(atViewX: 120, y: 40)
+            #expect(sheet.brightnessComponent > 0.9, "\(preference): the page should be white here, got \(sheet)")
+
+            let empty = CanvasPageView()
+            empty.transform = nil
+            let anywhere = render(empty, size: CGSize(width: 120, height: 80), appearance: preference)
+                .color(atViewX: 60, y: 40)
+            #expect(isToken(anywhere), "\(preference): an empty canvas is backdrop, got \(anywhere)")
+        }
     }
 }

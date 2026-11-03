@@ -10103,3 +10103,12 @@
 "Select a markup to read the notes written on it, or to write one." = "Select a markup to read the notes written on it, or to write one.";
 "Tool Set" = "Tool Set";
 "Show Tools As" = "Show Tools As";
+
+/* OCR page status: macOS text recognition failed on the page, or the page could not be rendered for it */
+"Could not be read" = "Could not be read";
+
+/* OCR page status explanation: the page could not be read this run */
+"This page could not be read this time, so search finds no new words on it. Any words an earlier reading found on it stay searchable. Try reading it again." = "This page could not be read this time, so search finds no new words on it. Any words an earlier reading found on it stay searchable. Try reading it again.";
+
+/* OCR sheet: run finished, and one or more pages could not be read */
+"Finished, but some pages could not be read, so search finds no new words on them. Start reading again to retry them." = "Finished, but some pages could not be read, so search finds no new words on them. Start reading again to retry them.";

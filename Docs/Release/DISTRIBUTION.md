@@ -168,14 +168,15 @@ in its version and checksum. No tap is published, so no user-facing document men
 as a way to install; [Packaging/homebrew/README.md](../../Packaging/homebrew/README.md) lists the
 steps that change that.
 
-### Verifiable only after the first public release
+### Verified on the first public release
 
-The repository was not public when this pipeline was written, so these have not run:
-the release workflow on GitHub, the one-liner against `releases/latest/download/install.sh`,
-`install.sh --version` and `--dry-run` against a real release, the `releases/latest` redirect the
-installer reads the newest tag from, `gh attestation verify`, and the tap. The installer itself,
-the disk image, the zip and the checksums were exercised locally against a built app
-(2026-10-27).
+v1.0.0 (2026-11-03) exercised the whole path: the release workflow on GitHub published the five
+assets; `releases/latest/download/install.sh` redirected to the v1.0.0 asset; the one-liner,
+`--dry-run` and `--version 1.0.0` installed or reported as documented, with the SHA-256 checked;
+the installed app verified with `codesign --verify --deep --strict`, carried no quarantine flag
+and was Universal 2; `shasum -a 256 -c SHA256SUMS.txt` passed on the downloaded disk image; and
+`gh attestation verify` tied the disk image to the release workflow at the tag. The Homebrew tap
+is not published and remains unverified.
 
 ## First-launch instructions
 

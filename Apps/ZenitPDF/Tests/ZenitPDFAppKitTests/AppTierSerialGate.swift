@@ -80,6 +80,10 @@ struct AppTierSerialisation: SuiteTrait, TestTrait, TestScoping {
         testCase: Test.Case?,
         performing function: @Sendable () async throws -> Void
     ) async throws {
+        // Before any test touches `NSDocument`, as the application delegate does at launch: the
+        // first document controller made is `NSDocumentController.shared` for good, and it must
+        // be the shipping one, not the plain one the first save or close would otherwise create.
+        await AppTestSupport.installShippingDocumentController()
         // The suite's own scope must not hold the gate: the tests inside it run within that
         // scope, and a suite holding the one permit while its tests queue for it is a deadlock.
         guard testCase != nil else {

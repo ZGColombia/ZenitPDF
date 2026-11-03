@@ -312,6 +312,14 @@ public struct OCRRunSheet: View {
                     value: model.pagesWithoutText.count.formatted()
                 )
             }
+            // Counted on its own, so a failed page is not buried in a long list (1.0.1).
+            if !model.pagesNotRead.isEmpty {
+                ZPDFStatusPill(
+                    severity: .danger,
+                    title: OCRPageStatus.couldNotBeRead.displayName,
+                    value: model.pagesNotRead.count.formatted()
+                )
+            }
             if !model.pagesSkippedForText.isEmpty {
                 ZPDFStatusPill(
                     severity: .neutral,
