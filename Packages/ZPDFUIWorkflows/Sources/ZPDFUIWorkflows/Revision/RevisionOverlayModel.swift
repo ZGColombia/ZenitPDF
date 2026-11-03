@@ -238,6 +238,9 @@ public final class RevisionOverlayModel {
                 self?.flushOpacityChange()
             }
         } else {
+            // A flush still waiting for the main actor would send this same value again.
+            pendingOpacityFlush?.cancel()
+            pendingOpacityFlush = nil
             lastOpacityNotification = now
             onLayersChange?(layers)
         }

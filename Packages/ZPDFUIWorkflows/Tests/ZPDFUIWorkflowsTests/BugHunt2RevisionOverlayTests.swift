@@ -79,12 +79,20 @@ struct BugHunt2RevisionOverlayTests {
     }
 
     /// Old output: 30 slider ticks produced 30 `onLayersChange` calls — 30 composites.
+    ///
+    /// The bound comes from the contract, not from this machine's speed: two notifications are
+    /// at least one interval apart, so a drag that lasted `elapsed` sends at most one per whole
+    /// interval plus the first tick's, and the trailing flush adds one more. A slow runner
+    /// stretches `elapsed`, and the bound with it; `dragWithinOneIntervalSendsOnce` checks the
+    /// coalescing itself without a clock.
     @Test("An opacity drag is coalesced and the final value always arrives")
     func opacityDragIsCoalesced() async throws {
         let model = RevisionOverlayModel(revisions: [revision("A"), revision("B")])
         var delivered: [Double] = []
         model.onLayersChange = { layers in delivered.append(layers[0].opacity) }
         let id = model.layers[0].id
+        let interval = model.opacityNotifyInterval
+        #expect(interval == .milliseconds(100))
         let clock = ContinuousClock()
         let start = clock.now
         for tick in 1...30 {
@@ -97,8 +105,8 @@ struct BugHunt2RevisionOverlayTests {
         }
         #expect(model.layers[0].opacity == 1.0, "the layer follows every tick")
         #expect(delivered.last == 1.0, "the final value is delivered")
-        #expect(delivered.count <= Int((elapsed / .milliseconds(100)).rounded(.up)) + 1)
-        #expect(delivered.count < 10)
+        #expect(delivered.count <= Int(elapsed / interval) + 2, "at most one composite per interval")
+        #expect(Set(delivered).count == delivered.count, "no opacity is sent to the compositor twice")
         print("IM-147 measurement: 30 ticks over \(elapsed) -> \(delivered.count) composite requests")
 
         // Releasing the slider flushes at once.
@@ -106,6 +114,60 @@ struct BugHunt2RevisionOverlayTests {
         model.setOpacity(0.3, forLayer: id)
         model.flushOpacityChange()
         #expect(delivered.last == 0.3)
+    }
+
+    /// The coalescing without a clock: a whole drag inside one interval reaches the compositor
+    /// as its first tick and, on release, its last (IM-147).
+    @Test("A drag inside one interval sends its first tick and, on release, its last")
+    func dragWithinOneIntervalSendsOnce() {
+        let model = RevisionOverlayModel(revisions: [revision("A"), revision("B")])
+        model.opacityNotifyInterval = .seconds(3_600)
+        var delivered: [Double] = []
+        model.onLayersChange = { layers in delivered.append(layers[0].opacity) }
+        let id = model.layers[0].id
+        for tick in 1...30 {
+            model.setOpacity(Double(tick) / 30, forLayer: id)
+        }
+        #expect(delivered == [1.0 / 30])
+        model.flushOpacityChange()
+        #expect(delivered == [1.0 / 30, 1.0])
+    }
+
+    /// Old output: [0.1, 0.3, 0.3] and then [.., 0.4, 0.5, 0.5]. A tick that came after the interval
+    /// while the timed flush was still waiting for the main actor was sent at once, and the
+    /// waiting flush sent it again — when its timer fired, or when the slider was released.
+    /// Holding the main actor past the interval makes that order certain on any machine; a slow
+    /// runner hit it every few ticks (IM-147).
+    @Test("A tick after the interval cancels the flush that is still waiting")
+    func lateFlushDoesNotDeliverTwice() async throws {
+        let model = RevisionOverlayModel(revisions: [revision("A"), revision("B")])
+        var delivered: [Double] = []
+        model.onLayersChange = { layers in delivered.append(layers[0].opacity) }
+        let id = model.layers[0].id
+        let interval = model.opacityNotifyInterval
+        let clock = ContinuousClock()
+        func holdMainActor() {
+            let until = clock.now + interval
+            while clock.now < until {}
+        }
+
+        // The timer: the waiting flush fires after the tick that superseded it.
+        model.setOpacity(0.1, forLayer: id)
+        model.setOpacity(0.2, forLayer: id)
+        holdMainActor()
+        model.setOpacity(0.3, forLayer: id)
+        try await Task.sleep(for: interval * 3)
+        #expect(delivered.last == 0.3, "the latest value is delivered")
+        #expect(Set(delivered).count == delivered.count, "no opacity is sent to the compositor twice")
+
+        // The release: the slider ends the drag while a superseded flush is still waiting.
+        model.setOpacity(0.4, forLayer: id)
+        model.setOpacity(0.45, forLayer: id)
+        holdMainActor()
+        model.setOpacity(0.5, forLayer: id)
+        model.flushOpacityChange()
+        #expect(delivered.last == 0.5, "the latest value is delivered")
+        #expect(Set(delivered).count == delivered.count, "no opacity is sent to the compositor twice")
     }
 }
 

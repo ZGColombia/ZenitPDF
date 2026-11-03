@@ -15,6 +15,13 @@
   its closing line, keeps any text an earlier run recognised on them, and Process PDF Files
   retries the file on the next run. A page skipped because it already has text is labelled
   *Skipped — already has text* instead of *No text found*.
+- An inserted image no longer stays a coarse mosaic. When the canvas redrew while it was still
+  reading the picture's pixels, it treated the interrupted read as "no pixels" and drew the
+  image as its low-resolution preview until the window was reopened; stamp and count-mark
+  artwork could likewise stay a fallback glyph. The next redraw now reads it again.
+- Dragging a revision overlay's opacity slider no longer asks for the same composite twice.
+  On a busy Mac a delayed update could repeat the value just sent, so the overlay redrew more
+  often than once per interval.
 
 ### Development
 

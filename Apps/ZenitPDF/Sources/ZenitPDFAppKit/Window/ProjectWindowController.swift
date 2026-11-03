@@ -543,8 +543,9 @@ public final class ProjectWindowController: NSWindowController, NSWindowDelegate
         wireScaleSheet(core: core, shell: shell, for: document)
         // A count mark can name imported artwork by digest (ADR-0011 §2.1). The picture lives
         // in the project's content-addressed store and the canvas has no package, so the
-        // lookup crosses here. Asked once per digest; a digest the store has no row for draws
-        // the mark's fallback glyph rather than nothing.
+        // lookup crosses here. Asked once per digest (again if a newer scene pass cut the read
+        // short); a digest the store has no row for draws the mark's fallback glyph rather than
+        // nothing.
         canvas.onResolveArtwork = { [weak document] digest in
             guard let package = document?.projectPackage else { return nil }
             return try? await ProjectArtworkStore.geometry(forDigest: digest, in: package)

@@ -328,11 +328,13 @@ public final class PDFCanvasViewController: NSViewController {
     /// A count mark can name imported artwork (ADR-0011 §2.1) and the picture lives in the
     /// project's content-addressed store, which this class has no access to. The hook is
     /// asked once per digest and the answer is cached: 312 marks made from one seal cost one
-    /// read, and a project with no artwork never opens the table at all.
+    /// read, and a project with no artwork never opens the table at all. A read cut short by
+    /// a newer scene pass is not an answer, and is asked again.
     public var onResolveArtwork: (@MainActor (String) async -> ArtworkGeometry?)?
 
     /// Resolves an inserted image's pixels by artwork digest (ADR-0043, L-81), or `nil` when the
-    /// store holds none. Installed by the host, which owns the package; asked once per digest.
+    /// store holds none. Installed by the host, which owns the package; asked once per digest,
+    /// and again when a newer scene pass cut the read short.
     public var onResolveInsertedImage: (@MainActor (String) async -> CGImage?)?
     /// Inserted-image pixels this canvas has resolved, keyed by digest, and the digests the store
     /// had none for.
@@ -1404,9 +1406,11 @@ public final class PDFCanvasViewController: NSViewController {
 
     /// Fetches any compiled artwork this scene's symbols name and has not seen before.
     ///
-    /// Asked once per digest, ever. A digest the store cannot produce is remembered as missing,
-    /// so a project whose artwork table was emptied by hand does not re-query it on every
-    /// rebuild — it draws the fallback glyph, which is the visible answer.
+    /// Asked once per digest, ever, by a pass that finishes its read. A digest the store cannot
+    /// produce is remembered as missing, so a project whose artwork table was emptied by hand
+    /// does not re-query it on every rebuild — it draws the fallback glyph, which is the visible
+    /// answer. A pass superseded mid-read is not an answer: the store's reads throw on a
+    /// cancelled task, and the newer pass asks again.
     private func resolveArtwork(for records: [MarkupRecord]) async {
         guard let onResolveArtwork else { return }
         var wanted: Set<String> = []
@@ -1426,6 +1430,12 @@ public final class PDFCanvasViewController: NSViewController {
         for digest in wanted.sorted() {
             if let geometry = await onResolveArtwork(digest) {
                 resolvedArtwork[digest] = geometry
+            } else if Task.isCancelled {
+                // A newer scene pass superseded this one while it read, and the store's reads
+                // throw on a cancelled task: this `nil` is "not asked", not "not there".
+                // Remembered as missing, it drew the fallback for the life of the canvas; the
+                // newer pass asks again.
+                return
             } else {
                 missingArtworkDigests.insert(digest)
             }
@@ -1447,6 +1457,11 @@ public final class PDFCanvasViewController: NSViewController {
         for digest in wanted.sorted() {
             if let image = await onResolveInsertedImage(digest) {
                 resolvedInsertedImages[digest] = image
+            } else if Task.isCancelled {
+                // Superseded mid-read, as in `resolveArtwork`: the newer pass asks again. Taken
+                // as missing, the picture stayed its 96-cell mosaic until the window reopened
+                // (L-81, exposed by the slow CI VM).
+                break
             } else {
                 missingInsertedImageDigests.insert(digest)
             }

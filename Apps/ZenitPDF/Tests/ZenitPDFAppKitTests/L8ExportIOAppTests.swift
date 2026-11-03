@@ -532,6 +532,48 @@ struct L8ExportIOAppTests {
         #expect(pageView.insertedImagesDrawnInLastPass == 1)
     }
 
+    /// What the stand-in resolver saw of the first read it was asked for.
+    @MainActor private final class FirstPixelRead { var asked = false; var answered = false }
+
+    /// Re-fix (CI, the 1× VM): a scene pass superseded while it read the picture's bytes got `nil`
+    /// from the store, whose reads throw on a cancelled task, and the canvas remembered the digest
+    /// as missing, so the picture drew as its 96-cell mosaic for the life of the window. Here the
+    /// first pass to ask is cancelled on purpose and its read runs on the cancelled task; the
+    /// newer pass starts only after that pass has handled its `nil`, so the order is the same on
+    /// every machine. Old output: no pixels, ever.
+    @Test("L-81: a scene pass superseded while it reads the picture leaves it to the next pass, not to the mosaic")
+    func supersededPixelReadIsAskedAgain() async throws {
+        let harness = try await Fix2Harness.make("L81 Superseded.pdf", calibrate: false)
+        defer { harness.tearDown() }
+        _ = try await Iter1ShellGlueTests.saveAsProject(harness, name: "L81 Superseded.zpdfproj")
+        await harness.settle()
+        let canvas = harness.canvas
+        let resolve = try #require(canvas.onResolveInsertedImage)
+        let first = FirstPixelRead()
+        canvas.onResolveInsertedImage = { digest in
+            guard !first.asked else { return await resolve(digest) }
+            first.asked = true
+            // Superseded, as `rebuildScene`'s cancel leaves a pass: the window's own read below
+            // runs on the cancelled task.
+            withUnsafeCurrentTask { $0?.cancel() }
+            let image = await resolve(digest)
+            first.answered = true
+            return image
+        }
+        let jpeg = harness.directory.appendingPathComponent("Sketch.jpg")
+        try Self.writeJPEG(width: 2_400, height: 1_600, to: jpeg)
+        #expect(await MarkupRound2Actions.insertImage(from: jpeg, document: harness.document) == nil)
+        // The pass the insertion's observation starts is the one that asks first; only after it
+        // has answered does a newer pass start. Two settles: if a settle's own pass was the one
+        // cancelled, the second still asks on a live task.
+        _ = await AppTestSupport.wait { first.answered }
+        await harness.settle()
+        await harness.settle()
+        #expect(first.answered, "no scene pass asked for the picture")
+        let pageView = canvas.pageViewForTesting
+        #expect(await AppTestSupport.wait { pageView.insertedImagePixels.values.contains { $0.width == 2_400 && $0.height == 1_600 } })
+    }
+
     @Test("L-81: the pixels are decoded within the import's bounds, and a picture past them is refused undecoded")
     func insertedImageDecodeBounds() throws {
         let folder = FileManager.default.temporaryDirectory.appendingPathComponent("l81-\(UUID().uuidString)", isDirectory: true)
