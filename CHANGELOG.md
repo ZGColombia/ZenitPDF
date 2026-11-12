@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.0.2
+
+### Fixes
+
+- Zenit PDF no longer quits unexpectedly at launch or when File ▸ Open Recent opens. When two
+  recent files shared a name, the app adjusted the spacing of their rows while macOS was still
+  updating them, and the app crashed — on macOS 26 a few seconds after launch, where the system
+  reads the menus without anyone opening them. The rows are now adjusted only while the menu
+  bar is open, after macOS has finished with them.
+
+### Development
+
+- `Scripts/verify-app-launches.sh` unregisters the build product from LaunchServices when it
+  ends, so a development build no longer shows up as a second Zenit PDF in Open With.
+
 ## 1.0.1
 
 ### Fixes

@@ -634,14 +634,77 @@ struct Live8AppShellTests {
         // "Plan-A.pdf —  live8", two spaces after the dash.
         let row = NSMenuItem(title: "Plan-A.pdf —  live8", action: nil, keyEquivalent: "")
         recent.insertItem(row, at: 0)
-        #expect(row.title == "Plan-A.pdf — live8")
-        row.title = "Plan-A.pdf —  live8 copy"
-        #expect(row.title == "Plan-A.pdf — live8 copy")
         let styled = NSMenuItem(title: "", action: nil, keyEquivalent: "")
         styled.attributedTitle = NSAttributedString(string: "Plan-B.pdf —  live8", attributes: [.font: NSFont.menuFont(ofSize: 0)])
         recent.insertItem(styled, at: 1)
+        // The person opens the menu bar: the rows read with single spaces.
+        NotificationCenter.default.post(name: NSMenu.didBeginTrackingNotification, object: bar)
+        #expect(row.title == "Plan-A.pdf — live8")
         #expect(styled.attributedTitle?.string == "Plan-B.pdf — live8")
         #expect(recent.items.last?.title == "Clear Menu")
+    }
+
+    /// Runs the main run loop until `condition` holds, or for `seconds`.
+    private static func runLoop(upTo seconds: TimeInterval = 1, until condition: () -> Bool) {
+        let deadline = Date(timeIntervalSinceNow: seconds)
+        while !condition(), Date() < deadline {
+            RunLoop.main.run(mode: .default, before: Date(timeIntervalSinceNow: 0.01))
+        }
+    }
+
+    /// Old: the tidier set a row's title again from inside the item-changed notification, which
+    /// AppKit posts before it hands the new title to the menu's implementation; the title it
+    /// still held was released under it, and the app crashed in
+    /// `-[NSContextMenuImpl _menuItem:atIndex:didChangeTitleFrom:to:]` whenever AppKit filled an
+    /// Open Recent holding two files of one name — at launch on macOS 26, with no menu open.
+    @Test("L-33: a row is never changed inside AppKit's own change to it, nor while the menu bar is closed")
+    func openRecentRowsAreLeftAloneInsideAppKitsChange() throws {
+        let bar = ZenitMenuBar.make()
+        let file = try #require(bar.items.first { $0.submenu?.title == ZPDFCommandGroup.file.displayName }?.submenu)
+        let recent = NSMenu(title: "Open Recent")
+        recent.addItem(NSMenuItem(title: "Clear Menu", action: #selector(NSDocumentController.clearRecentDocuments(_:)), keyEquivalent: ""))
+        let openRecent = NSMenuItem(title: "Open Recent", action: nil, keyEquivalent: "")
+        openRecent.submenu = recent
+        file.insertItem(openRecent, at: 2)
+        let tidier = OpenRecentTitleTidier()
+        defer { tidier.stop() }
+        tidier.watch(bar)
+        let untidy = "Plan-A.pdf —  live8"
+        let tidy = "Plan-A.pdf — live8"
+
+        // The menu bar is closed, as when macOS reads the menus at launch: AppKit's rows are
+        // left exactly as it wrote them, now and after the run loop has turned.
+        let row = NSMenuItem(title: untidy, action: nil, keyEquivalent: "")
+        recent.insertItem(row, at: 0)
+        row.title = untidy + " copy"
+        row.attributedTitle = NSAttributedString(string: untidy, attributes: [.font: NSFont.menuFont(ofSize: 0)])
+        Self.runLoop(upTo: 0.2, until: { false })
+        #expect(row.attributedTitle?.string == untidy, "a closed menu's row was changed")
+
+        // Open: tidied at once, outside any change of AppKit's.
+        NotificationCenter.default.post(name: NSMenu.didBeginTrackingNotification, object: bar)
+        #expect(tidier.isTracking)
+        #expect(row.attributedTitle?.string == tidy)
+
+        // AppKit fills the open menu. When its setter returns the row is still as AppKit set
+        // it — nothing was set from inside the notification — and it is tidied on the next
+        // pass of the run loop.
+        row.attributedTitle = NSAttributedString(string: untidy, attributes: [.font: NSFont.menuFont(ofSize: 0)])
+        #expect(row.attributedTitle?.string == untidy, "the row was changed inside AppKit's own change")
+        Self.runLoop(until: { row.attributedTitle?.string == tidy })
+        #expect(row.attributedTitle?.string == tidy)
+        let plain = NSMenuItem(title: untidy, action: nil, keyEquivalent: "")
+        recent.insertItem(plain, at: 1)
+        #expect(plain.title == untidy, "the row was changed inside AppKit's own insertion")
+        Self.runLoop(until: { plain.title == tidy })
+        #expect(plain.title == tidy)
+
+        // Closed again: a pass still waiting does nothing, and later changes are left alone.
+        plain.title = untidy
+        NotificationCenter.default.post(name: NSMenu.didEndTrackingNotification, object: bar)
+        #expect(!tidier.isTracking)
+        Self.runLoop(upTo: 0.2, until: { false })
+        #expect(plain.title == untidy, "a closed menu's row was changed")
     }
 
     // MARK: - L-78 the Takeoff Assistant Inbox and the Edit menu

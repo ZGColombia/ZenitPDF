@@ -265,8 +265,25 @@ cleanup() {
         done
     fi
     [ -n "${WORK_DIR}" ] && rm -rf "${WORK_DIR}"
+    unregister_build_product
 }
 trap cleanup EXIT
+
+# `open` registers the bundle it launches with LaunchServices, so every run of this gate added a
+# second "Zenit PDF" to Open With beside the installed one (seen 2026-11-12, after
+# Scripts/build-app.sh had already unregistered the build product). The gate takes it out again.
+# An installed copy is left registered: only a bundle outside the Applications folders is a
+# build product.
+unregister_build_product() {
+    local lsregister=/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister
+    if [ -z "${BUNDLE:-}" ] || [ ! -d "${BUNDLE}" ] || [ ! -x "${lsregister}" ]; then
+        return 0
+    fi
+    case "${BUNDLE}" in
+        /Applications/*|"${HOME}/Applications/"*) return 0 ;;
+    esac
+    "${lsregister}" -u "${BUNDLE}" >/dev/null 2>&1 || true
+}
 
 fail() {
     printf '\n=======================================================================\n'

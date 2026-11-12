@@ -7,8 +7,17 @@ import AppKit
 /// from its own strings: the separator `" — "` (spaces included, AppKit's `Document` table) joined
 /// to the folder by a further `"%@ %@"`. The row read "Plan-A.pdf —  live8", two spaces after the
 /// dash, in the installed build. There is no API for those titles, so this watches the submenu
-/// and collapses every run of white space in a row's title to one space as AppKit adds or
-/// changes it. It changes nothing else: not the order, not the action, not the file a row opens.
+/// and collapses every run of white space in a row's title to one space. It changes nothing
+/// else: not the order, not the action, not the file a row opens.
+///
+/// It touches a row only while the menu bar is being tracked, and never from inside AppKit's own
+/// change to that row. `-[NSMenuItem setTitle:]` posts the item-changed notification before it
+/// hands the new title to the menu's implementation, and the item holds the only reference to
+/// that title: setting the title again from the observer released it under AppKit, and the app
+/// crashed in `-[NSContextMenuImpl _menuItem:atIndex:didChangeTitleFrom:to:]` whenever AppKit
+/// filled a menu holding two recent files of one name — at launch on macOS 26, where the system
+/// reads the menus without anyone opening them. So a change is answered on the next pass of the
+/// run loop, and a menu nobody is looking at is left as AppKit wrote it until it is opened.
 @MainActor
 final class OpenRecentTitleTidier: NSObject {
 
@@ -18,6 +27,10 @@ final class OpenRecentTitleTidier: NSObject {
     /// The menu bar watched, and the Open Recent submenu found in it.
     private weak var bar: NSMenu?
     private(set) weak var recentMenu: NSMenu?
+    /// Whether the menu bar is open: between its begin- and end-tracking notifications.
+    private(set) var isTracking = false
+    /// Whether a pass over the submenu is already waiting for the run loop.
+    private var tidyScheduled = false
 
     /// `title` with every run of white space collapsed to a single space, and none at the ends.
     nonisolated static func tidied(_ title: String) -> String {
@@ -42,9 +55,12 @@ final class OpenRecentTitleTidier: NSObject {
         let center = NotificationCenter.default
         if let previous = self.bar {
             center.removeObserver(self, name: NSMenu.didBeginTrackingNotification, object: previous)
+            center.removeObserver(self, name: NSMenu.didEndTrackingNotification, object: previous)
         }
         self.bar = bar
+        isTracking = false
         center.addObserver(self, selector: #selector(trackingBegan(_:)), name: NSMenu.didBeginTrackingNotification, object: bar)
+        center.addObserver(self, selector: #selector(trackingEnded(_:)), name: NSMenu.didEndTrackingNotification, object: bar)
         attachToOpenRecent()
     }
 
@@ -53,15 +69,31 @@ final class OpenRecentTitleTidier: NSObject {
         NotificationCenter.default.removeObserver(self)
         bar = nil
         recentMenu = nil
+        isTracking = false
     }
 
     @objc private func trackingBegan(_ notification: Notification) {
+        isTracking = true
         attachToOpenRecent()
     }
 
+    @objc private func trackingEnded(_ notification: Notification) {
+        isTracking = false
+    }
+
+    /// AppKit added or changed a row. This runs inside AppKit's own change, so nothing is set
+    /// here; while the bar is open the rows are tidied on the next pass of the run loop.
     @objc private func recentMenuChanged(_ notification: Notification) {
-        guard let menu = notification.object as? NSMenu else { return }
-        tidy(menu)
+        guard isTracking, !tidyScheduled else { return }
+        tidyScheduled = true
+        RunLoop.main.perform(inModes: [.common]) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.tidyScheduled = false
+                guard self.isTracking, let menu = self.recentMenu else { return }
+                self.tidy(menu)
+            }
+        }
     }
 
     /// Finds the Open Recent submenu, watches it if it is new, and tidies what it holds.
@@ -81,7 +113,7 @@ final class OpenRecentTitleTidier: NSObject {
     }
 
     /// Collapses the white space in every row's title. Setting a title posts another change
-    /// notification, which finds the title already tidy and sets nothing.
+    /// notification, whose pass finds the title already tidy and sets nothing.
     func tidy(_ menu: NSMenu) {
         for item in menu.items where !item.isSeparatorItem {
             if let attributed = item.attributedTitle {
