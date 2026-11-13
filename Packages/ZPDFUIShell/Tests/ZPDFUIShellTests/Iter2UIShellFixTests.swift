@@ -95,7 +95,10 @@ private func iter2Image(width: Int, height: Int) -> CGImage {
 ///
 /// One `run(mode:before:)` returns as soon as it has serviced the main queue once, which on a
 /// busy machine — other suites' main-actor work is queued there — is before a perform's timer
-/// has fired. So the loop is run again until the condition holds or the time is up.
+/// has fired. So the loop is run again until the condition holds or the time is up. That one
+/// servicing of the main queue can itself last as long as the other suites keep it busy (over a
+/// minute on a hosted runner), so a caller waiting for a condition passes a limit well beyond
+/// that; the limit is only reached when the condition never holds.
 @MainActor
 private func iter2SpinDefaultRunLoop(upTo seconds: TimeInterval, until done: () -> Bool) {
     let deadline = Date().addingTimeInterval(seconds)
@@ -555,7 +558,7 @@ struct Iter2UIShellFixTests {
         #expect(abs(width - 300) < 20, "the in-memory layout follows every step (\(width))")
 
         dragging = false
-        iter2SpinDefaultRunLoop(upTo: 10) { defaults.writes > before }
+        iter2SpinDefaultRunLoop(upTo: 300) { defaults.writes > before }
         // A little longer, so a second write — one per step is what this replaced — would show.
         iter2SpinDefaultRunLoop(upTo: 0.1) { false }
         #expect(defaults.writes == before + 1, "one write when the drag is over")
