@@ -14,6 +14,9 @@
   page turns to the next, as before. A one-page document is the same either way.
 - While PDF layers are hidden, pages are shown one at a time, and the status bar says so, so a
   hidden layer never appears on a neighbouring page.
+- Known limit: the pointer's feedback — the snap ring, a drawing link's pointing hand — appears
+  on the current page only. Over a neighbouring page it shows once a click has made that page
+  current.
 - Select Text: a new tool, beside Select in the toolbar, in the Tools menu and on ⇧T, selects
   the drawing's own text so it can be copied. Drag across the text to select it in reading
   order; double-click selects a word and triple-click a line. The selection is highlighted on

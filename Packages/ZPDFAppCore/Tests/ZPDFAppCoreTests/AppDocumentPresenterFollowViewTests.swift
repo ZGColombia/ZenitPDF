@@ -1,4 +1,5 @@
 import Foundation
+import Observation
 import Testing
 import ZPDFContracts
 import ZPDFUIPresentation
@@ -57,7 +58,12 @@ struct AppDocumentPresenterFollowViewTests {
     @Test("Scrolling past sheets defers the snap index and the scale offer until the view rests")
     func scrollChangeDefersSnapIndexAndScaleOffer() async throws {
         let (environment, pages) = try await Self.environment(pages: 5)
-        environment.pageFollowDwell = .milliseconds(150)
+        // The dwell is a gate this test opens, so nothing here depends on the machine's speed.
+        let gate = DwellGate()
+        environment.pageDwellWait = { _ in
+            gate.waiting += 1
+            while !gate.isOpen { try? await Task.sleep(for: .milliseconds(5)) }
+        }
         var built: [UUID] = []
         environment.snapIndexSource = { page in
             built.append(page.id.rawValue)
@@ -70,10 +76,11 @@ struct AppDocumentPresenterFollowViewTests {
 
         let document = environment.document
         for index in 1...3 { document.followView(toPage: pages[index].id.rawValue, settle: false) }
-        try await Task.sleep(for: .milliseconds(40))
+        #expect(await Self.wait { gate.waiting == 3 }, "each page change waits on the dwell")
         #expect(built == [pages[0].id.rawValue], "no extraction for a sheet scrolled past")
         #expect(offered.isEmpty, "no scale offer for a sheet scrolled past")
 
+        gate.isOpen = true
         #expect(await Self.wait { offered == [pages[3].id.rawValue] }, "the sheet the view rests on is offered once")
         #expect(await Self.wait { built == [pages[0].id.rawValue, pages[3].id.rawValue] })
 
@@ -84,6 +91,20 @@ struct AppDocumentPresenterFollowViewTests {
         #expect(offered.last == pages[1].id.rawValue)
         #expect(await Self.wait { built.contains(pages[4].id.rawValue) && built.contains(pages[1].id.rawValue) })
         #expect(!built.contains(pages[2].id.rawValue))
+        #expect(offered == [pages[3].id.rawValue, pages[4].id.rawValue, pages[1].id.rawValue])
+    }
+
+    @Test("A snapshot that leaves the page list as it was does not replace it")
+    func unchangedPagesAreKept() async throws {
+        let (environment, _) = try await Self.environment(pages: 3)
+        let document = environment.document
+        let snapshot = try await environment.session.snapshot()
+        document.adopt(snapshot)
+        let replaced = ReplacedFlag()
+        withObservationTracking { _ = document.pages } onChange: { replaced.set() }
+        document.adopt(snapshot)
+        document.sheetOutlineTitles = document.sheetOutlineTitles
+        #expect(!replaced.value, "an unchanged page list must not wake its observers")
     }
 
     @Test("The dim set of any page follows the ledger filter's rule for the current one")
@@ -108,6 +129,21 @@ struct AppDocumentPresenterFollowViewTests {
         #expect(canvas.dimmedMarkupIDs(onPage: pages[0].id.rawValue) == canvas.dimmedMarkupIDs)
         canvas.setFilterMatches(nil)
         #expect(canvas.dimmedMarkupIDs(onPage: pages[1].id.rawValue).isEmpty)
+    }
+
+    /// Set from an observation callback, which may run on any thread.
+    final class ReplacedFlag: @unchecked Sendable {
+        private let lock = NSLock()
+        private var flag = false
+        func set() { lock.withLock { flag = true } }
+        var value: Bool { lock.withLock { flag } }
+    }
+
+    /// A dwell the test holds open until it says so.
+    @MainActor
+    final class DwellGate {
+        var isOpen = false
+        var waiting = 0
     }
 
     private static func wait(_ condition: @MainActor () -> Bool) async -> Bool {

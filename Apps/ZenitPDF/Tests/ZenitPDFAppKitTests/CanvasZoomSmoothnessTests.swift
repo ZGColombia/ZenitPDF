@@ -52,12 +52,11 @@ struct CanvasZoomSmoothnessTests {
         #expect(harness.canvas.visiblePageCoverageForTesting() >= 0.999)
     }
 
-    /// Pinned to single-page mode: its second half asserts the page *swap* — a turn never shows
-    /// the previous sheet's base. In continuous scrolling both sheets' bases are on screen at
-    /// once, each on its own sheet (`CanvasContinuousScrollTests`).
+    /// Run in continuous scrolling, the mode that ships: the base raster's residency is the same
+    /// on the strip's current page.
     @Test("NL-PERF-02: the base raster is resident for the page's life and under everything")
     func baseRasterIsResident() async throws {
-        let harness = try await Fix2Harness.make("NLPERF02b.pdf", pageCount: 2, calibrate: false, pageLayout: .singlePage)
+        let harness = try await Fix2Harness.make("NLPERF02b.pdf", pageCount: 2, calibrate: false, pageLayout: .continuous)
         defer { harness.tearDown() }
         harness.canvas.refresh()
         await settleRaster(harness)
@@ -70,7 +69,19 @@ struct CanvasZoomSmoothnessTests {
         #expect(longSide <= PDFCanvasViewController.baseRasterPixelSize && longSide >= 1024)
         let raster = harness.canvas.documentViewForTesting.rasterView
         #expect(raster.displayed.contains { $0.role == .base })
-        // A page turn never shows the previous sheet's base.
+    }
+
+    /// Pinned to single-page mode: it asserts the page *swap* — a turn never shows the previous
+    /// sheet's base. In continuous scrolling both sheets' bases are on screen at once, each on its
+    /// own sheet (`CanvasContinuousScrollTests`).
+    @Test("NL-PERF-02: a page turn never shows the previous sheet's base")
+    func pageTurnShowsNoPreviousBase() async throws {
+        let harness = try await Fix2Harness.make("NLPERF02c.pdf", pageCount: 2, calibrate: false, pageLayout: .singlePage)
+        defer { harness.tearDown() }
+        harness.canvas.refresh()
+        await settleRaster(harness)
+        let pageView = harness.canvas.pageViewForTesting
+        #expect(await AppTestSupport.wait { pageView.baseRaster != nil }, "no base raster")
         let firstBase = pageView.baseRaster?.image
         harness.core.document.goToNextPage()
         harness.canvas.refresh()

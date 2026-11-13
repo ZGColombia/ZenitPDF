@@ -59,6 +59,17 @@ final class CanvasStripState {
     var searchHighlight: (pageID: UUID, rect: PDFRectValue)?
     /// Whether the status bar has said that layer overrides suspend continuous scrolling.
     var saidSuspended = false
+    /// Whether the status bar has said that work on the current page holds a tall strip's window.
+    var saidWindowHeld = false
+    /// Set when a navigation or a press made a page current: it stays current, whatever the
+    /// view shows most of, until the person scrolls.
+    var followHeld = false
+    /// Scrolls the canvas makes itself (layout, a restore, a bookmark), which are not the person's.
+    var programmaticScrollDepth = 0
+    /// The scroll origin the last bounds change left, so a resize is not taken for a scroll.
+    var lastSeenClipOrigin: CGPoint?
+    /// Whether the canvas is on screen (between `viewDidAppear` and `viewDidDisappear`).
+    var isOnScreen = false
 
     // Test seams.
     /// Hand-offs of the current page: scrolling, presses and drops.
@@ -69,6 +80,8 @@ final class CanvasStripState {
     var passiveRenderStartCount = 0
     /// Window re-bases of a very tall strip.
     var rebaseCount = 0
+    /// Stand-in rasters fetched for neighbouring sheets.
+    var passiveBaseFetchCount = 0
     /// Presses on another sheet refused because work in progress holds the current one.
     var refusedPressCount = 0
 
@@ -155,7 +168,8 @@ extension PDFCanvasViewController {
         let continuous = strip.preference() == .continuous
         guard continuous != strip.prefersContinuous else { return }
         strip.prefersContinuous = continuous
-        guard isViewLoaded, pageView.transform != nil else { return }
+        // A canvas off screen (a background tab) lays out when it appears again.
+        guard isViewLoaded, pageView.transform != nil, strip.isOnScreen, view.window != nil else { return }
         refresh()
     }
 
@@ -171,6 +185,8 @@ extension PDFCanvasViewController {
         // The overscroll page turn belongs to single-page mode; here the next page is just below.
         scrollView.onTurnPage = nil
         rebuildScene()
+        // The observation reads every page's markups only in the strip: armed afresh to include them.
+        observe()
     }
 
     private func leaveStrip() {
@@ -183,7 +199,9 @@ extension PDFCanvasViewController {
         strip.followRetry = nil
         strip.recordsFetched = false
         strip.recordsByPage = [:]
+        strip.followHeld = false
         releasePassiveHosts()
+        observe()
         scrollView.onTurnPage = { [weak self] forward in
             self?.turnPage(forward: forward) ?? false
         }
@@ -199,10 +217,44 @@ extension PDFCanvasViewController {
         guard strip.prefersContinuous, strip.overridesActive, core.document.pages.count > 1,
               !strip.saidSuspended else { return }
         strip.saidSuspended = true
-        core.status.setActiveToolNote(NSLocalizedString(
+        postStripNote(NSLocalizedString(
             "Continuous scrolling is paused while PDF layers are hidden: pages show one at a time.",
             comment: "Status note: a multi-page document shows one page at a time while PDF layer overrides are active"
         ))
+    }
+
+    /// Posts a status note of continuous scrolling's own, unless the status bar already says
+    /// something — a tool's instructions or a measure lock's note are never replaced.
+    private func postStripNote(_ note: String) {
+        guard core.status.snapshot.activeToolNote == nil else { return }
+        core.status.setActiveToolNote(note)
+    }
+
+    /// Runs `body` as a scroll the canvas makes itself, which frees no page a navigation rested.
+    func scrollProgrammatically(_ body: () -> Void) {
+        strip.programmaticScrollDepth += 1
+        defer {
+            strip.programmaticScrollDepth -= 1
+            strip.lastSeenClipOrigin = scrollView.contentView.bounds.origin
+        }
+        body()
+    }
+
+    /// A bounds change of the clip view: when the person moved the view, a page a navigation or
+    /// a press made current may now be followed away from.
+    func noteStripScroll() {
+        let origin = scrollView.contentView.bounds.origin
+        defer { strip.lastSeenClipOrigin = origin }
+        guard strip.programmaticScrollDepth == 0, let last = strip.lastSeenClipOrigin, last != origin else { return }
+        strip.followHeld = false
+    }
+
+    /// Whether the strip as laid out is the strip of the page list as it is now. A page list
+    /// replaced since the last layout (pages added, removed, excluded) must be laid out before
+    /// any index of the old strip is used against it.
+    private func stripLayoutMatchesPages(_ layout: PageStripLayout) -> Bool {
+        let pages = core.document.pages
+        return layout.pageCount == pages.count && strip.sizesSource == pages
     }
 
     // MARK: - Layout
@@ -210,9 +262,10 @@ extension PDFCanvasViewController {
     /// The display sizes of the pages, read again only when the page list is replaced.
     private func stripPageSizes(_ pages: [ZPDFUIPresentation.PageDescriptor]) -> [CGSize] {
         if strip.sizesSource != pages {
-            strip.sizesSource = pages
             strip.sizes = pages.map { PageStripLayout.displaySize(of: $0.viewBox, rotation: $0.displayRotation) }
         }
+        // Kept as the very list compared next time, so the comparison is the identical-buffer one.
+        strip.sizesSource = pages
         return strip.sizes
     }
 
@@ -241,6 +294,26 @@ extension PDFCanvasViewController {
         }
         let pages = core.document.pages
         guard let index = pages.firstIndex(where: { $0.id == page.id }) else { return false }
+        strip.programmaticScrollDepth += 1
+        defer {
+            strip.programmaticScrollDepth -= 1
+            strip.lastSeenClipOrigin = scrollView.contentView.bounds.origin
+        }
+        // A zoom about a point keeps that point's sheet in the window, so the anchor's scroll is
+        // never clamped by a window laid out around a sheet far away.
+        if zoomChanged, let anchor, let old = strip.layout, old.pageCount == pages.count,
+           let under = old.nearestPage(toY: documentView.convert(anchor.window, from: nil).y) {
+            strip.windowAnchor = under
+        }
+        // A zoom aimed at a point — a pinch, a step about the pointer, the Zoom tool — is the
+        // person moving the view: a page a navigation held is followed away from again. A zoom
+        // from the menu or the status bar is not, and keeps it.
+        if zoomChanged, !externalZoom { strip.followHeld = false }
+        // The current page is normally kept inside the window. After a zoom aimed at another
+        // sheet with nothing held, the window follows the pointer instead; the follow rule then
+        // makes the sheet under it current.
+        let windowFollowsZoomAnchor = zoomChanged && anchor != nil && !isPageLocked
+        let originBefore = scrollView.contentView.bounds.origin
         let entering = !strip.isActive
         if entering { enterStrip() }
         let serial = core.document.navigationSerial
@@ -255,7 +328,7 @@ extension PDFCanvasViewController {
         if navigated || entering || needsInitialCentring { strip.windowAnchor = index }
         let sizes = stripPageSizes(pages)
         var layout = PageStripLayout(pageSizes: sizes, zoom: zoom, panMargin: panMargin, windowAnchor: strip.windowAnchor)
-        if !layout.window.contains(index) {
+        if !layout.window.contains(index), !windowFollowsZoomAnchor {
             strip.windowAnchor = index
             layout = PageStripLayout(pageSizes: sizes, zoom: zoom, panMargin: panMargin, windowAnchor: index)
         }
@@ -279,12 +352,23 @@ extension PDFCanvasViewController {
         if needsInitialCentring || navigated {
             needsInitialCentring = false
             restStripPage(index, layout: layout)
+            // The page asked for stays current until the person scrolls, even beside a larger
+            // neighbour that shows more of itself.
+            strip.followHeld = true
         } else if zoomChanged, let anchor {
             let viewAfter = transform.viewPoint(from: anchor.page)
             pageView.scroll(ZoomMath.scrollOrigin(
                 anchorInDocumentAfterZoom: viewAfter,
                 anchorInClipBounds: clip.convert(anchor.window, from: nil),
                 clipBoundsOrigin: clip.bounds.origin
+            ))
+            scrollView.reflectScrolledClipView(clip)
+        } else if previousPageID == page.id, !zoomChanged, !entering, !viewportChanged, stripMoved, let oldOrigin {
+            // The strip moved under a still view — a window re-base, pages added or removed above:
+            // the view moves by exactly as much, so nothing moves on screen.
+            pageView.scroll(NSPoint(
+                x: originBefore.x + transform.origin.x - oldOrigin.x,
+                y: originBefore.y + transform.origin.y - oldOrigin.y
             ))
             scrollView.reflectScrolledClipView(clip)
         } else if previousPageID == page.id, !zoomChanged, entering || viewportChanged || stripMoved,
@@ -311,11 +395,9 @@ extension PDFCanvasViewController {
         core.measurement.layout = pageLayout
         core.canvas.viewSize = viewSize
         applyPendingDestination(on: page.id, transform: transform)
+        // The report requests the current page's raster and places the neighbouring sheets — or,
+        // when it hands off, the layout it runs does.
         reportVisibleRect()
-        // A hand-off inside the report laid the new page out already.
-        guard core.document.currentPageID == page.id, pageView.transform == transform else { return true }
-        requestRaster(page: page, transform: transform, backingScale: backingScale)
-        updatePassiveHosts()
         return true
     }
 
@@ -354,7 +436,7 @@ extension PDFCanvasViewController {
         if isCalibrating, !calibrationPoints.isEmpty || calibrationPlacementsInFlight > 0 { return true }
         if selectDrag != nil || captionDrag != nil || dragAnchorPoint != nil || pageView.isTrackingPress { return true }
         if !typedEntry.isEmpty || measurementInput.state.isKeyboardCursorActive { return true }
-        if pendingOpeningProposal != nil { return true }
+        if pendingOpeningProposal != nil || isAutoTraceInFlight { return true }
         return strip.externalPageLock()
     }
 
@@ -365,19 +447,35 @@ extension PDFCanvasViewController {
     func followViewIfNeeded() -> Bool {
         guard strip.isActive, let layout = strip.layout, let current = strip.currentIndex,
               !strip.isAdopting, liveZoom == nil, !isAnimatingZoom, !isCommittingLiveZoom else { return false }
+        // The page list changed since the layout: lay out before any old index is used.
+        guard stripLayoutMatchesPages(layout) else {
+            pageView.performRasterBatch { layoutPage() }
+            return true
+        }
         let visible = scrollView.documentVisibleRect
-        if layout.needsRebase(visible: visible), let centre = layout.nearestPage(toY: visible.midY) {
-            let candidate = PageStripLayout(
-                pageSizes: layout.pageSizes, zoom: layout.zoom, panMargin: layout.panMargin, windowAnchor: centre
-            )
-            if candidate.window != layout.window, candidate.window.contains(current) {
-                strip.windowAnchor = centre
-                strip.rebaseCount &+= 1
-                pageView.performRasterBatch { layoutPage() }
-                return true
+        let locked = isPageLocked
+        if layout.needsRebase(visible: visible), let anchor = layout.rebaseAnchor(visible: visible) {
+            // Asked without building a layout: a scroll report near the edge costs O(log n).
+            let window = layout.window(around: anchor)
+            if window != layout.window {
+                if window.contains(current) {
+                    strip.windowAnchor = anchor
+                    strip.rebaseCount &+= 1
+                    strip.saidWindowHeld = false
+                    pageView.performRasterBatch { layoutPage() }
+                    return true
+                }
+                if locked, !strip.saidWindowHeld {
+                    // The window must keep the page the work is on, so the view can go no further.
+                    strip.saidWindowHeld = true
+                    postStripNote(NSLocalizedString(
+                        "Finish or cancel the work on this page to scroll further.",
+                        comment: "Status note: in continuous scrolling at a high zoom, work on the current page stops the view from scrolling further away from it"
+                    ))
+                }
             }
         }
-        guard !isPageLocked else { return false }
+        guard !locked, !strip.followHeld else { return false }
         let target = layout.pageToFollow(visible: visible, current: current)
         guard target != current else { return false }
         let now = ContinuousClock.now
@@ -402,13 +500,14 @@ extension PDFCanvasViewController {
     /// in progress holds the current one — then the press is ignored there, as a press off the
     /// sheet always was, and a boundary capture says why.
     func adoptStripPage(atWindowPoint windowPoint: CGPoint) {
-        guard strip.isActive, let layout = strip.layout, !strip.isAdopting, view.window != nil else { return }
+        guard strip.isActive, let layout = strip.layout, !strip.isAdopting, view.window != nil,
+              stripLayoutMatchesPages(layout) else { return }
         let point = documentView.convert(windowPoint, from: nil)
         guard let index = layout.page(at: point), index != strip.currentIndex else { return }
         guard !isPageLocked else {
             strip.refusedPressCount &+= 1
             if core.measurement.isCapturingBoundary || strip.externalPageLock() {
-                core.status.setActiveToolNote(NSLocalizedString(
+                postStripNote(NSLocalizedString(
                     "Finish or cancel the work on this page before using another page.",
                     comment: "Status note: a press on another page in continuous scrolling while a boundary or pick on the current page is in progress"
                 ))
@@ -424,6 +523,26 @@ extension PDFCanvasViewController {
         adoptStripPage(atWindowPoint: location)
     }
 
+    /// Whether a drop at a window point must be refused: it is on another sheet, and work on the
+    /// current page kept that sheet from becoming current — placed, it would land on the current
+    /// page at a point off its sheet. Says why.
+    func stripRefusesDrop(atWindowPoint windowPoint: CGPoint) -> Bool {
+        guard strip.isActive, let layout = strip.layout, stripLayoutMatchesPages(layout) else { return false }
+        let point = documentView.convert(windowPoint, from: nil)
+        guard let index = layout.page(at: point), index != strip.currentIndex else { return false }
+        postStripNote(NSLocalizedString(
+            "Finish or cancel the work on this page before using another page.",
+            comment: "Status note: a press on another page in continuous scrolling while a boundary or pick on the current page is in progress"
+        ))
+        return true
+    }
+
+    /// ``stripRefusesDrop(atWindowPoint:)`` for the drop the scroll view just took.
+    func stripRefusesDropUnderPointer() -> Bool {
+        guard let location = scrollView.lastDropLocationInWindow else { return false }
+        return stripRefusesDrop(atWindowPoint: location)
+    }
+
     /// Makes page `index` the current page without moving anything on screen: the presenter
     /// follows, the page is laid out in its slot (its tiles and stand-in come from the cache),
     /// its scene is re-filtered from the records already fetched, and the page it replaces
@@ -431,7 +550,8 @@ extension PDFCanvasViewController {
     @discardableResult
     func adoptStripPage(_ index: Int, settle: Bool) -> Bool {
         let pages = core.document.pages
-        guard strip.isActive, !strip.isAdopting, pages.indices.contains(index) else { return false }
+        guard strip.isActive, !strip.isAdopting, pages.indices.contains(index),
+              let layout = strip.layout, stripLayoutMatchesPages(layout) else { return false }
         let target = pages[index]
         guard target.id != core.document.currentPageID else { return false }
         strip.isAdopting = true
@@ -451,12 +571,14 @@ extension PDFCanvasViewController {
         CATransaction.setDisableActions(true)
         defer { CATransaction.commit() }
         core.document.followView(toPage: target.id, settle: settle)
-        if strip.recordsFetched { sceneRecords = strip.recordsByPage[target.id] ?? [] }
+        // A press or a drop chose this page: it stays current until the person scrolls.
+        strip.followHeld = settle
+        // Before the first fetch since entering the strip the records are not known: the page
+        // shows and hit-tests nothing until they land, never the previous page's records.
+        sceneRecords = strip.recordsFetched ? strip.recordsByPage[target.id] ?? [] : []
         pageView.performRasterBatch { layoutPage() }
-        if strip.recordsFetched {
-            applyScene()
-            markSceneCurrent()
-        }
+        applyScene()
+        if strip.recordsFetched { markSceneCurrent() } else { rebuildScene() }
         refreshLiveFeedback()
         applyStripSearchHighlight()
         return true
@@ -472,6 +594,8 @@ extension PDFCanvasViewController {
             if !strip.hosts.isEmpty { releasePassiveHosts() }
             return
         }
+        // A page list replaced since the layout: the layout that follows places the sheets.
+        guard stripLayoutMatchesPages(layout) else { return }
         let pages = core.document.pages
         let visible = scrollView.documentVisibleRect
         let band = visible.insetBy(dx: 0, dy: -visible.height)
@@ -548,13 +672,23 @@ extension PDFCanvasViewController {
         guard let page = host.page, let transform = host.documentTransform else { return }
         guard page.viewRotation == 0, page.viewCrop == nil, let source = rasterSource(for: page) else { return }
         let device = max(transform.pageFrame.width, transform.pageFrame.height) * (view.window?.backingScaleFactor ?? 2)
-        let size = device <= CGFloat(Self.passiveSmallBasePixelSize) ? Self.passiveSmallBasePixelSize : Self.baseRasterPixelSize
-        guard host.basePixelSize < size, host.baseTask == nil else { return }
+        let wanted = device <= CGFloat(Self.passiveSmallBasePixelSize) ? Self.passiveSmallBasePixelSize : Self.baseRasterPixelSize
+        // A cap set by the memory budget or a warning holds until the zoom changes.
+        if host.baseCapZoom != transform.zoom {
+            host.baseCapZoom = transform.zoom
+            host.baseCap = .max
+        }
+        let size = min(wanted, host.baseCap)
+        guard size > 0, host.basePixelSize < size, host.baseTask == nil else { return }
         let pdfIndex = page.index
         let displayWidth = transform.displaySize.width
+        host.baseRequest &+= 1
+        let request = host.baseRequest
+        strip.passiveBaseFetchCount &+= 1
         host.baseTask = Task { @MainActor [weak self, weak host] in
             guard let image = try? await source.thumbnail(pageIndex: pdfIndex, maximumPixelSize: size) else {
-                host?.baseTask = nil
+                // Only the newest request's task lets go of the handle.
+                if let host, host.baseRequest == request { host.baseTask = nil }
                 return
             }
             let base = await CanvasSurfaceImage.surfaced(PageRaster(
@@ -562,7 +696,8 @@ extension PDFCanvasViewController {
                 coverage: .wholePage,
                 scale: displayWidth > 0 ? CGFloat(image.width) / displayWidth : 1
             ))
-            guard let self, let host, !Task.isCancelled, self.strip.hosts[host.pageID] === host else { return }
+            guard let self, let host, !Task.isCancelled, host.baseRequest == request,
+                  self.strip.hosts[host.pageID] === host else { return }
             self.recordLanding {
                 host.baseTask = nil
                 host.base = base
@@ -581,8 +716,12 @@ extension PDFCanvasViewController {
         let farthestFirst = (order.map { $0.reversed().compactMap { strip.hosts[$0] } } ?? strip.hosts.values.sorted {
             abs(($0.documentTransform?.pageFrame.midY ?? 0) - visible.midY) > abs(($1.documentTransform?.pageFrame.midY ?? 0) - visible.midY)
         })
-        for host in farthestFirst where total > Self.passiveBaseByteBudget {
+        for host in farthestFirst where total > Self.passiveBaseByteBudget && host.baseBytes > 0 {
             total -= host.baseBytes
+            // Remembered, so the next scroll report does not fetch it straight back: a full-size
+            // stand-in steps down to the small one, a small one to none, until the zoom changes.
+            let small = Self.passiveSmallBasePixelSize
+            host.baseCap = host.basePixelSize > small ? small : 0
             host.dropBase()
         }
     }
@@ -594,19 +733,32 @@ extension PDFCanvasViewController {
     /// has no render in flight, so its render is always issued first (the renderer is serial
     /// per drawing), and never mid-gesture.
     func requestPassiveRasters() {
-        guard strip.isActive, pendingPlan == nil, liveZoom == nil, !isAnimatingZoom else { return }
+        guard strip.isActive, liveZoom == nil else { return }
+        // Cached tiles are shown always; a render waits while the current page's is in flight.
+        let mayRender = pendingPlan == nil && !isAnimatingZoom
         let visible = scrollView.documentVisibleRect
         let hosts = strip.hosts.values.sorted {
             abs(($0.documentTransform?.pageFrame.midY ?? 0) - visible.midY)
                 < abs(($1.documentTransform?.pageFrame.midY ?? 0) - visible.midY)
         }
-        for host in hosts { requestPassiveRaster(host, visible: visible) }
+        for host in hosts { requestPassiveRaster(host, visible: visible, mayRender: mayRender) }
+    }
+
+    /// Forgets what every neighbouring sheet delivered, keeping its pixels as stale stand-ins
+    /// until the new ones land: the tiles' content changed under the same keys (an annotation
+    /// display change, a layer filter).
+    func resetPassiveRasters() {
+        for host in strip.hosts.values {
+            if !host.pageView.tileRasters.isEmpty { host.pageView.staleTileRasters = host.pageView.tileRasters }
+            host.resetRaster()
+            host.tileKeys = []
+        }
     }
 
     /// One sheet's exact tiles: planned in document coordinates exactly as the current page
     /// plans, cached cells shown at once, the missing ones rendered in one call into the shared
     /// cache. One render in flight per sheet; a newer plan waits for it rather than cancelling.
-    private func requestPassiveRaster(_ host: CanvasPassivePage, visible: CGRect) {
+    private func requestPassiveRaster(_ host: CanvasPassivePage, visible: CGRect, mayRender: Bool) {
         guard let page = host.page, let transform = host.documentTransform,
               let source = rasterSource(for: page) else { return }
         guard visible.intersects(transform.pageFrame) else {
@@ -649,6 +801,7 @@ extension PDFCanvasViewController {
             host.pageView.staleTileRasters = []
             return
         }
+        guard mayRender else { return }
         let union = missing
             .map { grid.deviceRect(column: $0.column, row: $0.row) }
             .reduce(CGRect.null) { $0.union($1) }
@@ -702,7 +855,10 @@ extension PDFCanvasViewController {
             }
             if host.needsReplan || host.documentTransform != transform {
                 host.needsReplan = false
-                self.requestPassiveRaster(host, visible: self.scrollView.documentVisibleRect)
+                self.requestPassiveRaster(
+                    host, visible: self.scrollView.documentVisibleRect,
+                    mayRender: self.pendingPlan == nil && self.liveZoom == nil && !self.isAnimatingZoom
+                )
             }
         }
     }
@@ -727,7 +883,11 @@ extension PDFCanvasViewController {
     func relievePassiveHosts(critical: Bool) {
         for host in strip.hosts.values {
             host.pageView.staleTileRasters = []
-            if critical { host.dropBase() }
+            if critical {
+                // Not fetched back on the next scroll: none until the zoom changes.
+                host.baseCap = 0
+                host.dropBase()
+            }
         }
     }
 
@@ -877,6 +1037,8 @@ extension PDFCanvasViewController {
     var stripRefusedPressCountForTesting: Int { strip.refusedPressCount }
     /// Window re-bases so far.
     var stripRebaseCountForTesting: Int { strip.rebaseCount }
+    /// Stand-in rasters fetched for neighbouring sheets so far.
+    var passiveBaseFetchCountForTesting: Int { strip.passiveBaseFetchCount }
 
     /// The fraction of every visible sheet — the current page and its neighbours — that some
     /// raster covers on the frame the display would show now. Continuous scrolling's gate Z12.

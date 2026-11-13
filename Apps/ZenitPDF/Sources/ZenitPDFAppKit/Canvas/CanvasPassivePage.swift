@@ -64,8 +64,15 @@ final class CanvasPassivePage {
     var base: PageRaster?
     var baseBytes: Int { base.map { $0.image.bytesPerRow * $0.image.height } ?? 0 }
     var baseTask: Task<Void, Never>?
+    /// Bumped by every stand-in request and every drop, so only the newest request's task
+    /// touches ``baseTask`` and ``base``.
+    var baseRequest = 0
     /// The long side, in pixels, the stand-in was asked for.
     var basePixelSize = 0
+    /// The largest stand-in this sheet may hold, lowered when the memory budget or a memory
+    /// warning dropped one so it is not fetched straight back; and the zoom that cap was set at.
+    var baseCap = Int.max
+    var baseCapZoom: CGFloat = 0
 
     /// The plan whose tiles are on screen, and the one a render is in flight for.
     var deliveredPlan: ViewportRasterPlan?
@@ -139,6 +146,7 @@ final class CanvasPassivePage {
 
     /// Drops the stand-in raster, giving its memory back.
     func dropBase() {
+        baseRequest &+= 1
         baseTask?.cancel()
         baseTask = nil
         base = nil

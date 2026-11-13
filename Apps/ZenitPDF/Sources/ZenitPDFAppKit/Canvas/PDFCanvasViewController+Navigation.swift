@@ -42,8 +42,10 @@ extension PDFCanvasViewController {
             x: pending.left == nil ? visible.minX : view.x,
             y: pending.top == nil ? visible.minY : view.y
         )
-        pageView.scroll(origin)
-        scrollView.reflectScrolledClipView(scrollView.contentView)
+        scrollProgrammatically {
+            pageView.scroll(origin)
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+        }
     }
 
     /// The chords ``handleNavigationKey(_:)`` takes before the menu does: ⌘[ back, ⌘] forward —

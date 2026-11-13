@@ -2993,6 +2993,9 @@ final class CanvasPageView: NSView {
         releaseModifiers()
         pendingMeasureDragStart = nil
         pendingSelectStart = nil
+        // A tool drag whose release will never arrive is over too; left set, it held the page
+        // in continuous scrolling with nothing on screen to say why.
+        isMeasureDragging = false
         pressEndedTextEntry = false
         if isSelectDragging {
             isSelectDragging = false

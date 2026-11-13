@@ -65,6 +65,11 @@ public final class AppCoreEnvironment {
     /// is built and its scale offered (``AppDocumentPresenter/followView(toPage:settle:)``).
     /// A fling across forty sheets would otherwise start forty extractions and post forty offers.
     @ObservationIgnored public var pageFollowDwell: Duration = .milliseconds(250)
+    /// How the dwell is waited out: a sleep of ``pageFollowDwell``. A test injects a gate it
+    /// opens itself, so what it asserts does not depend on how fast the machine runs.
+    @ObservationIgnored public var pageDwellWait: @MainActor (Duration) async -> Void = { dwell in
+        try? await Task.sleep(for: dwell)
+    }
     /// The follow-ups waiting out ``pageFollowDwell`` for the page scrolled to last.
     @ObservationIgnored var pageDwellTask: Task<Void, Never>?
     /// Pages whose snap index is being built now, so a page turned to twice builds once.
@@ -407,8 +412,9 @@ public final class AppCoreEnvironment {
             }
             self.refreshStatus()
             let dwell = self.pageFollowDwell
+            let wait = self.pageDwellWait
             self.pageDwellTask = Task { @MainActor [weak self] in
-                try? await Task.sleep(for: dwell)
+                await wait(dwell)
                 guard !Task.isCancelled, let self, self.document.currentPageID == page.id else { return }
                 self.pageDwellTask = nil
                 self.ensureSnapIndex(forPage: page.id)

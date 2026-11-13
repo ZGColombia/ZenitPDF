@@ -272,7 +272,7 @@ public final class PDFCanvasViewController: NSViewController {
     /// The tiles of the last *complete* delivery: the stand-in for the next zoom (NL-PERF-02).
     private var deliveredTiles: [PageRaster] = []
     /// The cache keys of the tiles on screen, which a memory warning keeps (NL-PERF-10).
-    private var currentTileKeys: [CanvasTileCache.Key] = []
+    private(set) var currentTileKeys: [CanvasTileCache.Key] = []
 
     // MARK: Input state machine (IM-019)
 
@@ -579,6 +579,8 @@ public final class PDFCanvasViewController: NSViewController {
             // Continuous scrolling: a drop lands on the sheet under it, which becomes current first.
             scrollView.onDropFiles = { [weak self] urls, behavior in
                 self?.adoptStripPageUnderDrop()
+                // Images placed while work holds the current page would land on it, off its sheet.
+                if behavior == .placeImages, self?.stripRefusesDropUnderPointer() == true { return false }
                 return onDropFiles(urls, behavior)
             }
         }
@@ -835,6 +837,7 @@ public final class PDFCanvasViewController: NSViewController {
 
     public override func viewDidAppear() {
         super.viewDidAppear()
+        strip.isOnScreen = true
         core.canvas.viewSize = scrollView.contentSize
         let isFirstAppearance = !hasFittedInitially
         if !hasFittedInitially {
@@ -871,6 +874,7 @@ public final class PDFCanvasViewController: NSViewController {
     /// nobody can see (IM-241). Coming back re-renders the viewport, which is one render.
     public override func viewDidDisappear() {
         super.viewDidDisappear()
+        strip.isOnScreen = false
         commitLiveZoomIfNeeded()
         // Off screen the kept display link goes too; the next gesture on screen makes one.
         frameClock.invalidate()
@@ -907,6 +911,8 @@ public final class PDFCanvasViewController: NSViewController {
     }
 
     @objc private func contentBoundsDidChange(_ note: Notification) {
+        // Continuous scrolling: a scroll the person made frees a page navigation rested.
+        noteStripScroll()
         // A scroll posts a bounds change per event; the visible rect, the status refresh and
         // the raster planning run once per run-loop turn instead (IM-169).
         guard !visibleRectReportScheduled else { return }
@@ -973,7 +979,7 @@ public final class PDFCanvasViewController: NSViewController {
     /// pointer-rate change then ran N+1 refreshes for the rest of the session (CR-148).
     private var observationGeneration = 0
 
-    private func observe() {
+    func observe() {
         observationGeneration &+= 1
         armObservation(generation: observationGeneration)
     }
@@ -1011,8 +1017,10 @@ public final class PDFCanvasViewController: NSViewController {
             // page, and the neighbouring sheets draw every page's markups and the filter's dim.
             _ = core.document.pages
             _ = core.document.navigationSerial
-            _ = core.snapshot.markups
-            _ = core.canvas.filterRevision
+            if strip.isActive {
+                _ = core.snapshot.markups
+                _ = core.canvas.filterRevision
+            }
             _ = core.markup.activeKind
             _ = core.markup.placedPoints
             _ = core.markup.liveCursorPoint
@@ -1943,7 +1951,8 @@ public final class PDFCanvasViewController: NSViewController {
             && previousKey?.viewSize != scrollView.contentSize
         // Leaving continuous scrolling keeps the place too (the View menu toggle).
         let leftStrip = strip.consumeLeftStrip()
-        let centreToKeep = ((viewportChanged || leftStrip) && !zoomChanged) ? lastVisibleCentrePagePoint : nil
+        let keepsPlaceOnLeaving = leftStrip && previousKey?.pageID == page.id
+        let centreToKeep = ((viewportChanged || keepsPlaceOnLeaving) && !zoomChanged) ? lastVisibleCentrePagePoint : nil
         lastLayoutZoom = Double(zoom)
         // The sheet's view (NL-DOCS-07/16): turned and cropped for display; page space, and
         // every measurement in it, is unchanged, and hit testing inverts this same transform.
@@ -2037,7 +2046,7 @@ public final class PDFCanvasViewController: NSViewController {
         // which the whole sheet fits is centred on that axis — Fit Page lands centred, and a
         // small sheet is never left in a corner with empty backdrop on the other side. Panning
         // it aside afterwards is untouched: a pan is a scroll, not a layout.
-        if zoomChanged || viewportChanged || leftStrip || previousKey?.pageID != page.id {
+        if zoomChanged || viewportChanged || keepsPlaceOnLeaving || previousKey?.pageID != page.id {
             centreAxesWhereTheContentFits(centred.pageFrame)
         }
 
@@ -2282,8 +2291,10 @@ public final class PDFCanvasViewController: NSViewController {
         }
         origin.x = max(0, origin.x)
         origin.y = max(0, origin.y)
-        pageView.scroll(origin)
-        scrollView.reflectScrolledClipView(scrollView.contentView)
+        scrollProgrammatically {
+            pageView.scroll(origin)
+            scrollView.reflectScrolledClipView(scrollView.contentView)
+        }
         // A programmatic viewport change is reported at once: the coalescing of IM-169 is for
         // bursts of scroll events, and a caller that restores a viewport reads it straight back.
         reportVisibleRect()
@@ -2488,6 +2499,8 @@ public final class PDFCanvasViewController: NSViewController {
         currentTileKeys = []
         deliveredPlan = nil
         pendingPlan = nil
+        // The neighbouring sheets of continuous scrolling showed the same stale pixels.
+        resetPassiveRasters()
     }
 
     // MARK: - Pointer
@@ -3101,6 +3114,9 @@ public final class PDFCanvasViewController: NSViewController {
     /// Prepared pages and the off-main walk (NL-AUTO-01).
     let autoTraceService = AutoTraceService()
     private var autoTraceTask: Task<Void, Never>?
+    /// Whether an auto-trace walk is still working out its answer — work in progress that holds
+    /// the page in continuous scrolling.
+    private(set) var isAutoTraceInFlight = false
     private var autoTraceGeneration = 0
     /// The opening proposal on screen, while the person decides (NL-AUTO-07).
     private(set) var pendingOpeningProposal: OpeningProposal?
@@ -3819,8 +3835,10 @@ public final class PDFCanvasViewController: NSViewController {
         clearAutomationProposal()
         // The walk runs off the main actor on a prepared page (NL-AUTO-01): the click used to
         // flatten every primitive on the sheet again, synchronously, before the walk started.
+        isAutoTraceInFlight = true
         autoTraceTask = Task { @MainActor [weak self] in
             guard let self else { return }
+            defer { if self.autoTraceGeneration == generation { self.isAutoTraceInFlight = false } }
             let extracted = await self.autoTraceExtraction(pageID: pageID, pageIndex: pageIndex)
             // r2-platform (NL-AUTO-14): a scanned sheet has no vector linework; the trace reads
             // the pixels instead, and the area records that it came from the scan.

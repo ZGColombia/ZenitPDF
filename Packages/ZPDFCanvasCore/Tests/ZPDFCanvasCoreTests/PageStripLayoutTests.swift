@@ -179,12 +179,25 @@ struct PageStripLayoutTests {
         #expect(layout.needsRebase(visible: CGRect(x: top.minX, y: top.minY, width: 1600, height: 1000)))
     }
 
-    @Test("A page taller than the bound is still laid out, alone")
-    func oversizedPageIsItsOwnWindow() {
-        let sizes = [CGSize(width: 1000, height: 14_400), CGSize(width: 1000, height: 14_400)]
-        let layout = PageStripLayout(pageSizes: sizes, zoom: 64, panMargin: .zero, windowAnchor: 1)
-        #expect(layout.window == 1..<2)
-        #expect(layout.slotMinY(of: 1) == 0)
+    @Test("Sheets taller than half the bound keep both neighbours in the window, and a re-base moves onto the next")
+    func oversizedPagesKeepTheirNeighbours() {
+        // A0 portrait at 6400 %: 215,680 points a sheet, more than half the 2¹⁹ band.
+        let a0 = CGSize(width: 2384, height: 3370)
+        let sizes = Array(repeating: a0, count: 5)
+        let layout = PageStripLayout(pageSizes: sizes, zoom: 64, panMargin: .zero, windowAnchor: 2)
+        #expect(layout.window == 1..<4, "the anchor and both neighbours, past the bound")
+        #expect(layout.window(around: 2) == layout.window, "the cheap answer agrees with the layout")
+        // A viewport in the lower half of the last sheet of the window asks to move on, and the
+        // re-base anchors beyond the edge, so the window really moves.
+        let last = layout.slotFrame(of: 3)
+        let view = CGRect(x: last.minX, y: last.maxY - 2_000, width: 1600, height: 1000)
+        #expect(layout.needsRebase(visible: view))
+        let anchor = layout.rebaseAnchor(visible: view)
+        #expect(anchor == 4)
+        #expect(layout.window(around: 4) == 3..<5)
+        // A strip of two such sheets lays both out.
+        let two = PageStripLayout(pageSizes: [a0, a0], zoom: 64, panMargin: .zero, windowAnchor: 1)
+        #expect(two.window == 0..<2)
     }
 
     @Test("Resting a page: its top under the viewport's top edge, or centred when it fits")

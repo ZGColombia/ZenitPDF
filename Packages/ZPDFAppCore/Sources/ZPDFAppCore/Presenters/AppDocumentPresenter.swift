@@ -25,7 +25,15 @@ public final class AppDocumentPresenter: DocumentPresenting {
     /// (``PageDescriptor/resolvedSheetTitle(outlineTitle:label:)``). Setting it retitles the
     /// pages already adopted, so it may arrive after the first snapshot.
     public var sheetOutlineTitles: [UUID: String] = [:] {
-        didSet { pages = Self.titled(pages, outline: sheetOutlineTitles) }
+        didSet { adoptPages(Self.titled(pages, outline: sheetOutlineTitles)) }
+    }
+
+    /// Replaces ``pages`` only when the list differs. Every snapshot carries the page list, and
+    /// most snapshots (a markup drawn, a value edited) leave it as it was: assigning it anyway
+    /// woke every observer of `pages` and gave the canvas a new array to compare element by
+    /// element at pointer rate, where the unchanged one compares by its buffer.
+    private func adoptPages(_ list: [ZPDFUIPresentation.PageDescriptor]) {
+        if list != pages { pages = list }
     }
 
     /// `pages` with each sheet title resolved against `outline`.
@@ -128,7 +136,7 @@ public final class AppDocumentPresenter: DocumentPresenting {
         // whether an empty selection is a fresh start or a deliberate one — see below.
         let isFirstAdoption = pages.isEmpty
         let previousPageID = currentPageID
-        pages = Self.titled(snapshot.pages, outline: sheetOutlineTitles)
+        adoptPages(Self.titled(snapshot.pages, outline: sheetOutlineTitles))
         pageScales = snapshot.pageScales
         // Regions and zones arrive on the same snapshot as the markups they classify, so a
         // panel can never show a region the ledger row beside it has not heard of.

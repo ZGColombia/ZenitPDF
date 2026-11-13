@@ -422,6 +422,10 @@ struct CanvasContinuousScrollTests {
         let shownInClip = shown.offsetBy(dx: -originBefore.x, dy: -originBefore.y)
         canvas.gestureZoom(by: 1, aboutWindowPoint: anchor, phase: .ended)
         #expect(canvas.layoutCountForTesting == layoutsBefore + 1, "one layout at the gesture's end")
+        // The commit's scroll is reported a turn later; with the anchor's sheet still the one in
+        // view it neither hands off nor re-bases, so no second layout follows.
+        try? await Task.sleep(for: .milliseconds(60))
+        #expect(canvas.layoutCountForTesting == layoutsBefore + 1, "a layout after the gesture's end")
         let slot = try layout(harness).slotFrame(of: 1)
         let originAfter = visible(harness).origin
         let laidInClip = slot.offsetBy(dx: -originAfter.x, dy: -originAfter.y)
@@ -575,7 +579,11 @@ struct CanvasContinuousScrollTests {
         defer { harness.tearDown() }
         let ids = pageIDs(harness)
         var built: [UUID] = []
-        harness.core.pageFollowDwell = .milliseconds(400)
+        // The dwell is a gate the test opens, not a race against the machine's speed.
+        var dwellOpen = false
+        harness.core.pageDwellWait = { _ in
+            while !dwellOpen { try? await Task.sleep(for: .milliseconds(5)) }
+        }
         harness.core.snapIndexSource = { page in
             built.append(page.id.rawValue)
             return AppCoreEnvironment.SnapIndexBuild()
@@ -587,7 +595,9 @@ struct CanvasContinuousScrollTests {
             #expect(harness.core.document.currentPageID == ids[index])
             await waitOutRateLimit()
         }
-        #expect(!built.contains(ids[1]) && !built.contains(ids[2]), "no extraction for a sheet scrolled past")
+        #expect(!built.contains(ids[1]) && !built.contains(ids[2]) && !built.contains(ids[3]),
+                "no extraction for a sheet scrolled past, nor yet for the last before the dwell")
+        dwellOpen = true
         #expect(await AppTestSupport.wait { built.contains(ids[3]) }, "the sheet the view rests on is indexed")
         #expect(!built.contains(ids[1]) && !built.contains(ids[2]))
     }
@@ -599,6 +609,396 @@ struct CanvasContinuousScrollTests {
         #expect(!harness.canvas.passivePagesForTesting.isEmpty)
         harness.canvas.viewDidDisappear()
         #expect(harness.canvas.passivePagesForTesting.isEmpty)
+    }
+
+    // MARK: - Review fixes
+
+    private static let linework = "2 w 0 0 0 RG 72 72 m 300 300 l S\n"
+
+    /// Sizes the canvas's scroll view, as the viewer gates do, without ordering the window in.
+    private func sizeCanvas(_ harness: Fix2Harness, to target: CGSize) throws {
+        let window = try #require(harness.controller.window)
+        let scrollView = harness.canvas.scrollViewForTesting
+        for _ in 0..<3 {
+            let size = scrollView.contentSize
+            let dw = target.width - size.width, dh = target.height - size.height
+            guard abs(dw) > 0.5 || abs(dh) > 0.5 else { break }
+            let content = window.contentRect(forFrameRect: window.frame).size
+            window.setContentSize(NSSize(width: content.width + dw, height: content.height + dh))
+            window.layoutIfNeeded()
+            harness.canvas.view.layoutSubtreeIfNeeded()
+        }
+        #expect(!window.isVisible)
+    }
+
+    private func makePages(_ name: String, mediaBox: String, count: Int) async throws -> Fix2Harness {
+        let url = try AutomationFixtures.writePages(named: name, mediaBox: mediaBox, contents: Array(repeating: Self.linework, count: count))
+        let harness = try await Fix2Harness.make(name, calibrate: false, fixture: url, pageLayout: .continuous)
+        harness.canvas.refresh()
+        await settle(harness)
+        return harness
+    }
+
+    private func centrePagePoint(_ harness: Fix2Harness) throws -> PDFPointValue {
+        let transform = try #require(harness.canvas.pageViewForTesting.transform)
+        return transform.pagePoint(from: CGPoint(x: visible(harness).midX, y: visible(harness).midY))
+    }
+
+    @Test("A0 sheets at 6400 %: scrolling moves from one sheet onto the next, and the window's re-base moves nothing on screen")
+    func scrollsAcrossOversizedSheets() async throws {
+        let harness = try await makePages("CS A0.pdf", mediaBox: "0 0 2384 3370", count: 4)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        harness.core.canvas.setZoom(ViewportSnapshot.maximumZoom)
+        harness.canvas.refresh()
+        #expect(try layout(harness).isWindowed)
+        try scroll(harness, toPage: 1)
+        #expect(harness.core.document.currentPageID == ids[1], "onto the second sheet")
+        await waitOutRateLimit()
+        // Towards the foot of the second sheet, the window's edge: it re-bases onto the third.
+        let foot = try layout(harness).slotFrame(of: 1).maxY - visible(harness).height - 200
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: foot), report: false)
+        let before = try centrePagePoint(harness)
+        let rebases = harness.canvas.stripRebaseCountForTesting
+        harness.canvas.reportVisibleRect()
+        #expect(harness.canvas.stripRebaseCountForTesting == rebases + 1)
+        #expect(try layout(harness).window.contains(2))
+        let after = try centrePagePoint(harness)
+        #expect(abs(after.x - before.x) < 0.01 && abs(after.y - before.y) < 0.01, "the re-base moved the view: \(before) → \(after)")
+        await waitOutRateLimit()
+        try scroll(harness, toPage: 2)
+        #expect(harness.core.document.currentPageID == ids[2], "onto the third sheet")
+    }
+
+    @Test("A0 sheets at 6400 % with work holding the first: the view stops at the window and says why")
+    func lockedPageHoldsTheWindowWithANote() async throws {
+        let harness = try await makePages("CS A0 locked.pdf", mediaBox: "0 0 2384 3370", count: 4)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        harness.core.canvas.setZoom(ViewportSnapshot.maximumZoom)
+        harness.canvas.refresh()
+        harness.canvas.externalPageLock = { true }
+        harness.core.status.setActiveToolNote(nil)
+        let foot = try layout(harness).slotFrame(of: 1).maxY - visible(harness).height - 200
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: foot))
+        #expect(harness.core.document.currentPageID == ids[0])
+        #expect(harness.core.status.snapshot.activeToolNote?.contains("to scroll further") == true)
+    }
+
+    @Test("A zoom about a point two sheets from the current one keeps that point under the pointer, and follows it")
+    func pointerZoomAcrossTheWindowKeepsItsAnchor() async throws {
+        let harness = try await makePages("CS A0 zoom.pdf", mediaBox: "0 0 2384 3370", count: 6)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        harness.core.canvas.setZoom(ViewportSnapshot.minimumZoom)
+        harness.canvas.refresh()
+        harness.core.document.goToPage(id: ids[0])
+        harness.canvas.refresh()
+        let strip = try layout(harness)
+        let slot = strip.slotFrame(of: 3)
+        let page = harness.core.document.pages[3]
+        let pointDoc = CGPoint(x: slot.midX, y: slot.minY + slot.height / 3)
+        let pointPage = PageDisplayTransform(pageBox: page.viewBox, rotation: page.displayRotation,
+                                             zoom: strip.zoom, origin: strip.slotOrigin(of: 3)).pagePoint(from: pointDoc)
+        let pageView = harness.canvas.pageViewForTesting
+        let window = pageView.convert(pointDoc, to: nil)
+        harness.canvas.zoom(by: ViewportSnapshot.maximumZoom / ViewportSnapshot.minimumZoom, aboutWindowPoint: window)
+        let after = try layout(harness)
+        #expect(after.window.contains(3), "the window is laid out around the pointer's sheet")
+        let landed = pageView.convert(PageDisplayTransform(pageBox: page.viewBox, rotation: page.displayRotation,
+                                                           zoom: after.zoom, origin: after.slotOrigin(of: 3)).viewPoint(from: pointPage), to: nil)
+        #expect(abs(landed.x - window.x) < 0.5 && abs(landed.y - window.y) < 0.5, "moved to \(landed) from \(window)")
+        #expect(harness.core.document.currentPageID == ids[3], "the sheet zoomed into becomes current")
+    }
+
+    @Test("A hand-off onto an uncached sheet leaves the sheet just left at full sharpness")
+    func handOffKeepsTheOutgoingSheetSharp() async throws {
+        let harness = try await make("CS outgoing.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        var locked = true
+        harness.canvas.externalPageLock = { locked }
+        let slot = try layout(harness).slotFrame(of: 1)
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: slot.minY - 120))
+        await settle(harness)
+        // Only the current page's tiles stay cached: the incoming sheet must render.
+        harness.canvas.tileCacheForTesting.removeAll(except: Set(harness.canvas.currentTileKeys))
+        locked = false
+        harness.canvas.reportVisibleRect()
+        #expect(harness.core.document.currentPageID == ids[1])
+        #expect(harness.canvas.pendingPlan != nil, "the incoming sheet's render is in flight")
+        let outgoing = try #require(host(harness, page: ids[0]))
+        let transform = try #require(outgoing.pageView.transform)
+        let origin = outgoing.pageView.frame.origin
+        let shown = visible(harness).offsetBy(dx: -origin.x, dy: -origin.y).intersection(transform.pageFrame)
+        let scale = outgoing.pageView.effectiveBackingScale
+        let exact = outgoing.pageView.tileRasters.map { $0.placement(in: transform, backingScale: scale) }.filter(\.isPixelExact)
+        #expect(!exact.isEmpty, "the sheet just left shows its cached tiles at once")
+        #expect(CanvasPageView.coveredFraction(of: shown, by: exact.map(\.destination)) >= 0.999)
+        await settle(harness)
+    }
+
+    /// An A4 between two A1 sheets: at the A1's fit zoom the A4 is the smallest sheet in view.
+    private func makeMixedSizes(_ name: String) async throws -> Fix2Harness {
+        let url = try AutomationFixtures.writePDF(
+            named: name,
+            objects: [
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 2384 1684] /Contents 4 0 R >>", "",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 6 0 R >>", "",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 2384 1684] /Contents 8 0 R >>", ""
+            ],
+            streams: [4: Self.linework, 6: Self.linework, 8: Self.linework]
+        )
+        let harness = try await Fix2Harness.make(name, calibrate: false, fixture: url, pageLayout: .continuous)
+        harness.canvas.refresh()
+        await settle(harness)
+        return harness
+    }
+
+    @Test("A sheet navigated to stays current beside larger neighbours, through a resize and a zoom, until the person scrolls")
+    func navigatedPageStaysCurrentUntilAScroll() async throws {
+        let harness = try await makeMixedSizes("CS mixed.pdf")
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        let strip = try layout(harness)
+        #expect(strip.slotFrame(of: 1).midX == strip.slotFrame(of: 0).midX, "mixed sizes share the centre line")
+        harness.core.document.goToPage(id: ids[1])
+        harness.canvas.refresh()
+        #expect(harness.core.document.currentPageID == ids[1])
+        let a4 = try layout(harness).slotFrame(of: 1).intersection(visible(harness))
+        let a1 = try layout(harness).slotFrame(of: 0).intersection(visible(harness))
+        #expect(a1.width * a1.height > a4.width * a4.height, "a neighbour shows more of itself than the A4")
+        try sizeCanvas(harness, to: CGSize(width: 1300, height: 900))
+        harness.canvas.refresh()
+        #expect(harness.core.document.currentPageID == ids[1], "a resize keeps it")
+        harness.core.canvas.setZoom(harness.core.canvas.viewport.zoom * 1.25)
+        harness.canvas.refresh()
+        #expect(harness.core.document.currentPageID == ids[1], "a zoom keeps it")
+        await waitOutRateLimit()
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: visible(harness).minY + 40))
+        #expect(harness.core.document.currentPageID != ids[1], "a scroll lets the view lead again")
+    }
+
+    @Test("A press on the smaller sheet keeps it current after the press")
+    func pressedSmallPageStaysCurrent() async throws {
+        let harness = try await makeMixedSizes("CS mixed press.pdf")
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        let slot = try layout(harness).slotFrame(of: 1)
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: slot.midY - visible(harness).height / 2))
+        await waitOutRateLimit()
+        let point = CGPoint(x: slot.midX, y: slot.midY)
+        let pageView = harness.canvas.pageViewForTesting
+        pageView.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: point))
+        pageView.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: point))
+        #expect(harness.core.document.currentPageID == ids[1])
+        harness.canvas.refresh()
+        harness.canvas.reportVisibleRect()
+        #expect(harness.core.document.currentPageID == ids[1], "not followed away without a scroll")
+    }
+
+    @Test("A page list replaced before its layout is never indexed with the old strip")
+    func stalePageListIsLaidOutFirst() async throws {
+        let harness = try await make("CS stale.pdf", pages: 4)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        let all = try await harness.core.session.snapshot()
+        _ = try await harness.core.commands.perform(.setPagesExcluded([PageID(ids[0])], excluded: true))
+        await harness.settle()
+        let three = try await harness.core.session.snapshot()
+        #expect(three.pages.count == 3)
+        harness.core.document.adopt(all)
+        harness.canvas.refresh()
+        #expect(try layout(harness).pageCount == 4)
+        try scroll(harness, toPage: 3)
+        // The page list shrinks; the layout has not run. A scroll report must not use index 3.
+        harness.core.document.adopt(three)
+        #expect(try layout(harness).pageCount == 4, "the stale state under test")
+        harness.canvas.updatePassiveHosts()
+        harness.canvas.reportVisibleRect()
+        #expect(try layout(harness).pageCount == 3, "laid out before anything else")
+        #expect(harness.canvas.passivePagesForTesting.allSatisfy { sheet in harness.core.document.pages.contains { $0.id == sheet.pageID } })
+    }
+
+    @Test("An annotation display change re-renders the neighbouring sheets too")
+    func annotationChangeResetsNeighbours() async throws {
+        let harness = try await make("CS annotations.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        // The second sheet in view beside the first, which stays current.
+        harness.canvas.externalPageLock = { true }
+        let slot = try layout(harness).slotFrame(of: 1)
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: slot.minY - 120))
+        await settle(harness)
+        let sheet = try #require(host(harness, page: ids[1]))
+        try #require(!sheet.pageView.tileRasters.isEmpty)
+        let renders = harness.canvas.passiveRenderStartCountForTesting
+        harness.canvas.setLayerFiltering(nil)
+        #expect(sheet.deliveredPlan == nil, "the old delivery no longer satisfies")
+        #expect(!sheet.pageView.staleTileRasters.isEmpty, "yesterday's pixels stand in meanwhile")
+        await settle(harness)
+        #expect(harness.canvas.passiveRenderStartCountForTesting > renders, "the neighbour rendered again")
+        #expect(!sheet.pageView.tileRasters.isEmpty && sheet.pageView.staleTileRasters.isEmpty)
+    }
+
+    @Test("Over the stand-in budget, steady scrolling fetches no stand-in twice")
+    func standInBudgetDoesNotThrash() async throws {
+        let harness = try await makePages("CS budget.pdf", mediaBox: "0 0 2384 1684", count: 24)
+        defer { harness.tearDown() }
+        try sizeCanvas(harness, to: CGSize(width: 1600, height: 1400))
+        let backing = harness.canvas.pageViewForTesting.effectiveBackingScale
+        // Just over the small stand-in's 512 device pixels, so every sheet wants the full one.
+        harness.core.canvas.setZoom(Double(530 / (2384 * backing)))
+        harness.canvas.refresh()
+        await settle(harness)
+        harness.canvas.updatePassiveHosts()
+        await settle(harness)
+        let hosts = harness.canvas.passivePagesForTesting.count
+        let fetches = harness.canvas.passiveBaseFetchCountForTesting
+        #expect(hosts >= 9, "enough full-size stand-ins to pass the budget: \(hosts)")
+        #expect(fetches > hosts, "the budget stepped some stand-ins down")
+        for _ in 0..<3 {
+            harness.canvas.updatePassiveHosts()
+            await settle(harness)
+        }
+        #expect(harness.canvas.passiveBaseFetchCountForTesting == fetches, "a dropped stand-in was fetched back")
+        #expect(harness.canvas.passiveBaseBytesForTesting <= PDFCanvasViewController.passiveBaseByteBudget)
+    }
+
+    @Test("The strip's notes never replace a note already in the status bar")
+    func stripNotesDoNotOverwrite() async throws {
+        let harness = try await make("CS note.pdf", pages: 3)
+        defer { harness.tearDown() }
+        harness.core.status.setActiveToolNote("Measuring on Walls only")
+        harness.canvas.layerOverridesActive = { true }
+        harness.canvas.setLayerFiltering(nil)
+        #expect(!harness.canvas.isContinuousScrollActive)
+        #expect(harness.core.status.snapshot.activeToolNote == "Measuring on Walls only")
+    }
+
+    @Test("A preset dropped on another sheet while work holds the current one is refused, not misplaced")
+    func dropWhileLockedIsRefused() async throws {
+        let harness = try await make("CS drop locked.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        harness.canvas.externalPageLock = { true }
+        harness.core.status.setActiveToolNote(nil)
+        let slot = try layout(harness).slotFrame(of: 1)
+        let window = harness.canvas.pageViewForTesting.convert(CGPoint(x: slot.midX, y: slot.minY + 40), to: nil)
+        let drop = try #require(harness.canvas.scrollViewForTesting.onDropPreset)
+        #expect(!drop(UUID(), window))
+        #expect(harness.core.document.currentPageID == ids[0])
+        #expect(harness.core.status.snapshot.activeToolNote?.contains("before using another page") == true)
+    }
+
+    @Test("Drop and right-click adopt the sheet under them")
+    func dropAndRightClickAdopt() async throws {
+        let harness = try await make("CS adopt.pdf", pages: 3, calibrate: true)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        let strip = try layout(harness)
+        let pageView = harness.canvas.pageViewForTesting
+        // A Tool Library drop (an unknown preset places nothing, the adoption still happens).
+        let onSecond = pageView.convert(CGPoint(x: strip.slotFrame(of: 1).midX, y: strip.slotFrame(of: 1).minY + 40), to: nil)
+        let drop = try #require(harness.canvas.scrollViewForTesting.onDropPreset)
+        _ = drop(UUID(), onSecond)
+        #expect(harness.core.document.currentPageID == ids[1])
+        // A right-click with Length armed: it finishes the (empty) measurement, no menu opens.
+        harness.shell.perform(.measureLength)
+        harness.canvas.refresh()
+        let third = CGPoint(x: strip.slotFrame(of: 2).midX, y: strip.slotFrame(of: 2).minY + 40)
+        pageView.rightMouseDown(with: harness.mouseEvent(.rightMouseDown, atLocal: third))
+        #expect(harness.core.document.currentPageID == ids[2])
+    }
+
+    @Test("A window resize in the strip keeps the place")
+    func resizeKeepsThePlace() async throws {
+        let harness = try await make("CS resize.pdf", pages: 3)
+        defer { harness.tearDown() }
+        harness.core.canvas.setZoom(harness.core.canvas.viewport.zoom * 3)
+        harness.canvas.refresh()
+        let slot = try layout(harness).slotFrame(of: 1)
+        scroll(harness, to: CGPoint(x: slot.minX + 80, y: slot.minY + 150))
+        let before = try centrePagePoint(harness)
+        let page = harness.core.document.currentPageID
+        try sizeCanvas(harness, to: CGSize(width: 1100, height: 760))
+        #expect(harness.core.document.currentPageID == page)
+        let after = try centrePagePoint(harness)
+        #expect(abs(after.x - before.x) < 1 && abs(after.y - before.y) < 1, "\(before) → \(after)")
+    }
+
+    @Test("A zoom about a point on a neighbouring sheet, nothing held: the point stays under the pointer and its sheet is followed")
+    func unlockedZoomOnANeighbourFollows() async throws {
+        let harness = try await make("CS zoom follow.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        let before = try layout(harness)
+        let slot = before.slotFrame(of: 1)
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: slot.minY - visible(harness).height / 2))
+        await waitOutRateLimit()
+        let page = harness.core.document.pages[1]
+        let anchorDoc = CGPoint(x: slot.midX, y: slot.minY + 60)
+        let pagePoint = PageDisplayTransform(pageBox: page.viewBox, rotation: page.displayRotation,
+                                             zoom: before.zoom, origin: before.slotOrigin(of: 1)).pagePoint(from: anchorDoc)
+        let pageView = harness.canvas.pageViewForTesting
+        let window = pageView.convert(anchorDoc, to: nil)
+        harness.canvas.zoom(by: 4, aboutWindowPoint: window)
+        let after = try layout(harness)
+        let landed = pageView.convert(PageDisplayTransform(pageBox: page.viewBox, rotation: page.displayRotation,
+                                                           zoom: after.zoom, origin: after.slotOrigin(of: 1)).viewPoint(from: pagePoint), to: nil)
+        #expect(abs(landed.x - window.x) < 0.5 && abs(landed.y - window.y) < 0.5)
+        #expect(harness.core.document.currentPageID == ids[1], "the sheet under the zoom is followed")
+    }
+
+    @Test("A canvas off screen does not lay out for a preference change; it does when it appears")
+    func offscreenCanvasWaitsForThePreference() async throws {
+        let harness = try await make("CS offscreen pref.pdf", pages: 3)
+        defer { harness.tearDown() }
+        harness.canvas.viewDidDisappear()
+        let layouts = harness.canvas.layoutCountForTesting
+        harness.canvas.pageLayoutPreference = { .singlePage }
+        #expect(harness.canvas.layoutCountForTesting == layouts, "no layout for a canvas nobody sees")
+        #expect(harness.canvas.isContinuousScrollActive)
+        harness.canvas.viewDidAppear()
+        #expect(!harness.canvas.isContinuousScrollActive)
+    }
+
+    @Test("A tool drag whose release never comes stops holding the page when the canvas loses the keyboard")
+    func lostReleaseDoesNotHoldThePage() async throws {
+        let harness = try await make("CS lost release.pdf", pages: 3, calibrate: true)
+        defer { harness.tearDown() }
+        harness.shell.perform(.measureArea)
+        harness.canvas.refresh()
+        let slot = try layout(harness).slotFrame(of: 0)
+        let pageView = harness.canvas.pageViewForTesting
+        let start = CGPoint(x: slot.minX + 40, y: slot.minY + 40)
+        pageView.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: start))
+        pageView.mouseDragged(with: harness.mouseEvent(.leftMouseDragged, atLocal: CGPoint(x: start.x + 50, y: start.y + 50)))
+        #expect(pageView.isTrackingPress)
+        _ = pageView.resignFirstResponder()
+        #expect(!pageView.isTrackingPress)
+    }
+
+    @Test("A press right after entering the strip, before the first fetch, never hit-tests the previous page's records")
+    func pressBeforeTheFirstFetchUsesNoStaleRecords() async throws {
+        let url = try AppTestSupport.writeFixturePDF(named: "CS early press.pdf", pageCount: 3)
+        let harness = try await Fix2Harness.make("CS early press.pdf", calibrate: true, fixture: url, pageLayout: .singlePage)
+        defer { harness.tearDown() }
+        try await harness.addMarkup(tool: .length, geometry: { page in
+            MeasurementGeometry(pageID: page, points: [PDFPoint(x: 100, y: 100), PDFPoint(x: 300, y: 100)])
+        })
+        #expect(harness.canvas.sceneRecordCountForTesting == 1)
+        harness.canvas.pageLayoutPreference = { .continuous }
+        let slot = try layout(harness).slotFrame(of: 1)
+        let point = CGPoint(x: slot.midX, y: slot.minY + 40)
+        harness.canvas.pageViewForTesting.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: point))
+        #expect(harness.core.document.currentPageID == pageIDs(harness)[1])
+        #expect(harness.canvas.sceneRecordCountForTesting == 0, "the first page's record is not the second page's")
+        harness.canvas.pageViewForTesting.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: point))
+        await settle(harness)
+        #expect(harness.canvas.sceneRecordCountForTesting == 0)
     }
 
     // MARK: - Select Text in the strip

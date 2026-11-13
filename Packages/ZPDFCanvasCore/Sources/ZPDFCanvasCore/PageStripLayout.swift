@@ -27,11 +27,14 @@ import ZPDFUIPresentation
 ///
 /// A long document at a high zoom is taller than any view hierarchy should be: 323 A1 sheets at
 /// 6400 % are about 35 million points. Core Animation's behaviour at that magnitude could not be
-/// shown to be exact without a display, so the strip lays out only a *window* of pages, at most
-/// ``maximumDocumentHeight`` tall, around an anchor page. `windowShift` moves the window's first
-/// slot to the top of the document by a whole number of points, so a re-base moves every sheet
-/// by whole device pixels and every cached tile stays valid. A strip that fits is never
-/// windowed, which is every document at the zooms a person reads at.
+/// shown to be exact without a display, so the strip lays out only a *window* of pages around an
+/// anchor page: the pages wholly inside a ``maximumDocumentHeight``-tall band, and always the
+/// anchor's two neighbours — so a sheet taller than half the band (an A0 at 6400 % is 215,680
+/// points) still has a sheet on each side to scroll onto, and a re-base onto that sheet moves the
+/// window on. `windowShift` moves the window's first slot to the top of the document by a whole
+/// number of points, so a re-base moves every sheet by whole device pixels and every cached tile
+/// stays valid. A strip that fits is never windowed, which is every document at the zooms a
+/// person reads at.
 public struct PageStripLayout: Equatable, Sendable {
 
     /// Page points between two sheets. Scaled by the zoom like the sheets themselves.
@@ -65,6 +68,8 @@ public struct PageStripLayout: Equatable, Sendable {
     public let maximumWidth: CGFloat
     /// `offsets[k]` is Σ_{j<k}(H_j + gap), page points; `count == pageSizes.count + 1`.
     private let offsets: [CGFloat]
+    /// The band height a window may fill: the document bound less the pan margins.
+    private let budget: CGFloat
 
     /// Lays the strip out.
     ///
@@ -96,10 +101,10 @@ public struct PageStripLayout: Equatable, Sendable {
         offsets[pageSizes.count] = running
         self.offsets = offsets
         self.maximumWidth = widest
+        let budget = max(0, maximumDocumentHeight - 2 * panMargin.height)
+        self.budget = budget
         let window = Self.window(
-            offsets: offsets, sizes: pageSizes, zoom: self.zoom,
-            budget: max(0, maximumDocumentHeight - 2 * panMargin.height),
-            anchor: windowAnchor
+            offsets: offsets, sizes: pageSizes, zoom: self.zoom, budget: budget, anchor: windowAnchor
         )
         self.window = window
         self.windowShift = window.isEmpty ? 0 : (self.zoom * offsets[window.lowerBound]).rounded(.down)
@@ -293,6 +298,24 @@ public struct PageStripLayout: Equatable, Sendable {
 
     // MARK: Re-basing a window
 
+    /// The window a layout anchored on `anchor` would lay out, at this zoom and margin — without
+    /// building that layout. O(log n) and allocation-free, so a scroll report can ask it.
+    public func window(around anchor: Int) -> Range<Int> {
+        Self.window(offsets: offsets, sizes: pageSizes, zoom: zoom, budget: budget, anchor: anchor)
+    }
+
+    /// The page a re-base should anchor on for a viewport near the window's edge: the page at
+    /// the viewport's centre — or, when that is the window's first or last page, the page beyond
+    /// it, so the window always moves towards where the view is going.
+    public func rebaseAnchor(visible: CGRect) -> Int? {
+        guard let centre = nearestPage(toY: visible.midY), let first = window.first, let last = window.last else {
+            return nil
+        }
+        if centre == first, first > 0, visible.midY < slotFrame(of: centre).midY { return centre - 1 }
+        if centre == last, last < pageCount - 1, visible.midY > slotFrame(of: centre).midY { return centre + 1 }
+        return centre
+    }
+
     /// Whether the viewport has come close enough to an edge of the laid-out window, with
     /// pages beyond it, that the window should be laid out again around the viewport.
     public func needsRebase(visible: CGRect) -> Bool {
@@ -305,7 +328,7 @@ public struct PageStripLayout: Equatable, Sendable {
 
     /// The window around `anchor`: every page when the strip fits `budget`, otherwise the pages
     /// wholly inside a budget-tall band centred on the anchor — moved to lie inside the strip —
-    /// and always the anchor itself.
+    /// and always the anchor and its two neighbours.
     private static func window(
         offsets: [CGFloat], sizes: [CGSize], zoom: CGFloat, budget: CGFloat, anchor: Int
     ) -> Range<Int> {
@@ -332,6 +355,6 @@ public struct PageStripLayout: Equatable, Sendable {
             let mid = (end + upper) / 2
             if zoom * (offsets[mid] + sizes[mid].height) <= high { end = mid + 1 } else { upper = mid }
         }
-        return min(first, anchor)..<max(end, anchor + 1)
+        return min(first, max(0, anchor - 1))..<max(end, min(count, anchor + 2))
     }
 }

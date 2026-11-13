@@ -523,9 +523,10 @@ public final class ProjectWindowController: NSWindowController, NSWindowDelegate
         // Continuous scrolling (ADR-0045): pages show one at a time while PDF layers are
         // overridden, and work outside the canvas — a Scale Region's calibration destination, a
         // borrowed two-click pick, a region draft — holds the current page like work on it does.
+        // A measure lock changes what snaps, never what is drawn, so it is not an override here.
         canvas.layerOverridesActive = { [weak document] in
             guard let layers = document?.layerVisibility else { return false }
-            return !layers.matchesDocumentDefault || layers.measureLockLayerID != nil
+            return !layers.matchesDocumentDefault
         }
         canvas.externalPageLock = { [weak document, weak shell] in
             guard let document else { return false }
