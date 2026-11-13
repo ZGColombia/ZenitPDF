@@ -89,12 +89,19 @@ private func iter2Image(width: Int, height: Int) -> CGImage {
     return context.makeImage()!
 }
 
-/// Runs the main run loop in its default mode for a moment — where a default-mode perform
-/// fires once event tracking is over. Synchronous, because `RunLoop.run` is not available from
-/// an async context.
+/// Runs the main run loop in its default mode until `done` holds, or for `seconds` at most —
+/// where a default-mode perform fires once event tracking is over. Synchronous, because
+/// `RunLoop.run` is not available from an async context.
+///
+/// One `run(mode:before:)` returns as soon as it has serviced the main queue once, which on a
+/// busy machine — other suites' main-actor work is queued there — is before a perform's timer
+/// has fired. So the loop is run again until the condition holds or the time is up.
 @MainActor
-private func iter2SpinDefaultRunLoop(seconds: TimeInterval) {
-    RunLoop.main.run(mode: .default, before: Date().addingTimeInterval(seconds))
+private func iter2SpinDefaultRunLoop(upTo seconds: TimeInterval, until done: () -> Bool) {
+    let deadline = Date().addingTimeInterval(seconds)
+    while !done(), Date() < deadline {
+        RunLoop.main.run(mode: .default, before: min(deadline, Date().addingTimeInterval(0.05)))
+    }
 }
 
 /// A defaults store that counts its writes.
@@ -548,7 +555,9 @@ struct Iter2UIShellFixTests {
         #expect(abs(width - 300) < 20, "the in-memory layout follows every step (\(width))")
 
         dragging = false
-        iter2SpinDefaultRunLoop(seconds: 0.1)
+        iter2SpinDefaultRunLoop(upTo: 10) { defaults.writes > before }
+        // A little longer, so a second write — one per step is what this replaced — would show.
+        iter2SpinDefaultRunLoop(upTo: 0.1) { false }
         #expect(defaults.writes == before + 1, "one write when the drag is over")
         #expect(store.load().navigatorWidth == width)
 
