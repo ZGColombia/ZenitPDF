@@ -22,16 +22,27 @@ struct UndoToastTests {
         let model = UndoToastModel()
         var announced: [String] = []
         model.announce = { announced.append($0) }
+        // The first message's timer is short and the second's long, so which of the two has
+        // fired when this test looks does not depend on how late a busy machine resumes it. It
+        // used to look 35 ms into a 60 ms message, and a hosted runner resumed it later than that.
         model.duration = .milliseconds(60)
         model.show("Undid Move Markup")
         #expect(model.message == "Undid Move Markup")
         #expect(announced == ["Undid Move Markup"])
-        try await Task.sleep(for: .milliseconds(40))
+        model.duration = .seconds(120)
         model.show("Redid Move Markup")
-        try await Task.sleep(for: .milliseconds(35))
+        // Well past the first message's 60 ms: its timer has fired by now.
+        try await Task.sleep(for: .milliseconds(400))
         #expect(model.message == "Redid Move Markup", "the first message's timer did not clear the second")
-        try await Task.sleep(for: .milliseconds(120))
+        // A message goes after its own duration.
+        model.duration = .milliseconds(60)
+        model.show("Undid Move Markup")
+        let deadline = ContinuousClock.now + .seconds(60)
+        while model.message != nil, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(10))
+        }
         #expect(model.message == nil)
+        #expect(announced == ["Undid Move Markup", "Redid Move Markup", "Undid Move Markup"])
     }
 
     @Test("The toast floats over the canvas and never takes a click")
