@@ -18,8 +18,9 @@
 # not fail the workflow run, and it must not be made a required status check. The
 # app-package job runs with ZENIT_TIMING_ADVISORY=1, so the viewer's debug millisecond
 # budgets inside its suite report a miss as a warning; the core-packages job sets it too,
-# for the ledger's concurrent-versus-serial ratio (IM-081). Every other assertion, the
-# correctness tests included, is blocking.
+# for the ledger's concurrent-versus-serial ratio (IM-081), and the UI-packages job for the
+# ledger's scroll-window benchmark. Every other assertion, the correctness tests included,
+# is blocking.
 #
 # The runner image is pinned to xcode-27, the GitHub image whose default Xcode is the
 # 27.1 the project is built and tested with (TOOLCHAIN.md). When the image or the pin
@@ -96,6 +97,9 @@ jobs:
           chmod +x "${SCRIPT}"
 
       - name: Build and test the UI packages
+        env:
+          # The ledger's millisecond benchmark is advisory on a hosted runner (see the header).
+          ZENIT_TIMING_ADVISORY: "1"
         run: |
           set -euo pipefail
           mkdir -p ci-logs

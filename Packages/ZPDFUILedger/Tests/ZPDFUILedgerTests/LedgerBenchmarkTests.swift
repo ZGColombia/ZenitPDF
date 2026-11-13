@@ -101,8 +101,24 @@ struct LedgerBenchmarkTests {
         #expect(cells == Self.sampleCount * Self.windowSize * columns.count)
         // One 60-Hz frame is 16.7 ms. A cold window fetch has to fit inside one with room
         // to spare, because the table still has to build the cell views afterwards.
-        #expect(average < 16.0, "Average cold scroll-window fetch exceeded one frame")
-        #expect(worst < 80.0, "A single scroll-window fetch stalled the run loop")
+        #expect(Self.within(average, budget: 16.0, "average window fetch"), "Average cold scroll-window fetch exceeded one frame")
+        #expect(Self.within(worst, budget: 80.0, "slowest window fetch"), "A single scroll-window fetch stalled the run loop")
+    }
+
+    /// Whether `measured` milliseconds is inside `budget`.
+    ///
+    /// The budgets were measured on the reference Mac. On a hosted CI runner, a shared virtual
+    /// machine, one stalled sample says nothing about the ledger (102 ms was seen there against
+    /// a 5.5 ms median), so with `ZENIT_TIMING_ADVISORY=1` a miss adds a warning annotation and
+    /// the test does not fail, as for the viewer's budgets. The local gates never set it.
+    static func within(_ measured: Double, budget: Double, _ name: String) -> Bool {
+        guard measured >= budget else { return true }
+        guard ProcessInfo.processInfo.environment["ZENIT_TIMING_ADVISORY"] == "1" else { return false }
+        print(String(
+            format: "::warning title=Ledger budget missed (advisory)::%@: %.3f ms measured against a budget of %.3f ms",
+            name, measured, budget
+        ))
+        return true
     }
 
     @Test("Scrolling the whole ledger never grows the resident row set")
