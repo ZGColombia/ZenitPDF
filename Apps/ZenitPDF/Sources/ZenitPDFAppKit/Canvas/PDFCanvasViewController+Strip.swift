@@ -66,8 +66,10 @@ final class CanvasStripState {
     var followHeld = false
     /// Scrolls the canvas makes itself (layout, a restore, a bookmark), which are not the person's.
     var programmaticScrollDepth = 0
-    /// The scroll origin the last bounds change left, so a resize is not taken for a scroll.
+    /// The scroll origin and the viewport size the last bounds change left, so a resize is not
+    /// taken for a scroll.
     var lastSeenClipOrigin: CGPoint?
+    var lastSeenClipSize: CGSize?
     /// Whether the canvas is on screen (between `viewDidAppear` and `viewDidDisappear`).
     var isOnScreen = false
 
@@ -216,8 +218,7 @@ extension PDFCanvasViewController {
     private func noteStripSuspension() {
         guard strip.prefersContinuous, strip.overridesActive, core.document.pages.count > 1,
               !strip.saidSuspended else { return }
-        strip.saidSuspended = true
-        postStripNote(NSLocalizedString(
+        strip.saidSuspended = postStripNote(NSLocalizedString(
             "Continuous scrolling is paused while PDF layers are hidden: pages show one at a time.",
             comment: "Status note: a multi-page document shows one page at a time while PDF layer overrides are active"
         ))
@@ -225,9 +226,13 @@ extension PDFCanvasViewController {
 
     /// Posts a status note of continuous scrolling's own, unless the status bar already says
     /// something — a tool's instructions or a measure lock's note are never replaced.
-    private func postStripNote(_ note: String) {
-        guard core.status.snapshot.activeToolNote == nil else { return }
+    /// Returns whether the note was shown, so a note said once is only counted as said when the
+    /// person could read it.
+    @discardableResult
+    private func postStripNote(_ note: String) -> Bool {
+        guard core.status.snapshot.activeToolNote == nil else { return false }
         core.status.setActiveToolNote(note)
+        return true
     }
 
     /// Runs `body` as a scroll the canvas makes itself, which frees no page a navigation rested.
@@ -243,9 +248,15 @@ extension PDFCanvasViewController {
     /// A bounds change of the clip view: when the person moved the view, a page a navigation or
     /// a press made current may now be followed away from.
     func noteStripScroll() {
-        let origin = scrollView.contentView.bounds.origin
-        defer { strip.lastSeenClipOrigin = origin }
-        guard strip.programmaticScrollDepth == 0, let last = strip.lastSeenClipOrigin, last != origin else { return }
+        let bounds = scrollView.contentView.bounds
+        defer {
+            strip.lastSeenClipOrigin = bounds.origin
+            strip.lastSeenClipSize = bounds.size
+        }
+        guard strip.programmaticScrollDepth == 0, let last = strip.lastSeenClipOrigin, last != bounds.origin else { return }
+        // A resize that moves the origin — AppKit keeping the view inside a document that no
+        // longer reaches as far — is not the person scrolling.
+        guard strip.lastSeenClipSize == nil || strip.lastSeenClipSize == bounds.size else { return }
         strip.followHeld = false
     }
 
@@ -454,9 +465,16 @@ extension PDFCanvasViewController {
         }
         let visible = scrollView.documentVisibleRect
         let locked = isPageLocked
-        if layout.needsRebase(visible: visible), let anchor = layout.rebaseAnchor(visible: visible) {
+        if layout.needsRebase(visible: visible), var anchor = layout.rebaseAnchor(visible: visible) {
             // Asked without building a layout: a scroll report near the edge costs O(log n).
-            let window = layout.window(around: anchor)
+            var window = layout.window(around: anchor)
+            // The sheet beyond the edge would leave out a page work holds: the sheet at the
+            // view's centre may still keep it and let the view go one sheet further.
+            if !window.contains(current), let centre = layout.nearestPage(toY: visible.midY), centre != anchor,
+               layout.window(around: centre).contains(current) {
+                anchor = centre
+                window = layout.window(around: centre)
+            }
             if window != layout.window {
                 if window.contains(current) {
                     strip.windowAnchor = anchor
@@ -467,8 +485,7 @@ extension PDFCanvasViewController {
                 }
                 if locked, !strip.saidWindowHeld {
                     // The window must keep the page the work is on, so the view can go no further.
-                    strip.saidWindowHeld = true
-                    postStripNote(NSLocalizedString(
+                    strip.saidWindowHeld = postStripNote(NSLocalizedString(
                         "Finish or cancel the work on this page to scroll further.",
                         comment: "Status note: in continuous scrolling at a high zoom, work on the current page stops the view from scrolling further away from it"
                     ))
@@ -506,7 +523,7 @@ extension PDFCanvasViewController {
         guard let index = layout.page(at: point), index != strip.currentIndex else { return }
         guard !isPageLocked else {
             strip.refusedPressCount &+= 1
-            if core.measurement.isCapturingBoundary || strip.externalPageLock() {
+            if core.measurement.isCapturingBoundary || strip.externalPageLock() || isAutoTraceInFlight {
                 postStripNote(NSLocalizedString(
                     "Finish or cancel the work on this page before using another page.",
                     comment: "Status note: a press on another page in continuous scrolling while a boundary or pick on the current page is in progress"
@@ -969,6 +986,13 @@ extension PDFCanvasViewController {
     }
 
     // MARK: - Select Text
+
+    /// The lock an auto-trace held is gone: the current page catches up with the view without
+    /// waiting for another scroll.
+    func autoTraceDidEnd() {
+        guard strip.isActive, !isPageLocked else { return }
+        followViewIfNeeded()
+    }
 
     /// Whether a page is a neighbouring sheet on screen now.
     func isPassivePageShown(_ pageID: UUID) -> Bool {

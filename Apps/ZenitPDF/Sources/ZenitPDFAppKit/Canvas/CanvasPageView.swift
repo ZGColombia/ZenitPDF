@@ -698,6 +698,12 @@ final class CanvasPageView: NSView {
     private var isPanDragging = false
     /// A measurement drag gesture is in progress.
     private var isMeasureDragging = false
+    /// Where the tool drag in progress last was, on the page: where it is finished when the
+    /// view loses the keyboard before its release arrives.
+    private var lastMeasureDragPoint: PDFPointValue?
+    /// Set when the view finished a tool drag on losing the keyboard: the rest of that gesture —
+    /// its drags and its release, which AppKit still delivers here — belongs to no drag any more.
+    private var measureDragFinishedOnResign = false
     /// The press point of a drag tool that also places clicks, held until the first real
     /// drag movement decides between "drag" and "click".
     private var pendingMeasureDragStart: PDFPointValue?
@@ -2597,6 +2603,7 @@ final class CanvasPageView: NSView {
             previous: lastPress
         )
         lastPress = (event.timestamp, event.locationInWindow)
+        measureDragFinishedOnResign = false
         onWillBeginInteraction?()
         onWillBeginPress?(event.locationInWindow)
         // A press outside an open text box finishes the box and nothing else (W-004). Taking
@@ -2642,6 +2649,7 @@ final class CanvasPageView: NSView {
                 return
             }
             isMeasureDragging = true
+            lastMeasureDragPoint = point
             onDragBegan?(point)
             return
         }
@@ -2658,7 +2666,7 @@ final class CanvasPageView: NSView {
 
     override func mouseDragged(with event: NSEvent) {
         reconcileModifiers(from: event)
-        if pressEndedTextEntry { return }
+        if pressEndedTextEntry || measureDragFinishedOnResign { return }
         if isPanDragging || isSpaceHeld {
             onPanBy?(CGSize(width: -event.deltaX, height: -event.deltaY))
             return
@@ -2681,8 +2689,12 @@ final class CanvasPageView: NSView {
             // First real movement: the press was a drag anchor after all.
             pendingMeasureDragStart = nil
             isMeasureDragging = true
+            lastMeasureDragPoint = start
             onDragBegan?(start)
-            if let point = pagePoint(for: event) { onDragMoved?(point) }
+            if let point = pagePoint(for: event) {
+                lastMeasureDragPoint = point
+                onDragMoved?(point)
+            }
             return
         }
         if let start = pendingSelectStart {
@@ -2697,7 +2709,10 @@ final class CanvasPageView: NSView {
             return
         }
         if isMeasureDragging {
-            if let point = pagePoint(for: event) { onDragMoved?(point) }
+            if let point = pagePoint(for: event) {
+                lastMeasureDragPoint = point
+                onDragMoved?(point)
+            }
             return
         }
         onPointerMove?(pagePoint(for: event))
@@ -2708,6 +2723,11 @@ final class CanvasPageView: NSView {
         hoverWindowLocation = event.locationInWindow
         if pressEndedTextEntry {
             pressEndedTextEntry = false
+            return
+        }
+        if measureDragFinishedOnResign {
+            // The drag was finished when the view lost the keyboard; this release is its end.
+            measureDragFinishedOnResign = false
             return
         }
         if isPanDragging {
@@ -2993,9 +3013,20 @@ final class CanvasPageView: NSView {
         releaseModifiers()
         pendingMeasureDragStart = nil
         pendingSelectStart = nil
-        // A tool drag whose release will never arrive is over too; left set, it held the page
-        // in continuous scrolling with nothing on screen to say why.
-        isMeasureDragging = false
+        // A tool drag is finished where it last was — as a release off the sheet finishes it —
+        // rather than thrown away or left open: left open, its anchor held the page in
+        // continuous scrolling with nothing on screen to say why, and a Pen stroke was lost. A
+        // release that still arrives is that drag's end and does nothing more. Finished on the
+        // next turn, so a tool whose drag ends by opening a text box does not move the keyboard
+        // while it is being taken away.
+        if isMeasureDragging {
+            isMeasureDragging = false
+            measureDragFinishedOnResign = true
+            if let point = lastMeasureDragPoint {
+                DispatchQueue.main.async { [weak self] in self?.onDragEnded?(point) }
+            }
+        }
+        lastMeasureDragPoint = nil
         pressEndedTextEntry = false
         if isSelectDragging {
             isSelectDragging = false

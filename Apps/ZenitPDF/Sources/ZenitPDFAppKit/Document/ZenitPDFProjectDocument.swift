@@ -178,6 +178,10 @@ public final class ZenitPDFProjectDocument: NSDocument {
     /// as layer overrides meet each page. It used to hold page 0 only, so a layer toggle
     /// re-rendered every sheet from the first sheet's linework (nl-ux).
     private var layerAwareExtractions: [Int: VectorPageExtraction] = [:]
+    /// Per-page layer refreshes started, and layer-aware extractions actually run. Test seams for
+    /// continuous scrolling under a measure lock.
+    private(set) var layerRefreshCountForTesting = 0
+    private(set) var layerAwareExtractionPagesForTesting: [Int] = []
 
     /// NL-UX-04: the drawing's own annotations as last read by Make Drawing Annotations
     /// Editable, and the markup identities that command adopted. The originals' visibility is
@@ -1176,9 +1180,14 @@ public final class ZenitPDFProjectDocument: NSDocument {
         let pageChange = environment.document.onPageChange
         environment.document.onPageChange = { [weak self, weak environment] page in
             pageChange?(page)
-            // Only this window's canvas: another window shows its own sheet (S-009).
+            // Only this window's canvas: another window shows its own sheet (S-009). A page the
+            // view scrolled onto waits to be stopped on: the refresh is a layer-aware extraction
+            // and a snap rebuild, once for the sheet a fling ends on, not once per sheet passed.
             guard let environment else { return }
-            self?.layerPageDidChange(in: environment)
+            environment.whenPageSettles { [weak self, weak environment] in
+                guard let environment else { return }
+                self?.layerPageDidChange(in: environment)
+            }
         }
         refreshSymbolLegend()
         offerDrawingFileScale()   // NL-PLAT-06
@@ -1365,7 +1374,7 @@ public final class ZenitPDFProjectDocument: NSDocument {
         guard !layerVisibility.matchesDocumentDefault || layerVisibility.measureLockLayerID != nil else {
             return
         }
-        refreshLayerRendering(includesAnnotations: false, onlyIn: windowCore)
+        refreshLayerRendering(includesAnnotations: false, onlyIn: windowCore, forPageChange: true)
     }
 
     /// The zero-based index of the page `windowCore`'s window shows, or 0 before any page is shown.
@@ -1387,7 +1396,13 @@ public final class ZenitPDFProjectDocument: NSDocument {
     /// broadcast to every window, and a canvas replaces its single filter with each call and
     /// applies it only on that filter's page. So a page turn in window B gave window A, on
     /// another sheet, B's filter, and A's hidden layer showed again.
-    private func refreshLayerRendering(includesAnnotations: Bool, onlyIn windowCore: AppCoreEnvironment? = nil) {
+    ///
+    /// `forPageChange` marks the refresh a page change asks for, where nothing about the layers
+    /// or the annotations changed: with every layer at its default the canvas's native render is
+    /// already the right one and is not handed over again.
+    private func refreshLayerRendering(
+        includesAnnotations: Bool, onlyIn windowCore: AppCoreEnvironment? = nil, forPageChange: Bool = false
+    ) {
         guard let drawing else { return }
         // Layers are the primary drawing's (NL-DOCS-04): a window on a sheet of another drawing
         // keeps its native render and snap index.
@@ -1418,6 +1433,7 @@ public final class ZenitPDFProjectDocument: NSDocument {
                 guard let self else { return }
                 let core = plan.target.core
                 let pageIndex = plan.pageIndex
+                self.layerRefreshCountForTesting &+= 1
                 guard let extraction = await self.layerAwareExtraction(drawing: drawing, pageIndex: pageIndex) else { continue }
                 // The person turned this window's page while the extraction ran: that turn
                 // scheduled its own refresh, and this one would file the old page's filter
@@ -1445,7 +1461,12 @@ public final class ZenitPDFProjectDocument: NSDocument {
                 let filtering = (matchesDefault || plan.hidden.isEmpty)
                     ? nil
                     : LayerFilteredPageRenderer.Filtering(extraction: extraction, hiddenLayerIDs: plan.hidden, pageIndex: pageIndex)
-                plan.target.deliver(filtering)
+                // A page change with every layer at its default — a measure lock alone — changes
+                // what snaps, never what is drawn: the canvas already renders natively, and handing
+                // it the same native render again threw its tiles away (continuous scrolling did
+                // that at every sheet it passed). A layer toggle or an annotation display change
+                // still re-renders: the pixels may have changed under the same native render.
+                if !(forPageChange && matchesDefault) { plan.target.deliver(filtering) }
                 // Layer visibility is view state; nothing of it is persisted, so it must not
                 // mark the document edited (CR-155).
             }
@@ -1541,6 +1562,7 @@ public final class ZenitPDFProjectDocument: NSDocument {
     /// optional content included, so a default-hidden layer can be turned *on* as well.
     private func layerAwareExtraction(drawing: LoadedDrawing, pageIndex: Int) async -> VectorPageExtraction? {
         if let cached = layerAwareExtractions[pageIndex] { return cached }
+        layerAwareExtractionPagesForTesting.append(pageIndex)
         let extraction = try? await GeometryExtraction.client.extractPageGeometry(
             documentAt: drawing.url,
             pageIndex: pageIndex,

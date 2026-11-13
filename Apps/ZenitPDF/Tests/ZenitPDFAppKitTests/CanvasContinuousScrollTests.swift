@@ -422,10 +422,10 @@ struct CanvasContinuousScrollTests {
         let shownInClip = shown.offsetBy(dx: -originBefore.x, dy: -originBefore.y)
         canvas.gestureZoom(by: 1, aboutWindowPoint: anchor, phase: .ended)
         #expect(canvas.layoutCountForTesting == layoutsBefore + 1, "one layout at the gesture's end")
-        // The commit's scroll is reported a turn later; with the anchor's sheet still the one in
-        // view it neither hands off nor re-bases, so no second layout follows.
-        try? await Task.sleep(for: .milliseconds(60))
-        #expect(canvas.layoutCountForTesting == layoutsBefore + 1, "a layout after the gesture's end")
+        // The commit's own scroll is reported inside its layout, where the follow rule waits for
+        // the gesture: no report is left to run later, so nothing after the commit can hand off
+        // or re-base before the person's next scroll. One layout per gesture end, exactly.
+        #expect(!canvas.visibleRectReportPendingForTesting, "a report left for later could lay out again")
         let slot = try layout(harness).slotFrame(of: 1)
         let originAfter = visible(harness).origin
         let laidInClip = slot.offsetBy(dx: -originAfter.x, dy: -originAfter.y)
@@ -582,7 +582,8 @@ struct CanvasContinuousScrollTests {
         // The dwell is a gate the test opens, not a race against the machine's speed.
         var dwellOpen = false
         harness.core.pageDwellWait = { _ in
-            while !dwellOpen { try? await Task.sleep(for: .milliseconds(5)) }
+            // A superseded dwell is cancelled, and a cancelled sleep returns at once: it leaves.
+            while !dwellOpen && !Task.isCancelled { try? await Task.sleep(for: .milliseconds(5)) }
         }
         harness.core.snapIndexSource = { page in
             built.append(page.id.rawValue)
@@ -670,7 +671,7 @@ struct CanvasContinuousScrollTests {
         #expect(harness.core.document.currentPageID == ids[2], "onto the third sheet")
     }
 
-    @Test("A0 sheets at 6400 % with work holding the first: the view stops at the window and says why")
+    @Test("A0 sheets at 6400 % with work holding the first: the window goes as far as it can keep that sheet, then stops and says why")
     func lockedPageHoldsTheWindowWithANote() async throws {
         let harness = try await makePages("CS A0 locked.pdf", mediaBox: "0 0 2384 3370", count: 4)
         defer { harness.tearDown() }
@@ -678,10 +679,27 @@ struct CanvasContinuousScrollTests {
         harness.core.canvas.setZoom(ViewportSnapshot.maximumZoom)
         harness.canvas.refresh()
         harness.canvas.externalPageLock = { true }
-        harness.core.status.setActiveToolNote(nil)
-        let foot = try layout(harness).slotFrame(of: 1).maxY - visible(harness).height - 200
+        // A tool's own note is up: the strip's note waits rather than replace it, and is not
+        // counted as said.
+        harness.core.status.setActiveToolNote("Placing a pick")
+        #expect(try layout(harness).window == 0..<2)
+        // The foot of the second sheet: a window around the third would leave out the held first
+        // sheet, a window around the second keeps it and lets the view on to the third.
+        let rebases = harness.canvas.stripRebaseCountForTesting
+        var foot = try layout(harness).slotFrame(of: 1).maxY - visible(harness).height - 200
         scroll(harness, to: CGPoint(x: visible(harness).minX, y: foot))
+        #expect(harness.canvas.stripRebaseCountForTesting == rebases + 1, "re-based around the second sheet")
+        #expect(try layout(harness).window == 0..<3)
+        #expect(harness.core.status.snapshot.activeToolNote == "Placing a pick")
+        // The foot of the third sheet: no window keeps the first any more, so the view stops.
+        foot = try layout(harness).slotFrame(of: 2).maxY - visible(harness).height - 200
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: foot))
+        #expect(harness.canvas.stripRebaseCountForTesting == rebases + 1)
         #expect(harness.core.document.currentPageID == ids[0])
+        #expect(harness.core.status.snapshot.activeToolNote == "Placing a pick", "another note is never replaced")
+        // Once the status bar is free the stop is explained.
+        harness.core.status.setActiveToolNote(nil)
+        scroll(harness, to: CGPoint(x: visible(harness).minX, y: foot + 20))
         #expect(harness.core.status.snapshot.activeToolNote?.contains("to scroll further") == true)
     }
 
@@ -794,6 +812,8 @@ struct CanvasContinuousScrollTests {
         pageView.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: point))
         pageView.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: point))
         #expect(harness.core.document.currentPageID == ids[1])
+        // Past the hand-off rate limit, so a follow would happen now if the press did not hold.
+        await waitOutRateLimit()
         harness.canvas.refresh()
         harness.canvas.reportVisibleRect()
         #expect(harness.core.document.currentPageID == ids[1], "not followed away without a scroll")
@@ -887,10 +907,21 @@ struct CanvasContinuousScrollTests {
         harness.core.status.setActiveToolNote(nil)
         let slot = try layout(harness).slotFrame(of: 1)
         let window = harness.canvas.pageViewForTesting.convert(CGPoint(x: slot.midX, y: slot.minY + 40), to: nil)
+        // A real preset, which would place a count mark wherever the drop lands.
+        let original = harness.core.toolLibrary.presets
+        defer { harness.document.applyToolPresets(original) }
+        let preset = ToolPresetSummary(
+            id: UUID(), name: "Dropped Count", category: "Test", panel: .projectTools, markupKind: .count,
+            measurementKind: .count, colorRGBA: ColorRGBA(red: 1, green: 0, blue: 0, alpha: 1), defaultSubject: "Doors"
+        )
+        harness.document.applyToolPresets(original + [preset])
+        #expect(await AppTestSupport.wait { harness.core.toolLibrary.presets.contains { $0.id == preset.id } })
         let drop = try #require(harness.canvas.scrollViewForTesting.onDropPreset)
-        #expect(!drop(UUID(), window))
+        #expect(!drop(preset.id, window))
         #expect(harness.core.document.currentPageID == ids[0])
         #expect(harness.core.status.snapshot.activeToolNote?.contains("before using another page") == true)
+        await harness.settle()
+        #expect(!harness.core.snapshot.markups.contains { $0.subject == "Doors" }, "nothing was placed on the held page")
     }
 
     @Test("Drop and right-click adopt the sheet under them")
@@ -977,8 +1008,35 @@ struct CanvasContinuousScrollTests {
         pageView.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: start))
         pageView.mouseDragged(with: harness.mouseEvent(.leftMouseDragged, atLocal: CGPoint(x: start.x + 50, y: start.y + 50)))
         #expect(pageView.isTrackingPress)
+        #expect(harness.canvas.isPageLocked)
         _ = pageView.resignFirstResponder()
         #expect(!pageView.isTrackingPress)
+        // The drag is finished where it last was, and nothing holds the page any more.
+        #expect(await AppTestSupport.wait { !harness.canvas.isPageLocked }, "the page is still held")
+        await harness.settle()
+        #expect(await harness.records().count == 1, "the dragged area was finished, not thrown away")
+    }
+
+    @Test("A tool drag's release that still arrives after the canvas lost the keyboard ends that drag and nothing more")
+    func releaseAfterLosingTheKeyboardEndsTheDrag() async throws {
+        let harness = try await make("CS late release.pdf", pages: 3, calibrate: true)
+        defer { harness.tearDown() }
+        harness.shell.perform(.measureArea)
+        harness.canvas.refresh()
+        let slot = try layout(harness).slotFrame(of: 0)
+        let pageView = harness.canvas.pageViewForTesting
+        let start = CGPoint(x: slot.minX + 40, y: slot.minY + 40)
+        let end = CGPoint(x: start.x + 50, y: start.y + 50)
+        pageView.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: start))
+        pageView.mouseDragged(with: harness.mouseEvent(.leftMouseDragged, atLocal: end))
+        _ = pageView.resignFirstResponder()
+        // AppKit still sends the rest of the gesture to the view that took the press.
+        pageView.mouseDragged(with: harness.mouseEvent(.leftMouseDragged, atLocal: CGPoint(x: end.x + 30, y: end.y + 30)))
+        pageView.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: CGPoint(x: end.x + 30, y: end.y + 30)))
+        #expect(await AppTestSupport.wait { !harness.canvas.isPageLocked })
+        await harness.settle()
+        #expect(await harness.records().count == 1, "one area, finished once")
+        #expect(harness.core.measurement.placedPoints.isEmpty, "the release placed no stray point")
     }
 
     @Test("A press right after entering the strip, before the first fetch, never hit-tests the previous page's records")
@@ -999,6 +1057,92 @@ struct CanvasContinuousScrollTests {
         harness.canvas.pageViewForTesting.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: point))
         await settle(harness)
         #expect(harness.canvas.sceneRecordCountForTesting == 0)
+    }
+
+    /// Four sheets whose content sits on two PDF layers, Walls and Furniture.
+    private func makeLayeredSheets(_ name: String, count: Int) throws -> URL {
+        let content = "/OC /W BDC 2 w 0 0 0 RG 72 72 m 400 72 l S EMC\n/OC /F BDC 1 w 0 0 0 RG 72 300 m 400 300 l S EMC\n"
+        var objects = [
+            "<< /Type /Catalog /Pages 2 0 R /OCProperties << /OCGs [3 0 R 4 0 R] /D << /Order [3 0 R 4 0 R] /ON [3 0 R 4 0 R] >> >> >>",
+            "<< /Type /Pages /Kids [\((0..<count).map { "\(5 + 2 * $0) 0 R" }.joined(separator: " "))] /Count \(count) >>",
+            "<< /Type /OCG /Name (Walls) >>",
+            "<< /Type /OCG /Name (Furniture) >>"
+        ]
+        var streams: [Int: String] = [:]
+        for index in 0..<count {
+            objects.append("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents \(6 + 2 * index) 0 R /Resources << /Properties << /W 3 0 R /F 4 0 R >> >> >>")
+            objects.append("")
+            streams[6 + 2 * index] = content
+        }
+        return try AutomationFixtures.writePDF(named: name, objects: objects, streams: streams)
+    }
+
+    @Test("Under a measure lock, scrolling across sheets keeps every tile and refreshes the layers once, for the sheet it stops on")
+    func measureLockScrollingKeepsTilesAndWaits() async throws {
+        let url = try makeLayeredSheets("CS measure lock.pdf", count: 5)
+        let harness = try await Fix2Harness.make("CS measure lock.pdf", calibrate: false, fixture: url, pageLayout: .continuous)
+        defer { harness.tearDown() }
+        harness.canvas.refresh()
+        await settle(harness)
+        let ids = pageIDs(harness)
+        let layers = harness.document.layerVisibility
+        #expect(await AppTestSupport.wait { layers.items.count == 2 })
+        let walls = try #require(layers.items.first { $0.name == "Walls" })
+        layers.setMeasureLock(walls.id)
+        await settle(harness)
+        #expect(harness.canvas.isContinuousScrollActive, "a lock changes what snaps, never what is drawn")
+        var dwellOpen = false
+        harness.core.pageDwellWait = { _ in
+            while !dwellOpen && !Task.isCancelled { try? await Task.sleep(for: .milliseconds(5)) }
+        }
+        let generation = harness.canvas.tileGeneration
+        let refreshes = harness.document.layerRefreshCountForTesting
+        let extracted = harness.document.layerAwareExtractionPagesForTesting.count
+        for index in 1...3 {
+            try scroll(harness, toPage: index)
+            #expect(harness.core.document.currentPageID == ids[index])
+            await waitOutRateLimit()
+        }
+        #expect(harness.document.layerRefreshCountForTesting == refreshes, "no layer refresh for a sheet scrolled past")
+        dwellOpen = true
+        #expect(await AppTestSupport.wait { harness.document.layerRefreshCountForTesting == refreshes + 1 },
+                "one refresh, for the sheet the view stops on")
+        await settle(harness)
+        let since = harness.document.layerAwareExtractionPagesForTesting.dropFirst(extracted)
+        #expect(!since.contains(1) && !since.contains(2), "no extraction for a sheet scrolled past: \(Array(since))")
+        #expect(since.contains(3), "the sheet the view stopped on was extracted")
+        #expect(harness.canvas.tileGeneration == generation, "no tile was thrown away")
+    }
+
+    /// The last sheet an A4 below two A1 sheets: rested at the A1's fit zoom, a taller window
+    /// makes AppKit pull the scroll origin back inside the document.
+    @Test("A resize that pulls the scroll origin back is not a scroll: a sheet navigated to stays current")
+    func clampingResizeKeepsTheHeldPage() async throws {
+        let url = try AutomationFixtures.writePDF(
+            named: "CS clamp.pdf",
+            objects: [
+                "<< /Type /Catalog /Pages 2 0 R >>",
+                "<< /Type /Pages /Kids [3 0 R 5 0 R 7 0 R] /Count 3 >>",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 2384 1684] /Contents 4 0 R >>", "",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 2384 1684] /Contents 6 0 R >>", "",
+                "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Contents 8 0 R >>", ""
+            ],
+            streams: [4: Self.linework, 6: Self.linework, 8: Self.linework]
+        )
+        let harness = try await Fix2Harness.make("CS clamp.pdf", calibrate: false, fixture: url, pageLayout: .continuous)
+        defer { harness.tearDown() }
+        try sizeCanvas(harness, to: CGSize(width: 1200, height: 700))
+        harness.canvas.refresh()
+        let ids = pageIDs(harness)
+        harness.core.document.goToPage(id: ids[2])
+        harness.canvas.refresh()
+        #expect(harness.core.document.currentPageID == ids[2])
+        try sizeCanvas(harness, to: CGSize(width: 1200, height: 1400))
+        harness.canvas.refresh()
+        #expect(harness.core.document.currentPageID == ids[2], "the resize did not let the larger sheet take over")
+        let a4 = try layout(harness).slotFrame(of: 2).intersection(visible(harness))
+        let a1 = try layout(harness).slotFrame(of: 1).intersection(visible(harness))
+        #expect(a1.width * a1.height > a4.width * a4.height, "the larger sheet would win if the hold were released")
     }
 
     // MARK: - Select Text in the strip

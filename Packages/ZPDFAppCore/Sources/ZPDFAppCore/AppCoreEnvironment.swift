@@ -72,6 +72,23 @@ public final class AppCoreEnvironment {
     }
     /// The follow-ups waiting out ``pageFollowDwell`` for the page scrolled to last.
     @ObservationIgnored var pageDwellTask: Task<Void, Never>?
+    /// Work the app asked to run once the page scrolled to last has settled
+    /// (``whenPageSettles(_:)``); dropped with the dwell when the view moves on.
+    @ObservationIgnored var pageSettleWork: [@MainActor () -> Void] = []
+
+    /// Runs `work` once the page change being announced has settled: at once for a navigation
+    /// or a press, or — for a page the view scrolled onto — after ``pageFollowDwell``, and not at
+    /// all if the view moves on to another page first. For the expensive per-page work the app
+    /// hangs on a page change (a layer-aware refresh under a measure lock), so a fling across
+    /// many sheets does it once, for the sheet it stops on. Call it from inside the
+    /// `onPageChange` callback.
+    public func whenPageSettles(_ work: @escaping @MainActor () -> Void) {
+        guard document.pageChangeMayDwell, pageDwellTask != nil else {
+            work()
+            return
+        }
+        pageSettleWork.append(work)
+    }
     /// Pages whose snap index is being built now, so a page turned to twice builds once.
     @ObservationIgnored var snapIndexBuildsInFlight: Set<UUID> = []
     /// Why a page's vector geometry could not be read, kept so turning back to it says so again.
@@ -404,6 +421,7 @@ public final class AppCoreEnvironment {
             // both at once (and drops a wait still in flight).
             self.pageDwellTask?.cancel()
             self.pageDwellTask = nil
+            self.pageSettleWork = []
             guard self.document.pageChangeMayDwell else {
                 self.ensureSnapIndex(forPage: page.id)
                 self.refreshStatus()
@@ -419,6 +437,9 @@ public final class AppCoreEnvironment {
                 self.pageDwellTask = nil
                 self.ensureSnapIndex(forPage: page.id)
                 self.afterPageChange?(page)
+                let settled = self.pageSettleWork
+                self.pageSettleWork = []
+                for work in settled { work() }
             }
         }
 

@@ -62,7 +62,8 @@ struct AppDocumentPresenterFollowViewTests {
         let gate = DwellGate()
         environment.pageDwellWait = { _ in
             gate.waiting += 1
-            while !gate.isOpen { try? await Task.sleep(for: .milliseconds(5)) }
+            // A superseded dwell is cancelled, and a cancelled sleep returns at once: it leaves.
+            while !gate.isOpen && !Task.isCancelled { try? await Task.sleep(for: .milliseconds(5)) }
         }
         var built: [UUID] = []
         environment.snapIndexSource = { page in
@@ -94,17 +95,51 @@ struct AppDocumentPresenterFollowViewTests {
         #expect(offered == [pages[3].id.rawValue, pages[4].id.rawValue, pages[1].id.rawValue])
     }
 
+    @Test("Work hung on a page change waits for a scrolled-to page to settle, and runs at once for a navigation")
+    func settleWorkWaitsForTheDwell() async throws {
+        let (environment, pages) = try await Self.environment(pages: 5)
+        let gate = DwellGate()
+        environment.pageDwellWait = { _ in
+            gate.waiting += 1
+            while !gate.isOpen && !Task.isCancelled { try? await Task.sleep(for: .milliseconds(5)) }
+        }
+        let document = environment.document
+        var settled: [UUID] = []
+        let announce = document.onPageChange
+        document.onPageChange = { page in
+            announce?(page)
+            environment.whenPageSettles { settled.append(page.id) }
+        }
+        for index in 1...3 { document.followView(toPage: pages[index].id.rawValue, settle: false) }
+        #expect(await Self.wait { gate.waiting == 3 })
+        #expect(settled.isEmpty, "nothing runs for a sheet scrolled past")
+        gate.isOpen = true
+        #expect(await Self.wait { settled == [pages[3].id.rawValue] }, "once, for the sheet the view stops on")
+        document.goToPage(id: pages[0].id.rawValue)
+        #expect(settled == [pages[3].id.rawValue, pages[0].id.rawValue], "a navigation runs it at once")
+    }
+
     @Test("A snapshot that leaves the page list as it was does not replace it")
     func unchangedPagesAreKept() async throws {
         let (environment, _) = try await Self.environment(pages: 3)
         let document = environment.document
         let snapshot = try await environment.session.snapshot()
         document.adopt(snapshot)
+        // The very buffer is kept — what the canvas's layout key compares at pointer rate. A list
+        // rebuilt from the snapshot is a new buffer however equal its contents, so this holds
+        // only if the presenter did not assign.
+        // Held, so a replacement cannot reuse the freed buffer's address.
+        let held = document.pages
+        let buffer = held.withUnsafeBufferPointer { $0.baseAddress }
         let replaced = ReplacedFlag()
         withObservationTracking { _ = document.pages } onChange: { replaced.set() }
         document.adopt(snapshot)
         document.sheetOutlineTitles = document.sheetOutlineTitles
+        #expect(document.pages.withUnsafeBufferPointer { $0.baseAddress } == buffer, "the page list was replaced")
+        // Observation itself may already skip an equal value on a recent toolchain; the buffer
+        // check above is what this fix alone guarantees.
         #expect(!replaced.value, "an unchanged page list must not wake its observers")
+        _ = held
     }
 
     @Test("The dim set of any page follows the ledger filter's rule for the current one")

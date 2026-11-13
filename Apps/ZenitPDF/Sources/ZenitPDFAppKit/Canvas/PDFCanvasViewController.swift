@@ -926,6 +926,8 @@ public final class PDFCanvasViewController: NSViewController {
 
     /// Whether a coalesced visible-rect report is waiting for the next turn.
     private var visibleRectReportScheduled = false
+    /// Whether a coalesced visible-rect report is still to run. A test seam.
+    var visibleRectReportPendingForTesting: Bool { visibleRectReportScheduled }
     /// How many visible-rect reports ran. IM-169's counter.
     private(set) var visibleRectReportCountForTesting = 0
     /// How many viewport changes re-ran the pointer path for a still pointer (W-002).
@@ -3838,7 +3840,13 @@ public final class PDFCanvasViewController: NSViewController {
         isAutoTraceInFlight = true
         autoTraceTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            defer { if self.autoTraceGeneration == generation { self.isAutoTraceInFlight = false } }
+            defer {
+                if self.autoTraceGeneration == generation {
+                    self.isAutoTraceInFlight = false
+                    // Continuous scrolling: the page the trace held may follow the view again.
+                    self.autoTraceDidEnd()
+                }
+            }
             let extracted = await self.autoTraceExtraction(pageID: pageID, pageIndex: pageIndex)
             // r2-platform (NL-AUTO-14): a scanned sheet has no vector linework; the trace reads
             // the pixels instead, and the area records that it came from the scan.

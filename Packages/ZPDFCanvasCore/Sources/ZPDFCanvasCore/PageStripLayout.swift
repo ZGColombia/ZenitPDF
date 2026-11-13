@@ -40,9 +40,14 @@ public struct PageStripLayout: Equatable, Sendable {
     /// Page points between two sheets. Scaled by the zoom like the sheets themselves.
     public static let gap: CGFloat = 24
 
-    /// The tallest document view the strip lays out: 2¹⁹ points. Single-page layout reaches
-    /// about 2¹⁸ (an A0 at 6400 % plus its pan margins), so magnitudes stay within a factor of
-    /// two of what the canvas has always shown.
+    /// The band a window's pages are chosen from: 2¹⁹ points. Pages wholly inside it are laid
+    /// out, and the anchor's two neighbours always are, so the document view is at most this
+    /// tall — or three pages and two pan margins when the sheets are larger than that: three
+    /// 200-inch sheets (the largest a PDF page can be) at 6400 % are about 2.76 million points,
+    /// three times what single-page layout already reaches with one such sheet (921,600). The
+    /// bound limits only how far from the origin Core Animation is asked to place a layer; the
+    /// strip's own arithmetic is in doubles, and a re-base moves every slot by a whole number of
+    /// points (`windowShift`), so tile phases — and every cached tile — survive it exactly.
     public static let maximumDocumentHeight: CGFloat = 524_288
 
     /// Breathing room between the viewport's top edge and a sheet that navigation rests on.

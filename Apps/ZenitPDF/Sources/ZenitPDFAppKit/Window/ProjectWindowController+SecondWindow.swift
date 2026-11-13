@@ -161,9 +161,13 @@ extension ZenitPDFProjectDocument {
         let pageChange = viewCore.document.onPageChange
         viewCore.document.onPageChange = { [weak self, weak viewCore] page in
             pageChange?(page)
-            // Only this window's canvas: the others show their own sheets (S-009).
+            // Only this window's canvas: the others show their own sheets (S-009). A sheet the
+            // view scrolled onto waits to be stopped on, as in the first window.
             guard let viewCore else { return }
-            self?.layerPageDidChange(in: viewCore)
+            viewCore.whenPageSettles { [weak self, weak viewCore] in
+                guard let viewCore else { return }
+                self?.layerPageDidChange(in: viewCore)
+            }
         }
         viewCore.afterPageChange = { [weak self] page in self?.proposeScale(forPageID: page.id) }
         if let page = source?.document.currentPageID, page != viewCore.document.currentPageID {
