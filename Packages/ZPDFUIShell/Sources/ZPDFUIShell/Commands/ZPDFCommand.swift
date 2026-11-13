@@ -63,6 +63,8 @@ public enum ZPDFCommandID: String, Codable, Hashable, Sendable, CaseIterable {
 
     // Tools
     case selectTool = "zenit.tool.select"
+    /// Arms Select Text, which selects the drawing's own text for copying (1.1.0).
+    case selectTextTool = "zenit.tool.selectText"
     case panTool = "zenit.tool.pan"
     case zoomTool = "zenit.tool.zoom"
     case textTool = "zenit.tool.text"

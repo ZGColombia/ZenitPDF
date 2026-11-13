@@ -79,8 +79,8 @@ public struct ZenitToolGesture: Sendable, Hashable {
         self.optionDerivesRectangle = optionDerivesRectangle
     }
 
-    /// The tool collects nothing on the canvas: Select, Pan and Zoom own the pointer
-    /// themselves.
+    /// The tool collects nothing on the canvas: Select, Select Text, Pan and Zoom own the
+    /// pointer themselves.
     public static let none = ZenitToolGesture(
         collectsPoints: false,
         minimumPointCount: 0
@@ -92,7 +92,7 @@ public extension ZenitToolMode {
     /// How this tool is drawn. Total by construction: every case, both families.
     var gesture: ZenitToolGesture {
         switch self {
-        case .select, .pan, .zoom:
+        case .select, .selectText, .pan, .zoom:
             return .none
         case .calibrate:
             return ZenitToolGesture(minimumPointCount: 2, completingPointCount: 2)

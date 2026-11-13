@@ -70,7 +70,8 @@ extension PDFCanvasViewController {
     /// checks before `followDrawingLink` — no tool, preset, calibration or text box in charge,
     /// and no markup under the pointer (a click there selects the markup first).
     var drawingLinkHoverApplies: Bool {
-        guard core.markup.activeKind == nil, core.measurement.activeKind == nil, !isCalibrating,
+        // Under Select Text a click selects text, never follows a link (1.1.0).
+        guard !isSelectTextArmed, core.markup.activeKind == nil, core.measurement.activeKind == nil, !isCalibrating,
               activeTextEntry == nil, !isCapturingSnippetRegion, pageView.hoverTarget == nil else { return false }
         if core.toolLibrary.activePreset != nil, core.toolLibrary.armedSetMode != .draw { return false }
         return true

@@ -81,7 +81,9 @@ struct DesignD8TopBandTests {
 
     @Test("The tool group is centred on the window and on the band's full height")
     func toolsCentred() throws {
-        let (layout, window) = makeBandWindow(width: 1_672, key: "band.centre")
+        // 1 760 since 1.1.0: Select Text widened the tool group, and at the old 1 672 the brand
+        // group pushed it 4.75 pt right of centre — the layout's rule, not a defect.
+        let (layout, window) = makeBandWindow(width: 1_760, key: "band.centre")
         defer { window.close() }
         let band = try #require(layout.topBand)
         let views = band.centreEntries.map(\.view)

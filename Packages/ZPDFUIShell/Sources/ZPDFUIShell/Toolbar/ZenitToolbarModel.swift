@@ -15,6 +15,8 @@ import ZPDFUIPresentation
 public enum ZenitToolIdentifier: String, Codable, Hashable, Sendable, CaseIterable, Identifiable {
 
     case select
+    /// Select Text: selects the drawing's own text for copying (1.1.0). Beside Select.
+    case selectText
     case pan
     case zoom
     case calibrate
@@ -35,6 +37,7 @@ public enum ZenitToolIdentifier: String, Codable, Hashable, Sendable, CaseIterab
     public var displayName: String {
         switch self {
         case .select: return NSLocalizedString("Select", comment: "Toolbar tool name")
+        case .selectText: return NSLocalizedString("Select Text", comment: "Toolbar tool name")
         case .pan: return NSLocalizedString("Pan", comment: "Toolbar tool name")
         case .zoom: return NSLocalizedString("Zoom", comment: "Toolbar tool name")
         case .calibrate: return NSLocalizedString("Calibrate", comment: "Toolbar tool name")
@@ -53,6 +56,7 @@ public enum ZenitToolIdentifier: String, Codable, Hashable, Sendable, CaseIterab
     public var glyph: ZPDFGlyph {
         switch self {
         case .select: return .symbol(.select)
+        case .selectText: return .symbol(.selectText)
         case .pan: return .symbol(.pan)
         case .zoom: return .symbol(.zoomTool) // the mockup draws a plain magnifier
         case .calibrate: return .measurement(.calibrate)
@@ -71,7 +75,7 @@ public enum ZenitToolIdentifier: String, Codable, Hashable, Sendable, CaseIterab
     public var showsMeasurementControls: Bool {
         switch self {
         case .measure, .count, .cutout, .length, .area: return true
-        case .select, .pan, .zoom, .calibrate, .text, .callout, .shapes: return false
+        case .select, .selectText, .pan, .zoom, .calibrate, .text, .callout, .shapes: return false
         }
     }
 
@@ -85,6 +89,7 @@ public enum ZenitToolIdentifier: String, Codable, Hashable, Sendable, CaseIterab
     ) -> ZenitToolMode {
         switch self {
         case .select: return .select
+        case .selectText: return .selectText
         case .pan: return .pan
         case .zoom: return .zoom
         case .calibrate: return .calibrate
@@ -103,6 +108,7 @@ public enum ZenitToolIdentifier: String, Codable, Hashable, Sendable, CaseIterab
     public init(mode: ZenitToolMode) {
         switch mode {
         case .select: self = .select
+        case .selectText: self = .selectText
         case .pan: self = .pan
         case .zoom: self = .zoom
         case .calibrate: self = .calibrate
@@ -410,7 +416,7 @@ public final class ZenitToolbarModel {
             // The canvas re-arms the markup tool from this selection, so the tool style here
             // would replace the preset's look on every arm.
             style = preset?.placementStyle ?? toolStyle
-        case .select, .pan, .zoom, .calibrate:
+        case .select, .selectText, .pan, .zoom, .calibrate:
             break
         }
         arm(ZenitToolSelection(

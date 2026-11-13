@@ -1883,3 +1883,12 @@
 "Also in View ▸ Continuous Scroll. While PDF layers are hidden, pages show one at a time." = "Finns även i Visa ▸ Löpande rullning. Medan PDF-lager är dolda visas sidorna en i taget.";
 "Continuous scrolling is paused while PDF layers are hidden: pages show one at a time." = "Löpande rullning är pausad medan PDF-lager är dolda: sidorna visas en i taget.";
 "Finish or cancel the work on this page before using another page." = "Slutför eller avbryt arbetet på den här sidan innan du använder en annan sida.";
+
+/* 1.1.0: Select Text — select and copy the drawing's own text. The note names the OCR
+   command in English because the Swedish menu shows it in English: sv has no key for it. */
+"Select Text" = "Markera text";
+"Drag selects the drawing's text; double-click selects a word." = "Dra för att markera ritningens text; dubbelklicka för att markera ett ord.";
+"Drag across the drawing's own text to select it, then copy it" = "Dra över ritningens egen text för att markera den och kopiera den sedan";
+"This page has no text to select. Tools ▸ Read Text from Scanned Pages… reads a scanned sheet for Search." = "Den här sidan har ingen text att markera. Verktyg ▸ Read Text from Scanned Pages… läser ett skannat blad så att det går att söka i.";
+"Selected Text" = "Markerad text";
+"This PDF does not allow copying its text." = "Den här PDF-filen tillåter inte att texten kopieras.";

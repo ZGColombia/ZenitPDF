@@ -17,6 +17,9 @@ public protocol MarkupPasteboardAccess: AnyObject {
     func addPicture(_ png: Data, ifStill token: Int)
     /// The private payload currently on the clipboard, or `nil`.
     func readMarkups() -> Data?
+    /// Writes plain text alone — the drawing text Select Text copies (1.1.0) — replacing
+    /// whatever the clipboard held, markups included.
+    func writePlainText(_ text: String)
 }
 
 /// The shipping clipboard.
@@ -49,6 +52,12 @@ public final class SystemMarkupPasteboard: MarkupPasteboardAccess {
     public func readMarkups() -> Data? {
         pasteboard.data(forType: Self.type)
     }
+
+    public func writePlainText(_ text: String) {
+        pasteboard.clearContents()
+        pasteboard.declareTypes([.string], owner: nil)
+        pasteboard.setString(text, forType: .string)
+    }
 }
 
 /// A clipboard that lives in this process only: what a test process, or any process that is not
@@ -77,6 +86,13 @@ public final class ScratchMarkupPasteboard: MarkupPasteboardAccess {
     }
 
     public func readMarkups() -> Data? { payload }
+
+    public func writePlainText(_ text: String) {
+        changeCount += 1
+        payload = nil
+        plainText = text
+        picture = nil
+    }
 }
 
 /// The clipboard a new window copies markups to.

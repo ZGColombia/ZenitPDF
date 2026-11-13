@@ -191,6 +191,14 @@ final class CanvasPageView: NSView {
     /// next reveal or an Escape, and is deliberately not a selection: a found word is not a
     /// markup and must not join the selection, or Delete would appear to act on it.
     var searchHighlights: [PDFRectValue] = [] { didSet { if searchHighlights != oldValue { invalidatePage() } } }
+
+    /// Select Text (1.1.0): the armed tool's selection, which a press, drag and release are
+    /// routed to; `nil` whenever the tool is not armed (`CanvasTextSelection.swift`).
+    var textSelection: CanvasTextSelection?
+    /// The selected text's line boxes, in page space, drawn translucent in the live overlay.
+    var textSelectionHighlights: [PDFRectValue] = [] {
+        didSet { if textSelectionHighlights != oldValue { textSelectionHighlightsChanged(from: oldValue) } }
+    }
     /// The rasterised page, or the rasterised piece of it, in display space.
     var pageRaster: PageRaster? { didSet { if pageRaster != oldValue { rasterModelChanged() } } }
     /// The vector underlay: the page's own extracted linework, drawn under the raster while
@@ -1008,6 +1016,7 @@ final class CanvasPageView: NSView {
     /// The live layer, drawn by ``CanvasLiveOverlayView`` into the same flipped coordinates.
     func drawLiveLayer(_ dirtyRect: NSRect) {
         guard let context = NSGraphicsContext.current?.cgContext, let transform else { return }
+        drawTextSelection(transform: transform, dirtyRect: dirtyRect)   // Select Text, 1.1.0
         if liveDragAnchor != nil {
             drawDragPreview(transform: transform)
         } else if let quad = liveInferredQuad, quad.count >= 3 {
@@ -2608,6 +2617,12 @@ final class CanvasPageView: NSView {
             zoomDragStartView = localPoint(for: event)
             return
         }
+        if let textSelection {
+            // Select Text owns the press (1.1.0): a drag selects, a double-click a word, a
+            // triple-click a line, and any press lets go of the previous selection.
+            textSelection.press(at: pagePoint(for: event), clickCount: event.clickCount)
+            return
+        }
         guard let point = pagePoint(for: event) else { return }
         if isDoubleClick {
             onDoubleClick?(point)
@@ -2642,6 +2657,10 @@ final class CanvasPageView: NSView {
         if pressEndedTextEntry { return }
         if isPanDragging || isSpaceHeld {
             onPanBy?(CGSize(width: -event.deltaX, height: -event.deltaY))
+            return
+        }
+        if let textSelection, textSelection.isTracking {
+            if let point = clampedPagePoint(for: event) { textSelection.drag(to: point) }
             return
         }
         if let start = zoomDragStartView {
@@ -2690,6 +2709,10 @@ final class CanvasPageView: NSView {
         if isPanDragging {
             isPanDragging = false
             restCursor()
+            return
+        }
+        if let textSelection, textSelection.isTracking {
+            textSelection.release(at: clampedPagePoint(for: event))
             return
         }
         if zoomDragStartView != nil {
@@ -2975,6 +2998,8 @@ final class CanvasPageView: NSView {
         }
         zoomDragStartView = nil
         zoomMarqueeViewRect = nil
+        // A text drag whose release will never arrive keeps what it selected so far.
+        textSelection?.cancelTracking()
         return super.resignFirstResponder()
     }
 }

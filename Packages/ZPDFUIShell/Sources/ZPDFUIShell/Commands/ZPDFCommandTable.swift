@@ -477,7 +477,7 @@ public extension ZPDFCommandTable {
     /// IM-116: each toolbar tool has a single-key shortcut on the canvas — the first letter of
     /// its name where that is free, otherwise a letter from the name or the shape it draws
     /// (`R` for Shapes, whose default is the rectangle; `X` for Cutout; `⇧C` for Calibrate,
-    /// beside Callout's `C`). Digits stay with the number-key tool slots. The letters are
+    /// beside Callout's `C`; `⇧T` for Select Text, beside Text's `T`, by the same rule). Digits stay with the number-key tool slots. The letters are
     /// canvas-scoped and served by ``CanvasToolShortcut`` through the window's key monitor;
     /// the audits below prove they collide with nothing.
     private static var toolCommands: [ZPDFCommand] {
@@ -489,6 +489,18 @@ public extension ZPDFCommandTable {
                 binding: .character("s", []),
                 context: .canvas,
                 glyph: .symbol(.select)
+            ),
+            ZPDFCommand(
+                id: .selectTextTool,
+                title: NSLocalizedString("Select Text", comment: "Tools menu command"),
+                group: .tools,
+                binding: .character("t", [.shift]),
+                context: .canvas,
+                glyph: .symbol(.selectText),
+                accessibilityHint: NSLocalizedString(
+                    "Drag across the drawing's own text to select it, then copy it",
+                    comment: "Accessibility hint for the Select Text tool"
+                )
             ),
             ZPDFCommand(
                 id: .panTool,

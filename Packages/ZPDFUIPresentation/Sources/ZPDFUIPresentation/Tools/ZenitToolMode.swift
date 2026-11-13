@@ -15,6 +15,10 @@ public enum ZenitToolMode: Sendable, Hashable, Codable {
 
     /// Pointer: click selects, drag marquees.
     case select
+    /// I-beam: drag selects the drawing's own text, double-click a word, triple-click a line,
+    /// for copying (1.1.0). It selects text the PDF carries; it never creates a markup, so it
+    /// is neither a measurement nor a markup tool.
+    case selectText
     /// Hand: drag moves the page.
     case pan
     /// Marquee zoom: click steps in, `⌥`-click steps out, drag zooms to the rectangle.
@@ -46,6 +50,7 @@ public enum ZenitToolMode: Sendable, Hashable, Codable {
     public var displayName: String {
         switch self {
         case .select: return NSLocalizedString("Select", comment: "Armed tool name")
+        case .selectText: return NSLocalizedString("Select Text", comment: "Armed tool name")
         case .pan: return NSLocalizedString("Pan", comment: "Armed tool name")
         case .zoom: return NSLocalizedString("Zoom", comment: "Armed tool name")
         case .calibrate: return NSLocalizedString("Calibrate", comment: "Armed tool name")
@@ -83,7 +88,9 @@ public enum ZenitToolMode: Sendable, Hashable, Codable {
     /// change. A stale note is a lie in the opposite direction.
     public var limitationNote: String? {
         switch self {
-        case .select, .pan, .zoom, .calibrate:
+        case .select, .selectText, .pan, .zoom, .calibrate:
+            // Select Text on a page without a text layer says so, but that is a fact about the
+            // page, not the tool: the canvas puts that note up (CanvasTextSelection.swift).
             return nil
         case .markup(let kind):
             guard Self.isDrawable(kind) else {

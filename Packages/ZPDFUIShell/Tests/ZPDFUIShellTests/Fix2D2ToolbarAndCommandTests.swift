@@ -171,7 +171,7 @@ struct Fix2D2ToolbarAndCommandTests {
     // MARK: - IM-116
 
     private static let toolbarToolCommands: [ZPDFCommandID] = [
-        .selectTool, .panTool, .zoomTool, .calibrateScale, .measureLength, .measureArea,
+        .selectTool, .selectTextTool, .panTool, .zoomTool, .calibrateScale, .measureLength, .measureArea,
         .textTool, .calloutTool, .shapesTool, .measureTool, .measureCount, .cutoutTool
     ]
 
@@ -188,7 +188,7 @@ struct Fix2D2ToolbarAndCommandTests {
         // Letters are canvas-only, never digits, and never reach the menu bar's key equivalents.
         let letters = CanvasToolShortcut.commands(in: table)
         #expect(Set(letters.map(\.id)) == [
-            .selectTool, .panTool, .zoomTool, .textTool, .calloutTool,
+            .selectTool, .selectTextTool, .panTool, .zoomTool, .textTool, .calloutTool,
             .shapesTool, .measureTool, .cutoutTool, .calibrateScale,
             // nl-ux: Area joined the letters when ⌘A went back to Select All.
             .measureArea
@@ -200,6 +200,9 @@ struct Fix2D2ToolbarAndCommandTests {
         }
         #expect(table.command(.selectTool)?.binding?.displayString == "S")
         #expect(table.command(.calibrateScale)?.binding?.displayString == "\u{21E7}C")
+        // 1.1.0: Select Text sits beside Text's T as Calibrate sits beside Callout's C.
+        #expect(table.command(.selectTextTool)?.binding?.displayString == "\u{21E7}T")
+        #expect(table.command(.selectTextTool)?.group == .tools)
     }
 
     @Test("A tool letter arms its tool on the canvas, and types a letter everywhere else")
@@ -207,6 +210,8 @@ struct Fix2D2ToolbarAndCommandTests {
         #expect(CanvasToolShortcut.command(forCharactersIgnoringModifiers: "s", modifiers: []) == .selectTool)
         #expect(CanvasToolShortcut.command(forCharactersIgnoringModifiers: "C", modifiers: [.shift]) == .calibrateScale)
         #expect(CanvasToolShortcut.command(forCharactersIgnoringModifiers: "c", modifiers: []) == .calloutTool)
+        #expect(CanvasToolShortcut.command(forCharactersIgnoringModifiers: "T", modifiers: [.shift]) == .selectTextTool)
+        #expect(CanvasToolShortcut.command(forCharactersIgnoringModifiers: "t", modifiers: []) == .textTool)
         #expect(CanvasToolShortcut.command(forCharactersIgnoringModifiers: "s", modifiers: [.command]) == nil)
         #expect(CanvasToolShortcut.command(forCharactersIgnoringModifiers: "q", modifiers: []) == nil)
 

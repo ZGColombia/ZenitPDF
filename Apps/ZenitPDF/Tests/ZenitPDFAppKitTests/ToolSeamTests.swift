@@ -98,7 +98,7 @@ struct ToolSeamTests {
             // A behaviour, not a fall-through: the tool either collects geometry on the
             // canvas, or it is one of the three that own the pointer outright.
             let gesture = expected.gesture
-            let ownsPointer = expected == .select || expected == .pan || expected == .zoom
+            let ownsPointer = expected == .select || expected == .selectText || expected == .pan || expected == .zoom
             #expect(
                 gesture.collectsPoints || ownsPointer,
                 "\(tool.rawValue) is armed but collects nothing — an armed tool must collect"

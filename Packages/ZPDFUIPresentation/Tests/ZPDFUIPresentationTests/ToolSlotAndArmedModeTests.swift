@@ -150,6 +150,18 @@ struct ToolSlotAndArmedModeTests {
         #expect(CanvasCursorKind.resolve(tool: .select, setMode: .place, hasArmedPreset: true) == .place)
     }
 
+    @Test("Select Text wears the I-beam, and an armed preset cannot take its press (1.1.0)")
+    func selectTextOwnsItsCursor() {
+        for mode in ToolSetMode.allCases {
+            #expect(CanvasCursorKind.resolve(tool: .selectText, setMode: mode, hasArmedPreset: true) == .selectText)
+            #expect(CanvasCursorKind.resolve(tool: .selectText, setMode: mode, hasArmedPreset: false) == .selectText)
+        }
+        #expect(CanvasCursorKind.selectText.badgeSymbolName == nil, "the platform's I-beam, not a drawn one")
+        #expect(!CanvasCursorKind.selectText.verbDescription.isEmpty)
+        #expect(ZenitToolMode.selectText.limitationNote == nil)
+        #expect(ZenitToolMode.selectText.displayName == "Select Text")
+    }
+
     // MARK: - The armed state the panel and the status bar read
 
     @Test("The armed mode follows the preset's own set, not the panel on screen")

@@ -22,6 +22,8 @@ extension PDFCanvasViewController {
     /// the selection (the Mac convention — a right-click inside a multi-selection acts on all
     /// of it); empty drawing clears the selection.
     func selectForContextMenu(at point: PDFPointValue) {
+        // Selected drawing text answers the right-click with its own Copy (1.1.0).
+        if showsTextSelectionMenu { return }
         if activeTextEntry != nil { commitTextEntry() }
         if let hit = hitTest(point) {
             if !core.canvas.selectedMarkupIDs.contains(hit) {
@@ -34,6 +36,7 @@ extension PDFCanvasViewController {
 
     /// The menu for a right-click at `point` (page space, `nil` off the page).
     func markupContextMenu(at point: PDFPointValue?) -> NSMenu? {
+        if let menu = textSelectionContextMenu() { return menu }
         let selected = core.canvas.selectedMarkupIDs
         let markups = core.snapshot.markups.filter { selected.contains($0.id) }
         let menu = NSMenu(title: NSLocalizedString("Markup", comment: "Canvas context menu title"))
@@ -67,7 +70,8 @@ extension PDFCanvasViewController {
         menu.addItem(.separator())
         menu.addItem(ContextMenuItem(
             title: NSLocalizedString("Select All on Page", comment: "Canvas context menu"),
-            enabled: !core.canvas.visibleMarkups.isEmpty
+            // Under Select Text this selects the page's text, so the text rule decides (1.1.0).
+            enabled: validateSelectAllText() ?? !core.canvas.visibleMarkups.isEmpty
         ) { [weak self] in self?.selectAll(nil) })
         menu.addItem(shellItem(.calibrateScale))
         menu.addItem(.separator())

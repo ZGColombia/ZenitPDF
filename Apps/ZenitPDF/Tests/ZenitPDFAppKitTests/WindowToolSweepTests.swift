@@ -230,7 +230,7 @@ struct WindowToolSweepTests {
     // MARK: - The settle guard, per tool
 
     @Test("Arming a tool does not put the canvas in a refresh loop", arguments: [
-        ZPDFCommandID.selectTool, .panTool, .zoomTool, .textTool, .calloutTool,
+        ZPDFCommandID.selectTool, .selectTextTool, .panTool, .zoomTool, .textTool, .calloutTool,
         .shapesTool, .cutoutTool, .measureLength, .measureArea, .measureCount
     ])
     func armingAToolDoesNotSpin(command: ZPDFCommandID) async throws {

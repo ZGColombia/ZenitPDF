@@ -904,6 +904,8 @@ public final class ProjectShellEnvironment {
             externalCommandHandler?(command)
         case .selectTool:
             toolbar.selectTool(.select)
+        case .selectTextTool:
+            toolbar.selectTool(.selectText)
         case .panTool:
             toolbar.selectTool(.pan)
         case .zoomTool:

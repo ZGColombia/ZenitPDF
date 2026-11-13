@@ -40,10 +40,15 @@ extension PDFCanvasViewController {
     // MARK: Edit menu (responder chain)
 
     @objc public func copy(_ sender: Any?) {
+        // Select Text (1.1.0): selected drawing text is what Copy copies. With none, Copy
+        // copies the selected markups exactly as before.
+        if copySelectedTextWhenAnswered() { return }
         Task { @MainActor in _ = await copySelectedMarkups() }
     }
 
     @objc public func cut(_ sender: Any?) {
+        // Select Text cuts nothing: the drawing is not edited, and a markup is not its target.
+        if holdsMarkupEdits { return }
         Task { @MainActor in _ = await cutSelectedMarkups() }
     }
 
@@ -55,8 +60,12 @@ extension PDFCanvasViewController {
     /// this extension does not own.
     func validateMarkupClipboardItem(_ item: NSMenuItem) -> Bool? {
         switch item.action {
-        case #selector(copy(_:)), #selector(cut(_:)):
+        case #selector(copy(_:)):
+            if let verdict = validateTextCopy() { return verdict }
             return !core.canvas.selectedMarkupIDs.isEmpty
+        case #selector(cut(_:)):
+            // Selected drawing text cannot be cut: the drawing is not edited (1.1.0).
+            return !holdsMarkupEdits && !core.canvas.selectedMarkupIDs.isEmpty
         case #selector(paste(_:)):
             return pasteboardMarkups != nil
         default:

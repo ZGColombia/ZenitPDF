@@ -19,6 +19,8 @@ public enum CanvasCursorKind: String, Codable, Hashable, Sendable, CaseIterable,
 
     /// Pointer. A click selects, a drag marquees.
     case select
+    /// I-beam. A drag selects the drawing's own text (Select Text, 1.1.0).
+    case selectText
     /// Open hand. A drag moves the page.
     case pan
     /// Crosshair over the zoom marquee.
@@ -51,9 +53,12 @@ public enum CanvasCursorKind: String, Codable, Hashable, Sendable, CaseIterable,
         // BH-281: Pan and Zoom own the click — the canvas routes the press to the pan drag or
         // the zoom marquee before a preset could ever be applied or placed — so their cursor
         // wins over an armed preset. The stamp badge used to promise a drop the click never made.
+        // Select Text owns the press the same way: the page view routes it to the text
+        // selection before any preset could act on it, so the I-beam is the truth.
         switch tool {
         case .pan: return .pan
         case .zoom: return .zoom
+        case .selectText: return .selectText
         default: break
         }
         if hasArmedPreset {
@@ -65,6 +70,7 @@ public enum CanvasCursorKind: String, Codable, Hashable, Sendable, CaseIterable,
         }
         switch tool {
         case .select: return .select
+        case .selectText: return .selectText
         case .pan: return .pan
         case .zoom: return .zoom
         case .calibrate, .measure, .markup: return .draw
@@ -81,6 +87,11 @@ public enum CanvasCursorKind: String, Codable, Hashable, Sendable, CaseIterable,
             return NSLocalizedString(
                 "Click selects; drag marquees.",
                 comment: "What a click does with the Select cursor"
+            )
+        case .selectText:
+            return NSLocalizedString(
+                "Drag selects the drawing's text; double-click selects a word.",
+                comment: "What a drag does with the Select Text cursor"
             )
         case .pan:
             return NSLocalizedString(
@@ -117,7 +128,7 @@ public enum CanvasCursorKind: String, Codable, Hashable, Sendable, CaseIterable,
     /// pictures cannot drift apart, and so a test can assert both without importing AppKit.
     public var badgeSymbolName: String? {
         switch self {
-        case .select, .pan, .zoom, .draw: return nil
+        case .select, .selectText, .pan, .zoom, .draw: return nil
         case .apply: return "paintbrush.pointed.fill"
         case .place: return "plus.app.fill"
         }

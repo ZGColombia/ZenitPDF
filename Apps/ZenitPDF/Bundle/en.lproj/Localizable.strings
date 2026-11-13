@@ -10131,3 +10131,25 @@
 
 /* Status note: a press on another page in continuous scrolling while a boundary or pick on the current page is in progress */
 "Finish or cancel the work on this page before using another page." = "Finish or cancel the work on this page before using another page.";
+
+/* 1.1.0: Select Text — select and copy the drawing's own text */
+/* Armed tool name
+   Toolbar tool name
+   Tools menu command
+   Tool: select the drawing's own text to copy it */
+"Select Text" = "Select Text";
+
+/* What a drag does with the Select Text cursor */
+"Drag selects the drawing's text; double-click selects a word." = "Drag selects the drawing's text; double-click selects a word.";
+
+/* Accessibility hint for the Select Text tool */
+"Drag across the drawing's own text to select it, then copy it" = "Drag across the drawing's own text to select it, then copy it";
+
+/* Status bar note: Select Text is armed on a page without a text layer */
+"This page has no text to select. Tools ▸ Read Text from Scanned Pages… reads a scanned sheet for Search." = "This page has no text to select. Tools ▸ Read Text from Scanned Pages… reads a scanned sheet for Search.";
+
+/* Canvas context menu title over selected drawing text */
+"Selected Text" = "Selected Text";
+
+/* Status bar note: Copy refused because the drawing's security settings forbid copying text */
+"This PDF does not allow copying its text." = "This PDF does not allow copying its text.";
