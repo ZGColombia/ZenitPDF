@@ -616,7 +616,8 @@ struct CanvasContinuousScrollTests {
 
     private static let linework = "2 w 0 0 0 RG 72 72 m 300 300 l S\n"
 
-    /// Sizes the canvas's scroll view, as the viewer gates do, without ordering the window in.
+    /// Sizes the canvas's scroll view, as the viewer gates do, without ordering the window in —
+    /// within the screen a ``TestDisplay`` run pretends to have, as a real screen would allow.
     private func sizeCanvas(_ harness: Fix2Harness, to target: CGSize) throws {
         let window = try #require(harness.controller.window)
         let scrollView = harness.canvas.scrollViewForTesting
@@ -625,7 +626,9 @@ struct CanvasContinuousScrollTests {
             let dw = target.width - size.width, dh = target.height - size.height
             guard abs(dw) > 0.5 || abs(dh) > 0.5 else { break }
             let content = window.contentRect(forFrameRect: window.frame).size
-            window.setContentSize(NSSize(width: content.width + dw, height: content.height + dh))
+            let wanted = TestDisplay.fittedContentSize(NSSize(width: content.width + dw, height: content.height + dh), for: window)
+            guard wanted != content else { break }
+            window.setContentSize(wanted)
             window.layoutIfNeeded()
             harness.canvas.view.layoutSubtreeIfNeeded()
         }
@@ -752,7 +755,18 @@ struct CanvasContinuousScrollTests {
         let scale = outgoing.pageView.effectiveBackingScale
         let exact = outgoing.pageView.tileRasters.map { $0.placement(in: transform, backingScale: scale) }.filter(\.isPixelExact)
         #expect(!exact.isEmpty, "the sheet just left shows its cached tiles at once")
-        #expect(CanvasPageView.coveredFraction(of: shown, by: exact.map(\.destination)) >= 0.999)
+        // Measured over what a raster can cover of the visible sheet, as gate Z13 measures the
+        // current page (`viewportIsSharpForTesting`): the planner snaps a fractional sheet edge
+        // inward to whole device pixels and leaves that sliver to the stand-in. At 1x it is up to
+        // a whole point on the right and the bottom edge — 0.8 % of a 106-point strip of sheet.
+        let documentTransform = try #require(outgoing.documentTransform)
+        let deliverable = try ViewportRasterPlanner.plan(
+            transform: documentTransform, visibleViewRect: visible(harness), backingScale: scale,
+            overscanViewPoints: 0, pixelBudget: .max
+        ).destination.offsetBy(dx: -origin.x, dy: -origin.y)
+        let target = shown.intersection(deliverable)
+        #expect(!target.isNull && target.height > 0)
+        #expect(CanvasPageView.coveredFraction(of: target, by: exact.map(\.destination)) >= 0.999)
         await settle(harness)
     }
 
@@ -867,24 +881,33 @@ struct CanvasContinuousScrollTests {
     func standInBudgetDoesNotThrash() async throws {
         let harness = try await makePages("CS budget.pdf", mediaBox: "0 0 2384 1684", count: 24)
         defer { harness.tearDown() }
-        try sizeCanvas(harness, to: CGSize(width: 1600, height: 1400))
+        // Just over the small stand-in's 512 device pixels at this display's scale, so every
+        // sheet wants the full one.
         let backing = harness.canvas.pageViewForTesting.effectiveBackingScale
-        // Just over the small stand-in's 512 device pixels, so every sheet wants the full one.
         harness.core.canvas.setZoom(Double(530 / (2384 * backing)))
         harness.canvas.refresh()
         await settle(harness)
         harness.canvas.updatePassiveHosts()
         await settle(harness)
-        let hosts = harness.canvas.passivePagesForTesting.count
+        let full = harness.canvas.passivePagesForTesting.filter { $0.basePixelSize == PDFCanvasViewController.baseRasterPixelSize }
+        #expect(full.count >= 2, "at least two full-size stand-ins on any display: \(full.count)")
+        // The budget is set below what materialised, so the test does not depend on how many
+        // sheets this display's size and scale show: half of it must go.
+        let budget = harness.canvas.passiveBaseBytesForTesting / 2
+        harness.canvas.passiveBaseByteBudgetForTesting = budget
+        for _ in 0..<2 {
+            harness.canvas.updatePassiveHosts()
+            await settle(harness)
+        }
         let fetches = harness.canvas.passiveBaseFetchCountForTesting
-        #expect(hosts >= 9, "enough full-size stand-ins to pass the budget: \(hosts)")
-        #expect(fetches > hosts, "the budget stepped some stand-ins down")
+        #expect(harness.canvas.passivePagesForTesting.contains { $0.baseCap < PDFCanvasViewController.baseRasterPixelSize },
+                "the budget stepped some stand-ins down")
         for _ in 0..<3 {
             harness.canvas.updatePassiveHosts()
             await settle(harness)
         }
         #expect(harness.canvas.passiveBaseFetchCountForTesting == fetches, "a dropped stand-in was fetched back")
-        #expect(harness.canvas.passiveBaseBytesForTesting <= PDFCanvasViewController.passiveBaseByteBudget)
+        #expect(harness.canvas.passiveBaseBytesForTesting <= budget)
     }
 
     @Test("The strip's notes never replace a note already in the status bar")

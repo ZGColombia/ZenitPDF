@@ -84,6 +84,9 @@ final class CanvasStripState {
     var rebaseCount = 0
     /// Stand-in rasters fetched for neighbouring sheets.
     var passiveBaseFetchCount = 0
+    /// The bytes the neighbours' stand-ins may hold: ``PDFCanvasViewController/passiveBaseByteBudget``,
+    /// lowered by a test to put the sheets that did materialise over it.
+    var passiveBaseByteBudget = PDFCanvasViewController.passiveBaseByteBudget
     /// Presses on another sheet refused because work in progress holds the current one.
     var refusedPressCount = 0
 
@@ -728,12 +731,13 @@ extension PDFCanvasViewController {
     /// Keeps the neighbours' stand-ins within ``passiveBaseByteBudget``, dropping the farthest.
     private func enforcePassiveBaseBudget(order: [UUID]?) {
         var total = strip.hosts.values.reduce(0) { $0 + $1.baseBytes }
-        guard total > Self.passiveBaseByteBudget else { return }
+        let budget = strip.passiveBaseByteBudget
+        guard total > budget else { return }
         let visible = scrollView.documentVisibleRect
         let farthestFirst = (order.map { $0.reversed().compactMap { strip.hosts[$0] } } ?? strip.hosts.values.sorted {
             abs(($0.documentTransform?.pageFrame.midY ?? 0) - visible.midY) > abs(($1.documentTransform?.pageFrame.midY ?? 0) - visible.midY)
         })
-        for host in farthestFirst where total > Self.passiveBaseByteBudget && host.baseBytes > 0 {
+        for host in farthestFirst where total > budget && host.baseBytes > 0 {
             total -= host.baseBytes
             // Remembered, so the next scroll report does not fetch it straight back: a full-size
             // stand-in steps down to the small one, a small one to none, until the zoom changes.
@@ -741,6 +745,13 @@ extension PDFCanvasViewController {
             host.baseCap = host.basePixelSize > small ? small : 0
             host.dropBase()
         }
+    }
+
+    /// The stand-in budget this canvas enforces. A test seam: a test lowers it to put whatever
+    /// sheets materialised on its display over the budget.
+    var passiveBaseByteBudgetForTesting: Int {
+        get { strip.passiveBaseByteBudget }
+        set { strip.passiveBaseByteBudget = newValue }
     }
 
     /// Bytes the neighbours' stand-ins hold. A test seam for the memory bound.

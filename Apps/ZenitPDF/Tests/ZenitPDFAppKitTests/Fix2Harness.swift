@@ -33,6 +33,8 @@ struct Fix2Harness {
         fixture: URL? = nil,
         pageLayout: ZenitCanvasPreferences.PageLayout? = nil
     ) async throws -> Fix2Harness {
+        // A run that pretends to be the CI runner's display (`TestDisplay`): 1x, a small screen.
+        TestDisplay.install()
         let url = try fixture ?? AppTestSupport.writeFixturePDF(named: name, pageCount: pageCount)
         let document = try AppTestSupport.makeDocument(opening: url)
         forgetStoredWindowLayouts()
@@ -44,6 +46,7 @@ struct Fix2Harness {
         let shell = try #require(document.shell)
         let canvas = try #require(controller.canvasController(for: document))
         _ = canvas.view
+        if let window = controller.window { TestDisplay.fit(window) }
         if let pageLayout { canvas.pageLayoutPreference = { pageLayout } }
         controller.window?.layoutIfNeeded()
         canvas.view.layoutSubtreeIfNeeded()
