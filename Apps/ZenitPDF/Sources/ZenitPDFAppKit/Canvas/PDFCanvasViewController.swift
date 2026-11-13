@@ -30,14 +30,14 @@ import ZPDFVectorExtraction
 public final class PDFCanvasViewController: NSViewController {
 
     /// Points of backdrop around the sheet.
-    private static let margin: CGFloat = 24
+    static let margin: CGFloat = 24
 
     /// How much of the viewport is added as pannable space on **each** side of the sheet.
     ///
     /// 0.9 rather than 0.5 so an edge of the sheet can be dragged past the centre of the window
     /// and a little beyond — measuring along the bottom edge of a plan means wanting that edge
     /// in the middle of the screen, not at the bottom of it. See the note in `layoutPage()`.
-    private static let panMarginFraction: CGFloat = 0.9
+    static let panMarginFraction: CGFloat = 0.9
 
     let core: AppCoreEnvironment
     private let rasterSource: PageRasterSource?
@@ -67,7 +67,10 @@ public final class PDFCanvasViewController: NSViewController {
     let scrollView = ZenitCanvasScrollView()
     let pageView = CanvasPageView()
     /// The scroll view's document: the raster layers under the page view (NL-PERF-05).
-    private lazy var documentView = CanvasDocumentView(pageView: pageView)
+    lazy var documentView = CanvasDocumentView(pageView: pageView)
+    /// Continuous scrolling's state (`PDFCanvasViewController+Strip.swift`). Inert in
+    /// single-page mode.
+    let strip = CanvasStripState()
 
     /// The shapes the canvas is currently drawing.
     ///
@@ -85,10 +88,10 @@ public final class PDFCanvasViewController: NSViewController {
 
     private var rasterTask: Task<Void, Never>?
     /// The canvas's tiled raster (IM-044).
-    private let tileCache = CanvasTileCache()
+    let tileCache = CanvasTileCache()
     /// Bumped when the pixels a tile holds would change for the same key: layer filtering,
     /// annotation visibility.
-    private var tileGeneration = 0
+    var tileGeneration = 0
     /// The view each page's tiles were rendered for (NL-DOCS-07/16).
     private struct RenderedView: Equatable {
         var rotation = 0
@@ -113,6 +116,7 @@ public final class PDFCanvasViewController: NSViewController {
         await rasterTask?.value
         await thumbnailTask?.value
         await levelQueue.settle()
+        await settlePassiveRastersForTesting()
     }
 
     // MARK: - Gesture-replay seams (NL-PERF-01)
@@ -129,7 +133,7 @@ public final class PDFCanvasViewController: NSViewController {
     var recordsRenderLandingsForTesting = false
 
     /// Times one landing on the main actor and records it.
-    private func recordLanding(_ body: () -> Void) {
+    func recordLanding(_ body: () -> Void) {
         guard recordsRenderLandingsForTesting else {
             body()
             return
@@ -193,7 +197,7 @@ public final class PDFCanvasViewController: NSViewController {
     /// The plan a render is already in flight for. A layout pass and the scroll observer both
     /// reach `requestRaster`, and without this the same raster would be started twice and the
     /// first cancelled by the second for nothing.
-    private var pendingPlan: ViewportRasterPlan?
+    private(set) var pendingPlan: ViewportRasterPlan?
     private var renderedPageIndex: Int = -1
     /// The vector underlay, created only once a page's geometry has been extracted. It is not
     /// built at canvas construction because building it starts a Metal device and compiles
@@ -224,7 +228,7 @@ public final class PDFCanvasViewController: NSViewController {
 
     /// The anchor corner of a markup drag, kept until the release finishes it. A measurement
     /// drag's anchor is the input machine's (``measurementDragAnchor``).
-    private var dragAnchorPoint: PDFPointValue?
+    private(set) var dragAnchorPoint: PDFPointValue?
 
     // MARK: Live zoom state (NL-PERF-04, NL-PERF-05)
 
@@ -244,7 +248,7 @@ public final class PDFCanvasViewController: NSViewController {
     }
     private(set) var liveZoom: LiveZoom?
     private var liveZoomGeneration = 0
-    private var isCommittingLiveZoom = false
+    private(set) var isCommittingLiveZoom = false
     /// The page point a committed gesture must leave under its window point.
     private var pendingZoomAnchor: (window: NSPoint, page: PDFPointValue)?
     private var liveZoomIdleTask: Task<Void, Never>?
@@ -274,7 +278,7 @@ public final class PDFCanvasViewController: NSViewController {
 
     /// Carries out what the measurement input machine decides, the way this canvas always has:
     /// commits through the shell's Finish, Escape through its Cancel, constrained points raw.
-    private lazy var measurementDriver = CanvasMeasurementDriver(
+    private(set) lazy var measurementDriver = CanvasMeasurementDriver(
         measurement: core.measurement,
         canvas: core.canvas,
         shellCommand: { [weak self] command in self?.onShellCommand?(command) }
@@ -287,7 +291,7 @@ public final class PDFCanvasViewController: NSViewController {
     ///
     /// Announcements stay silent here: the canvas never spoke them, and turning VoiceOver
     /// announcements on is its own decision, not a side effect of routing.
-    private lazy var measurementInput = MeasurementInputController(
+    private(set) lazy var measurementInput = MeasurementInputController(
         target: measurementDriver,
         configuration: measurementInputConfiguration,
         announcer: { _ in }
@@ -313,7 +317,7 @@ public final class PDFCanvasViewController: NSViewController {
     )
 
     /// Calibration placements whose snap is still resolving.
-    private var calibrationPlacementsInFlight = 0
+    private(set) var calibrationPlacementsInFlight = 0
 
     /// The machine the measurement events are routed through. IM-019's test seam.
     var measurementInputForTesting: MeasurementInputController { measurementInput }
@@ -338,11 +342,11 @@ public final class PDFCanvasViewController: NSViewController {
     public var onResolveInsertedImage: (@MainActor (String) async -> CGImage?)?
     /// Inserted-image pixels this canvas has resolved, keyed by digest, and the digests the store
     /// had none for.
-    private var resolvedInsertedImages: [String: CGImage] = [:]
+    private(set) var resolvedInsertedImages: [String: CGImage] = [:]
     private var missingInsertedImageDigests: Set<String> = []
 
     /// Compiled artwork this canvas has already resolved, keyed by digest.
-    private var resolvedArtwork: [String: ArtworkGeometry] = [:]
+    private(set) var resolvedArtwork: [String: ArtworkGeometry] = [:]
     /// Digests the store answered `nil` for, so a missing picture is asked for once rather
     /// than on every scene rebuild.
     private var missingArtworkDigests: Set<String> = []
@@ -377,6 +381,13 @@ public final class PDFCanvasViewController: NSViewController {
         var rotation: Int
         var viewSize: CGSize
         var backingScale: CGFloat
+        /// Continuous scrolling only (constant in single-page mode): whether the strip is laid
+        /// out, the stored page list it is laid out from — compared by its identical buffer at
+        /// pointer rate, never rebuilt — and the navigation count, so a navigation to the page
+        /// already current still rests it.
+        var continuous = false
+        var stripPages: [ZPDFUIPresentation.PageDescriptor]? = nil
+        var navigationSerial = 0
     }
     private var lastLayoutKey: LayoutKey?
 
@@ -395,11 +406,17 @@ public final class PDFCanvasViewController: NSViewController {
         /// The markups the ledger filter dims (V-003): a Dim filter changes no visible markup,
         /// and the scene must still redraw.
         var dimmed: Set<UUID> = []
+        /// Continuous scrolling only: every page's markups and the ledger filter's revision,
+        /// because the neighbouring sheets draw from them too.
+        var allMarkups: [MarkupSummary] = []
+        var boundaryMarks: [PageBoundaryMark] = []
+        var filterRevision = 0
     }
     private var lastSceneKey: SceneKey?
 
     private var currentLayoutKey: LayoutKey {
         let page = core.document.currentPage
+        let continuous = wantsContinuousStrip
         return LayoutKey(
             // AppKit observes reads made by viewDidLayout. `viewport` also contains the
             // cursor, so reading its zoom made every pointer move invalidate window layout.
@@ -410,7 +427,10 @@ public final class PDFCanvasViewController: NSViewController {
             box: page?.viewBox,
             rotation: page?.displayRotation ?? 0,
             viewSize: scrollView.contentSize,
-            backingScale: view.window?.backingScaleFactor ?? 2
+            backingScale: view.window?.backingScaleFactor ?? 2,
+            continuous: continuous,
+            stripPages: continuous ? core.document.pages : nil,
+            navigationSerial: continuous ? core.document.navigationSerial : 0
         )
     }
 
@@ -422,15 +442,22 @@ public final class PDFCanvasViewController: NSViewController {
             showsCoverage: core.canvas.showsCoverageMap,
             tintsByAuthor: core.canvas.tintsByAuthor,
             layerOrder: core.snapshot.markupLayers.map(\.id),
-            dimmed: core.canvas.dimmedMarkupIDs
+            dimmed: core.canvas.dimmedMarkupIDs,
+            allMarkups: strip.isActive ? core.snapshot.markups : [],
+            boundaryMarks: strip.isActive ? core.snapshot.boundaryMarks : [],
+            filterRevision: strip.isActive ? core.canvas.filterRevision : 0
         )
     }
+
+    /// Records that the scene on screen is the scene for the current state, after continuous
+    /// scrolling re-filtered it in place rather than fetching it again.
+    func markSceneCurrent() { lastSceneKey = currentSceneKey }
 
     /// The area markups on this page a cutout could belong to.
     private var cutoutCandidates: [CutoutParentCandidate] = []
 
     /// What the Select tool's drag is doing. `nil` outside a select drag.
-    private var selectDrag: SelectDrag?
+    private(set) var selectDrag: SelectDrag?
     /// The vertex handle last clicked (or dragged, or inserted) on the selected markup, which
     /// Delete removes instead of the markup (NL-MEASURE-06,
     /// `PDFCanvasViewController+GeometryEditing.swift`).
@@ -506,7 +533,7 @@ public final class PDFCanvasViewController: NSViewController {
     static let countRemovalToleranceScreenPoints: Double = 8
 
     /// Set while `Calibrate Scale…` is collecting its two reference points.
-    private var calibrationPoints: [PDFPointValue] = []
+    private(set) var calibrationPoints: [PDFPointValue] = []
 
     /// The calibration clicks collected so far. BH-343's test seam.
     var calibrationPointsForTesting: [PDFPointValue] { calibrationPoints }
@@ -515,7 +542,7 @@ public final class PDFCanvasViewController: NSViewController {
     private var calibrationPlacementTask: Task<Void, Never>?
     /// Set when a new page is laid out, so the sheet is brought to the middle of the window once
     /// and then left where the reader puts it. See the pannable-margin note in `layoutPage()`.
-    private var needsInitialCentring = true
+    var needsInitialCentring = true
     private var calibrationPlacementGeneration = 0
     /// Raised with the two page-space points once calibration has both of them.
     public var onCalibrationPointsCollected: (@MainActor ([PDFPointValue]) -> Void)?
@@ -544,7 +571,17 @@ public final class PDFCanvasViewController: NSViewController {
     }
     /// Performs a canvas drop. Wired by the window controller.
     public var onDropFiles: (@MainActor (_ urls: [URL], _ behavior: CanvasDropBehavior) -> Bool)? {
-        didSet { scrollView.onDropFiles = onDropFiles }
+        didSet {
+            guard let onDropFiles else {
+                scrollView.onDropFiles = nil
+                return
+            }
+            // Continuous scrolling: a drop lands on the sheet under it, which becomes current first.
+            scrollView.onDropFiles = { [weak self] urls, behavior in
+                self?.adoptStripPageUnderDrop()
+                return onDropFiles(urls, behavior)
+            }
+        }
     }
     /// r2-markup (NL-UX-15): a drop behaviour decided by what is dropped.
     var contentDropBehavior: (@MainActor (_ urls: [URL], _ optionHeld: Bool) -> CanvasDropBehavior?)? {
@@ -743,10 +780,18 @@ public final class PDFCanvasViewController: NSViewController {
             switch turn {
             case .next: _ = self.turnPage(forward: true)
             case .previous: _ = self.turnPage(forward: false)
-            case .first: self.core.document.goToFirstPage(); self.restScroll(atTop: true)
-            case .last: self.core.document.goToLastPage(); self.restScroll(atTop: true)
+            case .first:
+                self.core.document.goToFirstPage()
+                // In continuous scrolling the navigation itself rests the page.
+                if !self.strip.isActive { self.restScroll(atTop: true) }
+            case .last:
+                self.core.document.goToLastPage()
+                if !self.strip.isActive { self.restScroll(atTop: true) }
             }
         }
+        // Continuous scrolling: a press on a neighbouring sheet makes it current first.
+        pageView.onWillBeginPress = { [weak self] windowPoint in self?.adoptStripPage(atWindowPoint: windowPoint) }
+        installStripObservers()
         pageView.onZoomMarquee = { [weak self] pageRect in self?.zoom(toPageRect: pageRect) }
         pageView.onZoomClick = { [weak self] windowPoint, zoomOut in
             // The zoom tool's click steps the zoom about the click, ⌥ inverts to out.
@@ -855,6 +900,7 @@ public final class PDFCanvasViewController: NSViewController {
         deliveredPlan = nil
         pendingPlan = nil
         renderedPageIndex = -1
+        releasePassiveHosts()
     }
 
     @objc private func contentBoundsDidChange(_ note: Notification) {
@@ -953,6 +999,12 @@ public final class PDFCanvasViewController: NSViewController {
             // Clear emptied the records while the screen kept the tape (TapeMeasureTests).
             _ = core.measurement.temporaryMeasurements
             _ = core.document.currentPageID
+            // Continuous scrolling: the strip is laid out from every page, a navigation rests a
+            // page, and the neighbouring sheets draw every page's markups and the filter's dim.
+            _ = core.document.pages
+            _ = core.document.navigationSerial
+            _ = core.snapshot.markups
+            _ = core.canvas.filterRevision
             _ = core.markup.activeKind
             _ = core.markup.placedPoints
             _ = core.markup.liveCursorPoint
@@ -1140,6 +1192,7 @@ public final class PDFCanvasViewController: NSViewController {
         layoutTextEditor()
         // The magnifier leaves with its tool and names the snap that landed (V-006, V-007).
         refreshLoupeInLiveLane()
+        refreshPassiveSelection()
     }
 
     /// The live overlay's state for the armed tool, built in one place.
@@ -1361,7 +1414,7 @@ public final class PDFCanvasViewController: NSViewController {
         return first
     }
 
-    private func rebuildScene() {
+    func rebuildScene() {
         lastSceneKey = currentSceneKey
         // The snapshot's markups moved: the hidden set is recomputed on the next scene pass.
         sceneHiddenMarkupIDsCache = nil
@@ -1381,11 +1434,16 @@ public final class PDFCanvasViewController: NSViewController {
             let records = await session.drawOrderedMarkups
             guard !Task.isCancelled, let self else { return }
             // Page-scoped: the scene, the hit test, the vertex editor and the coverage map
-            // only ever want this sheet's records (IM-041).
-            self.sceneRecords = records.filter { $0.pageID.rawValue == pageID }
+            // only ever want this sheet's records (IM-041). In continuous scrolling the page
+            // may have followed the view while the fetch ran, and every record is kept for the
+            // neighbouring sheets.
+            let scope = self.strip.isActive ? (self.core.document.currentPageID ?? pageID) : pageID
+            self.sceneRecords = records.filter { $0.pageID.rawValue == scope }
+            self.adoptStripRecords(records)
             await self.resolveArtwork(for: records)
             guard !Task.isCancelled else { return }
             self.applyScene()
+            self.applyPassiveScenes()
         }
     }
 
@@ -1480,7 +1538,7 @@ public final class PDFCanvasViewController: NSViewController {
     /// How many times the hidden set was computed. A test seam for R-007.
     private(set) var sceneHiddenComputationCountForTesting = 0
 
-    private var sceneHiddenMarkupIDs: Set<UUID> {
+    var sceneHiddenMarkupIDs: Set<UUID> {
         if let cached = sceneHiddenMarkupIDsCache { return cached }
         sceneHiddenComputationCountForTesting &+= 1
         let computed = layerHiddenMarkupIDs.union(ledgerFilterHiddenMarkupIDs())
@@ -1524,7 +1582,7 @@ public final class PDFCanvasViewController: NSViewController {
     /// How many times the author colours were assigned. A test seam for T-004.
     private(set) var authorTintColourComputationCountForTesting = 0
 
-    private func authorTintColours() -> [String: ZenitNamedPalette.Entry] {
+    func authorTintColours() -> [String: ZenitNamedPalette.Entry] {
         let markups = core.snapshot.markups
         let aliases = core.review.myNames
         // An unchanged snapshot shares the cached array's storage, so `==` answers without
@@ -1547,28 +1605,60 @@ public final class PDFCanvasViewController: NSViewController {
     /// through the actor. The *committed* geometry is untouched until the release; this is
     /// the preview, and it is built from the same `CanvasSceneBuilder` the committed shape
     /// will be built from, so what the user drags is what lands.
-    private func applyScene() {
+    func applyScene() {
         guard let page = core.document.currentPage else { return }
         // ADR-0032: a hidden markup layer is not drawn (and so cannot be hit).
         let hidden = sceneHiddenMarkupIDs
         let shown = hidden.isEmpty ? sceneRecords : sceneRecords.filter { !hidden.contains($0.id.rawValue) }
         let previewed = shown.map(previewing(_:))
-        var shapes = CanvasSceneBuilder.build(
+        let shapes = sceneShapes(
             records: previewed,
             summaries: core.canvas.visibleMarkups,
             pageID: page.id,
             captionOverrides: liveCaptionOverride,
-            artwork: resolvedArtwork,
             cache: shapeCache,
-            segmentLabelling: segmentLabelling(forPage: page.id)   // NL-MEASURE-09
+            authorsByID: { self.sceneAuthorsByID },
+            dimmed: core.canvas.dimmedMarkupIDs
+        )
+        pageView.shapes = shapes
+        pageView.coverageOverlay = coverageOverlay(for: page)
+        pageView.doubleCountHatch = Self.doubleCountHatch(core.doubleCountRegions[PageID(page.id)] ?? [])
+        refreshTraceFenceLines()   // NL-MEASURE-11
+        // The cutout parents depend on the committed geometry only, never on a drag preview:
+        // rebuilt when the committed set changes, not per drag frame (IM-042).
+        if selectDrag == nil || cutoutCandidateSource != sceneRecords.count {
+            cutoutCandidateSource = sceneRecords.count
+            rebuildCutoutCandidates(previewed, pageID: page.id)
+        }
+    }
+
+    /// One sheet's drawable shapes: its records compiled, tinted by author, dimmed by the
+    /// ledger filter, with the tape overlay on top. The current page and the neighbouring
+    /// sheets of continuous scrolling both draw from here, so they cannot look different.
+    func sceneShapes(
+        records previewed: [MarkupRecord],
+        summaries: [MarkupSummary],
+        pageID: UUID,
+        captionOverrides: [UUID: String],
+        cache: CanvasShapeCache,
+        authorsByID: () -> [UUID: String],
+        dimmed: Set<UUID>
+    ) -> [CanvasMarkupShape] {
+        var shapes = CanvasSceneBuilder.build(
+            records: previewed,
+            summaries: summaries,
+            pageID: pageID,
+            captionOverrides: captionOverrides,
+            artwork: resolvedArtwork,
+            cache: cache,
+            segmentLabelling: segmentLabelling(forPage: pageID)   // NL-MEASURE-09
         )
         // NL-COLLAB-06: display-only author colours (Review/AuthorTint.swift), from inputs kept
         // across drag frames (T-004).
         if core.canvas.tintsByAuthor {
-            shapes = AuthorTint.apply(to: shapes, authorByID: sceneAuthorsByID, colours: authorTintColours())
+            shapes = AuthorTint.apply(to: shapes, authorByID: authorsByID(), colours: authorTintColours())
         }
         // The ledger filter's Dim (V-003): the markups it left out draw faintly.
-        let dimmed = core.canvas.dimmedMarkupIDs
         if !dimmed.isEmpty {
             for index in shapes.indices where dimmed.contains(shapes[index].id) {
                 shapes[index].isDimmed = true
@@ -1582,7 +1672,7 @@ public final class PDFCanvasViewController: NSViewController {
         let temporaries = CanvasSceneBuilder.build(
             records: core.measurement.temporaryOverlayRecords,
             summaries: core.measurement.temporaryMeasurements,
-            pageID: page.id,
+            pageID: pageID,
             captionOverrides: [:],
             artwork: [:]
         )
@@ -1590,16 +1680,7 @@ public final class PDFCanvasViewController: NSViewController {
             shape.isTemporary = true
             shapes.append(shape)
         }
-        pageView.shapes = shapes
-        pageView.coverageOverlay = coverageOverlay(for: page)
-        pageView.doubleCountHatch = Self.doubleCountHatch(core.doubleCountRegions[PageID(page.id)] ?? [])
-        refreshTraceFenceLines()   // NL-MEASURE-11
-        // The cutout parents depend on the committed geometry only, never on a drag preview:
-        // rebuilt when the committed set changes, not per drag frame (IM-042).
-        if selectDrag == nil || cutoutCandidateSource != sceneRecords.count {
-            cutoutCandidateSource = sceneRecords.count
-            rebuildCutoutCandidates(previewed, pageID: page.id)
-        }
+        return shapes
     }
 
     /// The committed record count the cutout candidates were built from.
@@ -1648,7 +1729,16 @@ public final class PDFCanvasViewController: NSViewController {
            cache.pageID == page.id, cache.count == measured.count, cache.newest == newest {
             return cache.overlay
         }
+        let overlay = Self.coverageOverlay(measured: measured, page: page)
+        coverageCache = (page.id, measured.count, newest, overlay)
+        return overlay
+    }
 
+    /// The coverage overlay of one page's measured records (``coverageRecords(_:onPage:)``).
+    static func coverageOverlay(
+        measured: [MarkupRecord],
+        page: ZPDFUIPresentation.PageDescriptor
+    ) -> CanvasPageView.CoverageOverlay? {
         let polygons = measured.flatMap { $0.geometry?.polygons ?? [] }
         let box = page.cropBox
         let extent = ZPDFContracts.PDFRect(
@@ -1689,7 +1779,6 @@ public final class PDFCanvasViewController: NSViewController {
                 )
             )
         }
-        coverageCache = (page.id, measured.count, newest, overlay)
         return overlay
     }
 
@@ -1772,7 +1861,7 @@ public final class PDFCanvasViewController: NSViewController {
 
     // MARK: - Layout
 
-    private func layoutPage() {
+    func layoutPage() {
         // A zoom gesture still on the GPU is folded into the layout first: when the zoom in
         // the presenter is still the one the gesture started from, the gesture is committed
         // (a window resize mid-pinch keeps the pinch); when something else set a zoom — the
@@ -1816,8 +1905,25 @@ public final class PDFCanvasViewController: NSViewController {
                 anchorPagePoint = oldTransform.pagePoint(from: inPage)
             }
         }
+        // A zoom nobody pointed at — the menu, the status bar, Fit Page — as opposed to a gesture
+        // or a step about the pointer. Continuous scrolling rests the page on such a fit.
+        let zoomWasExternal = pendingZoomAnchor == nil && pendingZoomAnchorWindowPoint == nil
         pendingZoomAnchorWindowPoint = nil
         pendingZoomAnchor = nil
+        // Continuous scrolling lays the page out in its slot of the strip
+        // (`PDFCanvasViewController+Strip.swift`); single-page mode carries on below unchanged.
+        if wantsContinuousStrip || strip.isActive { lastLayoutZoom = Double(zoom) }
+        if layoutStripIfWanted(
+            page: page,
+            zoom: zoom,
+            previousPageID: previousKey?.pageID,
+            previousViewSize: previousKey?.viewSize,
+            anchor: anchorPagePoint.flatMap { point in anchorWindowPoint.map { (window: $0, page: point) } },
+            zoomChanged: zoomChanged,
+            externalZoom: zoomWasExternal
+        ) {
+            return
+        }
         // LT3-10: a window resize or a panel toggle changes the viewport, the pan margins and
         // with them where the sheet sits in the document — and the scroll origin used to stay
         // put, so the sheet slid down and right, off centre, with its far edges cut off. The
@@ -1825,7 +1931,9 @@ public final class PDFCanvasViewController: NSViewController {
         let viewportChanged = previousKey != nil
             && previousKey?.pageID == page.id
             && previousKey?.viewSize != scrollView.contentSize
-        let centreToKeep = (viewportChanged && !zoomChanged) ? lastVisibleCentrePagePoint : nil
+        // Leaving continuous scrolling keeps the place too (the View menu toggle).
+        let leftStrip = strip.consumeLeftStrip()
+        let centreToKeep = ((viewportChanged || leftStrip) && !zoomChanged) ? lastVisibleCentrePagePoint : nil
         lastLayoutZoom = Double(zoom)
         // The sheet's view (NL-DOCS-07/16): turned and cropped for display; page space, and
         // every measurement in it, is unchanged, and hit testing inverts this same transform.
@@ -1919,8 +2027,8 @@ public final class PDFCanvasViewController: NSViewController {
         // which the whole sheet fits is centred on that axis — Fit Page lands centred, and a
         // small sheet is never left in a corner with empty backdrop on the other side. Panning
         // it aside afterwards is untouched: a pan is a scroll, not a layout.
-        if zoomChanged || viewportChanged || previousKey?.pageID != page.id {
-            centreAxesWhereTheSheetFits(centred)
+        if zoomChanged || viewportChanged || leftStrip || previousKey?.pageID != page.id {
+            centreAxesWhereTheContentFits(centred.pageFrame)
         }
 
         let backingScale = view.window?.backingScaleFactor ?? 2
@@ -1939,11 +2047,11 @@ public final class PDFCanvasViewController: NSViewController {
         requestRaster(page: page, transform: centred, backingScale: backingScale)
     }
 
-    /// Centres the sheet on every axis on which it fits the visible area (LT3-10).
-    private func centreAxesWhereTheSheetFits(_ transform: PageDisplayTransform) {
+    /// Centres the content — the sheet, or the strip of sheets in continuous scrolling — on
+    /// every axis on which it fits the visible area (LT3-10).
+    func centreAxesWhereTheContentFits(_ frame: CGRect) {
         let clip = scrollView.contentView
         let visible = clip.bounds
-        let frame = transform.pageFrame
         var origin = visible.origin
         if frame.width <= visible.width + 0.5 { origin.x = frame.midX - visible.width / 2 }
         if frame.height <= visible.height + 0.5 { origin.y = frame.midY - visible.height / 2 }
@@ -1954,10 +2062,13 @@ public final class PDFCanvasViewController: NSViewController {
 
     /// The page point at the centre of the visible area after the last report, which a resize
     /// keeps at the centre (LT3-10).
-    private var lastVisibleCentrePagePoint: PDFPointValue?
+    private(set) var lastVisibleCentrePagePoint: PDFPointValue?
 
-    private func reportVisibleRect() {
+    func reportVisibleRect() {
         visibleRectReportScheduled = false
+        // Continuous scrolling: the page the view now shows most of becomes current first; the
+        // layout that hand-off runs has reported this rect already.
+        if followViewIfNeeded() { return }
         guard let transform = pageView.transform else { return }
         visibleRectReportCountForTesting += 1
         let visible = scrollView.documentVisibleRect
@@ -1985,6 +2096,8 @@ public final class PDFCanvasViewController: NSViewController {
         // …and so does everything else the pointer feeds: the snap the next click takes, the
         // rubber band, the hover (W-002).
         refreshPointerAfterViewportChange()
+        // The neighbouring sheets that came into or left the view.
+        updatePassiveHosts()
     }
 
     /// Re-runs the pointer path for the page point now under a still pointer (W-002).
@@ -2020,12 +2133,15 @@ public final class PDFCanvasViewController: NSViewController {
     /// continuous reading. Landing a backward turn at the top would put the reader above the
     /// content they were just scrolling up towards.
     @discardableResult
-    private func turnPage(forward: Bool) -> Bool {
+    func turnPage(forward: Bool) -> Bool {
         let document = core.document
         guard forward ? document.canGoToNextPage : document.canGoToPreviousPage else {
             return false
         }
         if forward { document.goToNextPage() } else { document.goToPreviousPage() }
+        // In continuous scrolling the page keys navigate and the navigation rests the page; a
+        // search highlight stays on the page it was found on.
+        if strip.isActive { return true }
         clearSearchHighlights()
         needsInitialCentring = true
         restScroll(atTop: forward)
@@ -2226,7 +2342,7 @@ public final class PDFCanvasViewController: NSViewController {
 
     private var zoomAnimationTask: Task<Void, Never>?
     /// While a zoom jump animates, raster planning waits for the final frame.
-    private var isAnimatingZoom = false
+    private(set) var isAnimatingZoom = false
 
     nonisolated static func animatesZoomJumps(reduceMotion: Bool, windowVisible: Bool) -> Bool {
         !reduceMotion && windowVisible
@@ -2281,6 +2397,7 @@ public final class PDFCanvasViewController: NSViewController {
             jump(zoom: fit.zoom, visiblePageRect: fit.visiblePageRect)
         }
         pageView.searchHighlights = highlight ? [rect] : []
+        noteStripSearchHighlight(highlight ? rect : nil)
     }
 
     /// Test seam: the search highlights currently drawn, so a test can assert that revealing a
@@ -2302,6 +2419,7 @@ public final class PDFCanvasViewController: NSViewController {
     /// Clears any search highlight. Escape, and any page change, both mean "I am done with that".
     public func clearSearchHighlights() {
         pageView.searchHighlights = []
+        noteStripSearchHighlight(nil)
     }
 
     // MARK: - Layer visibility (gap 10)
@@ -2342,6 +2460,9 @@ public final class PDFCanvasViewController: NSViewController {
         if let underlayPage, let underlayExtraction {
             prepareVectorUnderlay(page: underlayPage, extraction: underlayExtraction)
         }
+        // While PDF layers are overridden the canvas shows one page at a time: a neighbouring
+        // sheet's native render would show a layer the person has hidden.
+        refreshLayerOverrideState()
         layoutPage()
     }
 
@@ -2531,16 +2652,10 @@ public final class PDFCanvasViewController: NSViewController {
     /// - the scale is **never clamped**, so the settled page is sharp at every zoom (Z5);
     /// - the reuse test is **containment at the same scale**, not a five-per-cent scale band,
     ///   so panning inside the margin is free and zooming always re-renders.
-    private func requestRaster(page: ZPDFUIPresentation.PageDescriptor, transform: PageDisplayTransform, backingScale: CGFloat) {
+    func requestRaster(page: ZPDFUIPresentation.PageDescriptor, transform: PageDisplayTransform, backingScale: CGFloat) {
         guard let rasterSource = rasterSource(for: page), !isAnimatingZoom else { return }
         let pageKey = rasterKey(of: page)
-        // A sheet whose view changed (NL-DOCS-07/16) keeps none of its old tiles.
-        let view = RenderedView(rotation: page.viewRotation, crop: page.viewCrop)
-        if renderedViews[pageKey, default: RenderedView()] != view {
-            renderedViews[pageKey] = view
-            tileGeneration &+= 1
-            if renderedPageIndex == pageKey { renderedPageIndex = -1 }
-        }
+        noteRenderedView(of: page)
         let visible = pageView.visibleRect.isEmpty
             ? CGRect(origin: .zero, size: scrollView.contentSize)
             : pageView.visibleRect
@@ -2551,6 +2666,11 @@ public final class PDFCanvasViewController: NSViewController {
                 visibleViewRect: visible,
                 backingScale: backingScale
             )
+        } catch ViewportRasterFault.emptyViewport where strip.isActive {
+            // In continuous scrolling the current page may lie wholly outside the view — a
+            // locked page scrolled away from, a navigation still resting. Nothing to draw is
+            // not a refusal.
+            return
         } catch {
             // Typed and never silent: a refusal leaves the previous raster on screen and says
             // so in the log rather than producing a soft one (gate Z8).
@@ -2634,6 +2754,8 @@ public final class PDFCanvasViewController: NSViewController {
             pageView.underlayRaster = nil
             renderNoticeTask?.cancel()
             pageView.renderNotice = nil
+            // Nothing to render for the current page: the neighbouring sheets may render now.
+            requestPassiveRasters()
             return
         }
 
@@ -2727,6 +2849,19 @@ public final class PDFCanvasViewController: NSViewController {
         }
     }
 
+    /// Starts a new tile generation when a page's view (NL-DOCS-07/16) changed since its tiles
+    /// were made: a sheet whose view changed keeps none of its old tiles. The current page and
+    /// continuous scrolling's neighbouring sheets both ask before they plan.
+    func noteRenderedView(of page: ZPDFUIPresentation.PageDescriptor) {
+        let pageKey = rasterKey(of: page)
+        let view = RenderedView(rotation: page.viewRotation, crop: page.viewCrop)
+        if renderedViews[pageKey, default: RenderedView()] != view {
+            renderedViews[pageKey] = view
+            tileGeneration &+= 1
+            if renderedPageIndex == pageKey { renderedPageIndex = -1 }
+        }
+    }
+
     /// Retires the render in flight, when there is one: its plan is for a view the canvas has
     /// already left, and letting it land would put that view's tiles over the ones on screen
     /// (U-001, iteration 4). Its skeleton was for the same plan and goes with it.
@@ -2741,7 +2876,7 @@ public final class PDFCanvasViewController: NSViewController {
 
     /// The render step for the current mode: the native renderer, or the layer-filtered
     /// content-stream renderer when per-project layer overrides are in force.
-    private func rasterRenderer(
+    func rasterRenderer(
         page: ZPDFUIPresentation.PageDescriptor,
         rasterSource: PageRasterSource
     ) -> @MainActor (ViewportRasterPlan) async -> CGImage? {
@@ -2795,6 +2930,8 @@ public final class PDFCanvasViewController: NSViewController {
             // leave the screen (they stay in the cache for the next gesture). Mid-gesture they
             // are what the person is looking at, so they stay.
             if liveZoom == nil { pageView.levelTileRasters = [] }
+            // The current page has what it needs: the neighbouring sheets may render now.
+            requestPassiveRasters()
         }
     }
 
@@ -2802,8 +2939,8 @@ public final class PDFCanvasViewController: NSViewController {
     static let baseRasterPixelSize = 2048
 
     /// Base rasters by page, the current page and the last few visited.
-    private var baseRasters: [Int: PageRaster] = [:]
-    private var baseRasterOrder: [Int] = []
+    var baseRasters: [Int: PageRaster] = [:]
+    var baseRasterOrder: [Int] = []
 
     /// The page's resident base raster (NL-PERF-02, IM-045): the whole sheet at about 2048
     /// pixels, drawn under everything for as long as the page is shown. It stands in while a
@@ -3240,7 +3377,7 @@ public final class PDFCanvasViewController: NSViewController {
     }
 
     /// The anchor corner of the measurement drag in progress, as the machine holds it.
-    private var measurementDragAnchor: PDFPointValue? {
+    var measurementDragAnchor: PDFPointValue? {
         let state = measurementInput.state
         guard state.dragPressPoint != nil else { return nil }
         return state.vertices.first
@@ -5190,7 +5327,8 @@ extension PDFCanvasViewController {
             y: effective * live.offset.y + (1 - effective) * point.y
         )
         let visible = scrollView.documentVisibleRect
-        let sheet = transform.pageFrame.applying(live.transform)
+        let sheet = (strip.isActive ? strip.layout?.stripFrame ?? transform.pageFrame : transform.pageFrame)
+            .applying(live.transform)
         if sheet.width <= visible.width + 0.5 { live.offset.x += visible.midX - sheet.midX }
         if sheet.height <= visible.height + 0.5 { live.offset.y += visible.midY - sheet.midY }
         live.anchorWindowPoint = windowPoint
@@ -5399,7 +5537,7 @@ extension PDFCanvasViewController {
     /// memory. `critical` also drops the vector underlay.
     func handleMemoryPressure(critical: Bool) {
         levelQueue.cancelQueued()
-        tileCache.removeAll(except: Set(currentTileKeys))
+        tileCache.removeAll(except: Set(currentTileKeys).union(passiveTileKeys()))
         pageView.staleTileRasters = []
         if liveZoom == nil { pageView.levelTileRasters = [] }
         let current = currentRasterKey
@@ -5408,6 +5546,7 @@ extension PDFCanvasViewController {
         }
         baseRasterOrder.removeAll { $0 != current }
         if critical { pageView.underlayRaster = nil }
+        relievePassiveHosts(critical: critical)
     }
 }
 

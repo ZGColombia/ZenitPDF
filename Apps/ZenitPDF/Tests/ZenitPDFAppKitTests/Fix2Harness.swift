@@ -22,11 +22,16 @@ struct Fix2Harness {
     /// Opens `name` (a stroked-rectangle fixture), attaches it to a window controller, and
     /// optionally calibrates 100 pt = 1 m with snap off, so quantities read straight off the
     /// coordinates.
+    ///
+    /// `pageLayout` pins the canvas to continuous scrolling or to one page at a time; `nil`
+    /// takes the app-wide preference, which is what ships (continuous). A test that asserts how
+    /// a page *swap* behaves passes `.singlePage`.
     static func make(
         _ name: String,
         pageCount: Int = 1,
         calibrate: Bool = true,
-        fixture: URL? = nil
+        fixture: URL? = nil,
+        pageLayout: ZenitCanvasPreferences.PageLayout? = nil
     ) async throws -> Fix2Harness {
         let url = try fixture ?? AppTestSupport.writeFixturePDF(named: name, pageCount: pageCount)
         let document = try AppTestSupport.makeDocument(opening: url)
@@ -39,6 +44,7 @@ struct Fix2Harness {
         let shell = try #require(document.shell)
         let canvas = try #require(controller.canvasController(for: document))
         _ = canvas.view
+        if let pageLayout { canvas.pageLayoutPreference = { pageLayout } }
         controller.window?.layoutIfNeeded()
         canvas.view.layoutSubtreeIfNeeded()
         canvas.viewDidAppear()

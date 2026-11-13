@@ -81,7 +81,7 @@ struct AppCommandTableTests {
         // NL-UX-20: New Window for Project heads the Window menu's document block.
         #expect(slot(.windowTabs) == [.newWindowForProject, .showNextTab, .showPreviousTab])
         // nl-collaboration: the Review List and author tint sit above the command palette.
-        #expect(slot(.viewExtras) == [.reviewList, .tintByAuthor, .commandPalette])
+        #expect(slot(.viewExtras) == [.reviewList, .tintByAuthor, .continuousScroll, .commandPalette])
         // r2-markup: group, link, image; Arrange and Align submenus.
         #expect(slot(.editGroup) == [.groupMarkups, .ungroupMarkups, .editMarkupLink, .insertImage])
         #expect(slot(.editArrange) == [.bringToFront, .bringForward, .sendBackward, .sendToBack])
@@ -208,6 +208,8 @@ struct AppCommandTableTests {
         // NL-COLLAB-04: the Review List needs a document tab in front.
         case .reviewList: return s.hasLoadedCore
         case .tintByAuthor: return s.hasDrawing
+        // Continuous scrolling (ADR-0045): an app-wide preference, available with no document.
+        case .continuousScroll: return true
         case .batchApply: return s.hasPagesAndStampPreset
         case .copySnippet, .exportSnippet: return s.hasMarkupSelection
         // r2-pdf, NL-PDF-21: the shelf is of the selection too.
@@ -349,7 +351,7 @@ struct AppCommandTableTests {
 
     // MARK: - Dispatch reads the table
 
-    @Test("Dispatch covers every table entry; only Import Zenit JSON and the file-level PDF commands run with no document in front")
+    @Test("Dispatch covers every table entry; only Import Zenit JSON, the file-level PDF commands and app-wide preferences run with no document in front")
     func dispatchCoversEveryEntry() {
         // r2-pdf, NL-PDF-18: New PDF from Documents and Set Up "Print to Zenit PDF" make a PDF
         // rather than act on one.
@@ -358,7 +360,9 @@ struct AppCommandTableTests {
                                                   .newFromTemplate, .installPack, .createPack,
                                                   .indexDrawingFolder, .searchDrawingFolder, .forgetDrawingFolder,
                                                   // U-023: the job-template file rows work on the per-user library.
-                                                  .exportJobTemplate, .importJobTemplate]
+                                                  .exportJobTemplate, .importJobTemplate,
+                                                  // ADR-0045: View ▸ Continuous Scroll is an app-wide preference.
+                                                  .continuousScroll]
         for spec in ZenitAppCommandTable.specs {
             #expect(spec.action.needsDocument == !documentFree.contains(spec.command), "\(spec.command)")
         }

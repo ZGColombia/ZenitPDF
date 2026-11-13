@@ -823,6 +823,19 @@ enum ZenitAppCommandTable {
                 action: .withDocument { _, document in AuthorTint.toggle(document: document) }
             )
 
+        case .continuousScroll:
+            // Continuous scrolling (ADR-0045): the app-wide page layout, with a checkmark while
+            // pages scroll as one strip. Available with no document, like Settings, because it
+            // is a preference rather than an action on the drawing in front.
+            return ZenitAppCommandSpec(
+                command,
+                slot: .viewExtras,
+                title: NSLocalizedString("Continuous Scroll", comment: "View menu command: scroll through every page of a document as one strip instead of one page at a time"),
+                rule: .always,
+                isOn: { _ in ZenitCanvasPreferences.scrollsContinuously },
+                action: .documentOptional { _, _ in ZenitCanvasPreferences.toggleContinuousScroll() }
+            )
+
         case .shareLastExport:
             // NL-PLAT-10 (r2-platform): the system share picker needs no entitlement and no server.
             return ZenitAppCommandSpec(

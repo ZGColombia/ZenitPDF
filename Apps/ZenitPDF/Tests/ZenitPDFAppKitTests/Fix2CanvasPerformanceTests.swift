@@ -256,9 +256,12 @@ struct Fix2CanvasPerformanceTests {
         }
     }
 
+    /// Pinned to single-page mode: it asserts the page *swap*, where the old sheet's pixels must
+    /// leave with it. In continuous scrolling the next sheet is already on screen beside the
+    /// current one and a navigation shows its cached tiles (`CanvasContinuousScrollTests`).
     @Test("IM-045: turning the page drops the old sheet's pixels at once")
     func pageTurnDropsTheOldSheet() async throws {
-        let harness = try await Fix2Harness.make("IM045.pdf", pageCount: 2, calibrate: false)
+        let harness = try await Fix2Harness.make("IM045.pdf", pageCount: 2, calibrate: false, pageLayout: .singlePage)
         defer { harness.tearDown() }
         harness.canvas.refresh()
         await settleRaster(harness)

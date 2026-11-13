@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.1.0
+
+### Features
+
+- Continuous scrolling. In a document with several pages the pages now follow one another in
+  one long strip, and you simply scroll through them; the page you are looking at becomes the
+  current page as you scroll, without the view jumping. A click with a tool on another visible
+  page works on that page straight away. Work in progress — points already placed, a text box
+  being typed, a calibration or a boundary — keeps its page until you finish or cancel it.
+- View ▸ Continuous Scroll turns this on and off; the same choice is in Settings ▸ Canvas. It is
+  on by default. Turned off, the canvas shows one page at a time and scrolling past the edge of a
+  page turns to the next, as before. A one-page document is the same either way.
+- While PDF layers are hidden, pages are shown one at a time, and the status bar says so, so a
+  hidden layer never appears on a neighbouring page.
+
 ## 1.0.2
 
 ### Fixes

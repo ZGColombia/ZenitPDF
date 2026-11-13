@@ -520,6 +520,21 @@ public final class ProjectWindowController: NSWindowController, NSWindowDelegate
         let canvas = PDFCanvasViewController(core: core, rasterSource: rasterSource, toolbar: shell.toolbar)
         // A project of several drawings: each page renders from its own drawing (NL-DOCS-04).
         canvas.drawingSet = document.drawingSet
+        // Continuous scrolling (ADR-0045): pages show one at a time while PDF layers are
+        // overridden, and work outside the canvas — a Scale Region's calibration destination, a
+        // borrowed two-click pick, a region draft — holds the current page like work on it does.
+        canvas.layerOverridesActive = { [weak document] in
+            guard let layers = document?.layerVisibility else { return false }
+            return !layers.matchesDocumentDefault || layers.measureLockLayerID != nil
+        }
+        canvas.externalPageLock = { [weak document, weak shell] in
+            guard let document else { return false }
+            if let target = document.pendingScaleCalibration, target != .pageDefault { return true }
+            if PendingPointPicks.anyArmed(document) { return true }
+            if let sheet = ScaleSheetCoordinator.active(for: document), sheet.pendingPick != nil { return true }
+            if let regions = shell?.scaleRegions, regions.draft != nil || regions.isAwaitingPolygon { return true }
+            return false
+        }
         // Automation reads the document's layer state and other pages' geometry (nl-automation).
         wireAutomation(canvas: canvas, for: document)
         // The drawing's own links follow on click (nl-documents, NL-DOCS-09).

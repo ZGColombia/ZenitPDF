@@ -54,6 +54,25 @@ public final class AppCanvasPresenter: CanvasPresenting {
     /// must not have to know what a ledger filter is to honour one.
     public private(set) var dimmedMarkupIDs: Set<UUID> = []
 
+    /// Bumped whenever the ledger filter's matches or behaviour change, so a canvas drawing
+    /// pages other than the current one (continuous scrolling) knows to ask
+    /// ``dimmedMarkupIDs(onPage:)`` again without comparing the sets at pointer rate.
+    public private(set) var filterRevision = 0
+
+    /// ``dimmedMarkupIDs`` for any page: the markups on `pageID` that are drawn but failed the
+    /// ledger filter under `.dimNonMatching`. The current page's answer equals
+    /// ``dimmedMarkupIDs``; a neighbouring sheet shown in continuous scrolling dims by the same
+    /// rule.
+    public func dimmedMarkupIDs(onPage pageID: UUID) -> Set<UUID> {
+        guard let matchingMarkupIDs, filterBehavior == .dimNonMatching else { return [] }
+        var dimmed: Set<UUID> = []
+        for summary in allMarkups where summary.pageID == pageID && !summary.hidden
+            && !matchingMarkupIDs.contains(summary.id) {
+            dimmed.insert(summary.id)
+        }
+        return dimmed
+    }
+
     /// Markups the ledger filter takes off the sheet under ``filterBehavior``
     /// `.hideNonMatching`: not hidden, yet failing the filter, on every page (V-003).
     ///
@@ -202,6 +221,7 @@ public final class AppCanvasPresenter: CanvasPresenting {
     /// narrowing when `ids` is `nil`.
     public func setFilterMatches(_ ids: Set<UUID>?) {
         matchingMarkupIDs = ids
+        filterRevision &+= 1
         recomputeVisible()
     }
 
@@ -395,6 +415,7 @@ public final class AppCanvasPresenter: CanvasPresenting {
 
     public func setFilterBehavior(_ behavior: LedgerCanvasFilterBehavior) {
         filterBehavior = behavior
+        filterRevision &+= 1
         recomputeVisible()
     }
 

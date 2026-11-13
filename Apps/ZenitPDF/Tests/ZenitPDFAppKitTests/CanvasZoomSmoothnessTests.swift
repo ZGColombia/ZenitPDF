@@ -52,9 +52,12 @@ struct CanvasZoomSmoothnessTests {
         #expect(harness.canvas.visiblePageCoverageForTesting() >= 0.999)
     }
 
+    /// Pinned to single-page mode: its second half asserts the page *swap* — a turn never shows
+    /// the previous sheet's base. In continuous scrolling both sheets' bases are on screen at
+    /// once, each on its own sheet (`CanvasContinuousScrollTests`).
     @Test("NL-PERF-02: the base raster is resident for the page's life and under everything")
     func baseRasterIsResident() async throws {
-        let harness = try await Fix2Harness.make("NLPERF02b.pdf", pageCount: 2, calibrate: false)
+        let harness = try await Fix2Harness.make("NLPERF02b.pdf", pageCount: 2, calibrate: false, pageLayout: .singlePage)
         defer { harness.tearDown() }
         harness.canvas.refresh()
         await settleRaster(harness)

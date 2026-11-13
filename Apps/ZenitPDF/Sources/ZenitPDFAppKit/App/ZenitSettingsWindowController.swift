@@ -41,6 +41,9 @@ public final class ZenitSettingsWindowController: NSWindowController, NSWindowDe
     /// moved into whichever controller built its Canvas section last, so a private controller
     /// (the test seam below) took it out of the shipping Settings window and re-targeted it (K-13).
     let wheelZoomsCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    /// Canvas ▸ "Continuous scrolling": the same app-wide preference as View ▸ Continuous Scroll,
+    /// one box per controller for the same reason as ``wheelZoomsCheckbox``.
+    let continuousScrollCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
 
     /// r2-platform: Identity (company, colour), Office library and Command-line tool
     /// (Platform/PlatformSettingsPanel.swift).

@@ -1,7 +1,8 @@
 import AppKit
 
-/// Settings ▸ Canvas (NL-UX-14): whether a mouse wheel zooms, and the doors to the keyboard
-/// shortcuts (NL-UX-11) and the welcome guide (NL-UX-13).
+/// Settings ▸ Canvas (NL-UX-14): whether a mouse wheel zooms, whether pages scroll as one
+/// continuous strip, and the doors to the keyboard shortcuts (NL-UX-11) and the welcome guide
+/// (NL-UX-13).
 extension ZenitSettingsWindowController {
 
     func canvasSection() -> NSView {
@@ -29,6 +30,33 @@ extension ZenitSettingsWindowController {
             comment: "Settings ▸ Canvas: note under the Mouse wheel zooms checkbox"
         ))
 
+        // Continuous scrolling (ADR-0045): the View menu's toggle, in the place preferences live.
+        let continuous = continuousScrollCheckbox
+        continuous.title = NSLocalizedString(
+            "Continuous scrolling",
+            comment: "Settings ▸ Canvas: scroll through every page of a document as one strip"
+        )
+        continuous.target = self
+        continuous.action = #selector(continuousScrollToggled(_:))
+        continuous.state = ZenitCanvasPreferences.scrollsContinuously ? .on : .off
+        continuous.setAccessibilityHelp(NSLocalizedString(
+            "When on, the pages of a document follow one another in one long strip. When off, the canvas shows one page at a time and scrolling past its edge turns the page.",
+            comment: "Settings ▸ Canvas: help for the Continuous scrolling checkbox"
+        ))
+        continuous.toolTip = continuous.accessibilityHelp()
+        let continuousNote = wrappingNote(NSLocalizedString(
+            "Also in View ▸ Continuous Scroll. While PDF layers are hidden, pages show one at a time.",
+            comment: "Settings ▸ Canvas: note under the Continuous scrolling checkbox"
+        ))
+        // The View menu changes the same preference while this window is open.
+        NotificationCenter.default.removeObserver(self, name: ZenitCanvasPreferences.didChangeNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(canvasPreferencesDidChange(_:)),
+            name: ZenitCanvasPreferences.didChangeNotification,
+            object: nil
+        )
+
         let shortcuts = NSButton(
             title: NSLocalizedString("Keyboard Shortcuts…", comment: "Settings ▸ Canvas: open the shortcut settings"),
             target: ZenitShortcutSettingsWindowController.shared,
@@ -43,12 +71,25 @@ extension ZenitSettingsWindowController {
         buttons.orientation = .horizontal
         buttons.spacing = 8
 
-        let stack = NSStackView(views: [heading, wheel, wheelNote, buttons])
+        let stack = NSStackView(views: [heading, wheel, wheelNote, continuous, continuousNote, buttons])
         stack.orientation = .vertical
         stack.alignment = .leading
         stack.spacing = 10
         stack.setCustomSpacing(4, after: wheel)
+        stack.setCustomSpacing(4, after: continuous)
         return stack
+    }
+
+    @objc func continuousScrollToggled(_ sender: Any?) {
+        var preferences = ZenitCanvasPreferences.current
+        preferences.pageLayout = continuousScrollCheckbox.state == .on ? .continuous : .singlePage
+        ZenitCanvasPreferences.current = preferences
+    }
+
+    /// Keeps the box in step with View ▸ Continuous Scroll.
+    @objc func canvasPreferencesDidChange(_ note: Notification) {
+        let state: NSControl.StateValue = ZenitCanvasPreferences.scrollsContinuously ? .on : .off
+        if continuousScrollCheckbox.state != state { continuousScrollCheckbox.state = state }
     }
 
     @objc func wheelZoomsToggled(_ sender: Any?) {

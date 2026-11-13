@@ -86,6 +86,19 @@ public final class AppDocumentPresenter: DocumentPresenting {
     /// Called after the current page changed, so the canvas can follow.
     public var onPageChange: (@MainActor (ZPDFUIPresentation.PageDescriptor) -> Void)?
 
+    /// Counts navigations: every change of page a person *asked for* — a thumbnail, the page
+    /// field, a menu command, a search hit, a bookmark — and the fallback when the page on screen
+    /// leaves the set. ``followView(toPage:settle:)`` leaves it alone.
+    ///
+    /// Continuous scrolling tells the two apart by it: a navigation rests the new page in the
+    /// viewport, while a page that became current because the person scrolled to it must not
+    /// move anything on screen.
+    public private(set) var navigationSerial = 0
+
+    /// Whether the page change ``onPageChange`` is announcing came from scrolling and may wait
+    /// before its expensive follow-ups run (a snap index, a scale offer). Read inside the callback.
+    public private(set) var pageChangeMayDwell = false
+
     /// Called whenever the warning list changes, so the status bar's tray mirrors it.
     ///
     /// The tray reads `StatusPresenting.warnings`; warnings are *posted* here. Without
@@ -148,6 +161,7 @@ public final class AppDocumentPresenter: DocumentPresenting {
         // sheet's scale (R-049).
         if let previousPageID, previousPageID != currentPageID,
            let page = pages.first(where: { $0.id == currentPageID }) {
+            navigationSerial &+= 1
             onPageChange?(page)
         }
     }
@@ -209,6 +223,32 @@ public final class AppDocumentPresenter: DocumentPresenting {
         currentPageScale = pageScales[id]
         selectedPageIDs = [id]
         selectionAnchorID = id
+        navigationSerial &+= 1
+        onPageChange?(page)
+    }
+
+    /// Makes the page the canvas scrolled to current, without navigating to it.
+    ///
+    /// Continuous scrolling's page change: the person scrolled, and the page with the most of
+    /// itself in view is now the one the tools act on. Unlike ``goToPage(id:)`` it is not a
+    /// navigation, so
+    ///
+    /// - ``navigationSerial`` does not move, and the canvas leaves the view where it is;
+    /// - a single selected page follows the view, but a multi-selection is the person's batch
+    ///   scope and is kept;
+    /// - with `settle` off the follow-ups that read the page (the snap index, the scale offer)
+    ///   may wait until the person stops on the page, so a fling across forty sheets does not
+    ///   start forty extractions. A press on a page passes `settle` so its tools work at once.
+    public func followView(toPage id: ZPDFUIPresentation.PageDescriptor.ID, settle: Bool) {
+        guard id != currentPageID, let page = pages.first(where: { $0.id == id }) else { return }
+        currentPageID = id
+        currentPageScale = pageScales[id]
+        if selectedPageIDs.count <= 1 {
+            selectedPageIDs = [id]
+            selectionAnchorID = id
+        }
+        pageChangeMayDwell = !settle
+        defer { pageChangeMayDwell = false }
         onPageChange?(page)
     }
 
@@ -260,6 +300,7 @@ public final class AppDocumentPresenter: DocumentPresenting {
         }
         currentPageID = id
         currentPageScale = pageScales[id]
+        navigationSerial &+= 1
         onPageChange?(page)
     }
 

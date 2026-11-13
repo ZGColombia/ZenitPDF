@@ -61,6 +61,12 @@ public final class AppCoreEnvironment {
     @ObservationIgnored public var snapIndexSource: (@MainActor (ZPDFContracts.PageDescriptor) async -> SnapIndexBuild)? {
         didSet { if let page = document.currentPageID { ensureSnapIndex(forPage: page) } }
     }
+    /// How long a page that became current by scrolling must stay current before its snap index
+    /// is built and its scale offered (``AppDocumentPresenter/followView(toPage:settle:)``).
+    /// A fling across forty sheets would otherwise start forty extractions and post forty offers.
+    @ObservationIgnored public var pageFollowDwell: Duration = .milliseconds(250)
+    /// The follow-ups waiting out ``pageFollowDwell`` for the page scrolled to last.
+    @ObservationIgnored var pageDwellTask: Task<Void, Never>?
     /// Pages whose snap index is being built now, so a page turned to twice builds once.
     @ObservationIgnored var snapIndexBuildsInFlight: Set<UUID> = []
     /// Why a page's vector geometry could not be read, kept so turning back to it says so again.
@@ -388,9 +394,26 @@ public final class AppCoreEnvironment {
             self.measurement.setPage(PageID(page.id))
             self.markup.setPage(PageID(page.id))
             self.followPageInSearch(page.id)
-            self.ensureSnapIndex(forPage: page.id)
+            // A page scrolled past in continuous scrolling waits to be stopped on before its snap
+            // index is built and its scale offered; any other change, and a press on a page, runs
+            // both at once (and drops a wait still in flight).
+            self.pageDwellTask?.cancel()
+            self.pageDwellTask = nil
+            guard self.document.pageChangeMayDwell else {
+                self.ensureSnapIndex(forPage: page.id)
+                self.refreshStatus()
+                self.afterPageChange?(page)
+                return
+            }
             self.refreshStatus()
-            self.afterPageChange?(page)
+            let dwell = self.pageFollowDwell
+            self.pageDwellTask = Task { @MainActor [weak self] in
+                try? await Task.sleep(for: dwell)
+                guard !Task.isCancelled, let self, self.document.currentPageID == page.id else { return }
+                self.pageDwellTask = nil
+                self.ensureSnapIndex(forPage: page.id)
+                self.afterPageChange?(page)
+            }
         }
 
         // Warnings are posted on the document presenter and rendered from the status

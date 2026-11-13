@@ -2,9 +2,9 @@ import AppKit
 import ZPDFAppCore
 import ZPDFUIPresentation
 
-/// Canvas preferences a person sets once (NL-UX-14, NL-UX-16): whether a mouse wheel zooms, and
-/// the smart-zoom target. Stored as one blob in the process defaults (the standard defaults in
-/// the shipping app, memory elsewhere).
+/// Canvas preferences a person sets once (NL-UX-14, NL-UX-16): whether a mouse wheel zooms, the
+/// smart-zoom target, and whether pages scroll as one continuous strip. Stored as one blob in the
+/// process defaults (the standard defaults in the shipping app, memory elsewhere).
 ///
 /// The haptic snap confirmation that used to live here is gone (R-009): the taps
 /// were unbearable and the app makes no sound or tap on pointer movement. A
@@ -16,13 +16,26 @@ struct ZenitCanvasPreferences: Codable, Equatable {
     /// Off by default. Only a phase-less, coarse wheel event is affected: a trackpad or a
     /// gesture mouse still scrolls, and ⌘ still zooms either way.
     var wheelZooms: Bool = false
+    /// How a document of several pages scrolls: one continuous strip of sheets (the default),
+    /// or one page at a time with the overscroll page turn. App-wide, View ▸ Continuous Scroll
+    /// and Settings ▸ Canvas. A one-page document is the same either way.
+    var pageLayout: PageLayout = .continuous
 
-    init(smartZoomLevel: Double = 2.0, wheelZooms: Bool = false) {
-        self.smartZoomLevel = smartZoomLevel
-        self.wheelZooms = wheelZooms
+    /// How the canvas lays a document's pages out.
+    enum PageLayout: String, Codable, Equatable {
+        /// Every page in one vertical strip; scrolling moves through the document.
+        case continuous
+        /// One page at a time; scrolling past the edge turns the page.
+        case singlePage
     }
 
-    private enum CodingKeys: String, CodingKey { case smartZoomLevel, wheelZooms }
+    init(smartZoomLevel: Double = 2.0, wheelZooms: Bool = false, pageLayout: PageLayout = .continuous) {
+        self.smartZoomLevel = smartZoomLevel
+        self.wheelZooms = wheelZooms
+        self.pageLayout = pageLayout
+    }
+
+    private enum CodingKeys: String, CodingKey { case smartZoomLevel, wheelZooms, pageLayout }
 
     /// Every key is optional: synthesized decoding would refuse a blob stored before a field
     /// existed, and the whole preference set would fall back to its defaults — losing a
@@ -31,14 +44,35 @@ struct ZenitCanvasPreferences: Codable, Equatable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         smartZoomLevel = try container.decodeIfPresent(Double.self, forKey: .smartZoomLevel) ?? 2.0
         wheelZooms = try container.decodeIfPresent(Bool.self, forKey: .wheelZooms) ?? false
+        // An unknown spelling from a later build reads as the default rather than losing the blob.
+        pageLayout = (try? container.decodeIfPresent(PageLayout.self, forKey: .pageLayout)) ?? .continuous
     }
 
     static let defaultsKey = "Zenit.CanvasPreferences"
 
+    /// Posted on the main thread after ``current`` is written, so every open canvas picks up a
+    /// change made in the View menu or in Settings without reading the defaults per event.
+    static let didChangeNotification = Notification.Name("ZenitCanvasPreferencesDidChange")
+
     @MainActor
     static var current: ZenitCanvasPreferences {
         get { ZenitProcessDefaults.layout.decode(ZenitCanvasPreferences.self, forKey: defaultsKey) ?? ZenitCanvasPreferences() }
-        set { ZenitProcessDefaults.layout.encode(newValue, forKey: defaultsKey) }
+        set {
+            ZenitProcessDefaults.layout.encode(newValue, forKey: defaultsKey)
+            NotificationCenter.default.post(name: didChangeNotification, object: nil)
+        }
+    }
+
+    /// Whether the canvas scrolls continuously, as the View menu's checkmark shows it.
+    @MainActor
+    static var scrollsContinuously: Bool { current.pageLayout == .continuous }
+
+    /// Flips View ▸ Continuous Scroll.
+    @MainActor
+    static func toggleContinuousScroll() {
+        var preferences = current
+        preferences.pageLayout = preferences.pageLayout == .continuous ? .singlePage : .continuous
+        current = preferences
     }
 }
 

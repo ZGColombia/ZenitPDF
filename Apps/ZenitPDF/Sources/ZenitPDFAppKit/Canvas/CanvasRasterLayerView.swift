@@ -22,12 +22,16 @@ final class CanvasDocumentView: NSView {
 
     let rasterView = CanvasRasterLayerView()
     let pageView: CanvasPageView
+    /// The neighbouring sheets of continuous scrolling (``CanvasPassivePage``), under the
+    /// current page's rasters and ink. Empty in single-page mode.
+    let passiveHost = CanvasPassiveHostView()
 
     init(pageView: CanvasPageView) {
         self.pageView = pageView
         super.init(frame: .zero)
         wantsLayer = true
         layerContentsRedrawPolicy = .never
+        addSubview(passiveHost)
         addSubview(rasterView)
         addSubview(pageView)
         pageView.rasterLayerView = rasterView
@@ -43,6 +47,7 @@ final class CanvasDocumentView: NSView {
 
     override func setFrameSize(_ newSize: NSSize) {
         super.setFrameSize(newSize)
+        passiveHost.frame = bounds
         rasterView.frame = bounds
         pageView.frame = bounds
     }

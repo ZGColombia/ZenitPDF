@@ -66,6 +66,33 @@ final class CanvasPageView: NSView {
     /// out first and the event is converted against the page the person is looking at.
     var onWillBeginInteraction: (@MainActor () -> Void)?
 
+    /// Raised with the press's window location before a press is interpreted, so continuous
+    /// scrolling can make the sheet under the pointer the current one first and the press acts
+    /// on that sheet (press adoption).
+    var onWillBeginPress: (@MainActor (CGPoint) -> Void)?
+
+    /// A neighbouring sheet in continuous scrolling: drawn exactly as the current page is — its
+    /// rasters as layers, its ink in ``draw(_:)`` — but it takes no events, no keyboard, no
+    /// cursor and no tracking, has no live overlay and says nothing to VoiceOver. The current
+    /// page's view, which spans the whole document, owns all of that.
+    var isPassive = false {
+        didSet {
+            guard isPassive != oldValue else { return }
+            liveOverlay.isHidden = isPassive
+            if isPassive, let trackingArea {
+                removeTrackingArea(trackingArea)
+                self.trackingArea = nil
+            }
+        }
+    }
+
+    /// Whether a press is being tracked: a select or tool drag, or a press still deciding
+    /// whether it is one. A pan drag is not counted — panning moves the view, not the work.
+    var isTrackingPress: Bool {
+        pendingSelectStart != nil || isSelectDragging || isMeasureDragging
+            || pendingMeasureDragStart != nil || zoomDragStartView != nil
+    }
+
     private func rasterModelChanged() {
         if compositesRasters {
             guard rasterBatchDepth == 0 else {
@@ -837,8 +864,9 @@ final class CanvasPageView: NSView {
     }
 
     nonisolated override var isFlipped: Bool { true }
-    override var acceptsFirstResponder: Bool { true }
+    override var acceptsFirstResponder: Bool { !isPassive }
     override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+    override func hitTest(_ point: NSPoint) -> NSView? { isPassive ? nil : super.hitTest(point) }
 
     /// The armed verb's cursor. The first shared tool rule is that the cursor changes.
     /// Before this only the space-held pan ever touched `NSCursor`, so every
@@ -847,12 +875,14 @@ final class CanvasPageView: NSView {
     /// tool. One assignment decides it now, and ``ZenitCanvasCursor`` owns the artwork.
     override func resetCursorRects() {
         super.resetCursorRects()
+        guard !isPassive else { return }
         addCursorRect(bounds, cursor: cursorKind.nsCursor)
     }
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         if let trackingArea { removeTrackingArea(trackingArea) }
+        guard !isPassive else { return }
         let area = NSTrackingArea(
             rect: bounds,
             options: [.mouseMoved, .mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect],
@@ -2555,6 +2585,7 @@ final class CanvasPageView: NSView {
         )
         lastPress = (event.timestamp, event.locationInWindow)
         onWillBeginInteraction?()
+        onWillBeginPress?(event.locationInWindow)
         // A press outside an open text box finishes the box and nothing else (W-004). Taking
         // first responder commits it (the editor's resign); the press used to carry on as a
         // Text-tool press, so with Reuse Tool on its release opened a new empty box — and an
@@ -2751,6 +2782,7 @@ final class CanvasPageView: NSView {
         // secondary-click event. During a measurement it finishes the geometry (or is
         // swallowed); a context menu is never shown mid-measurement.
         onWillBeginInteraction?()
+        onWillBeginPress?(event.locationInWindow)
         if onSecondaryClick?(pagePoint(for: event)) == true { return }
         // Otherwise: a selection followed by the context menu. `super` asks `menu(for:)`,
         // which asks the controller (nl-markup, NL-MARKUP-02): the menu is built from the
@@ -2996,7 +3028,7 @@ final class CanvasLiveOverlayView: NSView {
 
 extension CanvasPageView {
 
-    override func isAccessibilityElement() -> Bool { true }
+    override func isAccessibilityElement() -> Bool { !isPassive }
 
     override func accessibilityRole() -> NSAccessibility.Role? { .layoutArea }
 
@@ -3024,7 +3056,7 @@ extension CanvasPageView {
         )
     }
 
-    override func accessibilityChildren() -> [Any]? { markupAccessibilityElements() }
+    override func accessibilityChildren() -> [Any]? { isPassive ? [] : markupAccessibilityElements() }
 
     /// One element per markup on this page — **every** markup, scrolled out of view or not
     /// (`ACCESSIBILITY_PLAN.md`): its caption (or text, or kind) as the label, its
@@ -3068,6 +3100,7 @@ extension CanvasPageView {
 
     /// Posts an announcement for VoiceOver, and keeps the last few for tests.
     func announce(_ text: String) {
+        guard !isPassive else { return }
         accessibilityAnnouncements.append(text)
         if accessibilityAnnouncements.count > 20 { accessibilityAnnouncements.removeFirst() }
         guard NSWorkspace.shared.isVoiceOverEnabled else { return }

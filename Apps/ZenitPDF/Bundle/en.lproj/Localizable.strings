@@ -10112,3 +10112,22 @@
 
 /* OCR sheet: run finished, and one or more pages could not be read */
 "Finished, but some pages could not be read, so search finds no new words on them. Start reading again to retry them." = "Finished, but some pages could not be read, so search finds no new words on them. Start reading again to retry them.";
+
+
+/* View menu command: scroll through every page of a document as one strip instead of one page at a time */
+"Continuous Scroll" = "Continuous Scroll";
+
+/* Settings ▸ Canvas: scroll through every page of a document as one strip */
+"Continuous scrolling" = "Continuous scrolling";
+
+/* Settings ▸ Canvas: help for the Continuous scrolling checkbox */
+"When on, the pages of a document follow one another in one long strip. When off, the canvas shows one page at a time and scrolling past its edge turns the page." = "When on, the pages of a document follow one another in one long strip. When off, the canvas shows one page at a time and scrolling past its edge turns the page.";
+
+/* Settings ▸ Canvas: note under the Continuous scrolling checkbox */
+"Also in View ▸ Continuous Scroll. While PDF layers are hidden, pages show one at a time." = "Also in View ▸ Continuous Scroll. While PDF layers are hidden, pages show one at a time.";
+
+/* Status note: a multi-page document shows one page at a time while PDF layer overrides are active */
+"Continuous scrolling is paused while PDF layers are hidden: pages show one at a time." = "Continuous scrolling is paused while PDF layers are hidden: pages show one at a time.";
+
+/* Status note: a press on another page in continuous scrolling while a boundary or pick on the current page is in progress */
+"Finish or cancel the work on this page before using another page." = "Finish or cancel the work on this page before using another page.";

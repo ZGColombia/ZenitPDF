@@ -251,6 +251,8 @@ extension PDFCanvasViewController {
     /// a Place click uses.
     func enablePresetDrops() {
         scrollViewForTesting.onDropPreset = { [weak self] presetID, windowPoint in
+            // Continuous scrolling: the sheet under the drop becomes current first (ADR-0045).
+            self?.adoptStripPage(atWindowPoint: windowPoint)
             guard let self, let transform = self.pageViewForTesting.transform else { return false }
             let point = transform.pagePoint(from: self.pageViewForTesting.convert(windowPoint, from: nil))
             return self.dropPreset(presetID, at: point)

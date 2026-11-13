@@ -1875,3 +1875,11 @@
 "Could not be read" = "Kunde inte läsas";
 "This page could not be read this time, so search finds no new words on it. Any words an earlier reading found on it stay searchable. Try reading it again." = "Den här sidan kunde inte läsas den här gången, så sökningen hittar inga nya ord på den. Ord som en tidigare läsning hittade på den går fortfarande att söka efter. Försök läsa den igen.";
 "Finished, but some pages could not be read, so search finds no new words on them. Start reading again to retry them." = "Klart, men några sidor kunde inte läsas, så sökningen hittar inga nya ord på dem. Starta läsningen igen för att försöka på nytt.";
+
+/* 1.1.0: continuous scrolling */
+"Continuous Scroll" = "Löpande rullning";
+"Continuous scrolling" = "Löpande rullning";
+"When on, the pages of a document follow one another in one long strip. When off, the canvas shows one page at a time and scrolling past its edge turns the page." = "När det är på följer dokumentets sidor på varandra i en lång remsa. När det är av visar arbetsytan en sida i taget, och rullar du förbi kanten byts sidan.";
+"Also in View ▸ Continuous Scroll. While PDF layers are hidden, pages show one at a time." = "Finns även i Visa ▸ Löpande rullning. Medan PDF-lager är dolda visas sidorna en i taget.";
+"Continuous scrolling is paused while PDF layers are hidden: pages show one at a time." = "Löpande rullning är pausad medan PDF-lager är dolda: sidorna visas en i taget.";
+"Finish or cancel the work on this page before using another page." = "Slutför eller avbryt arbetet på den här sidan innan du använder en annan sida.";

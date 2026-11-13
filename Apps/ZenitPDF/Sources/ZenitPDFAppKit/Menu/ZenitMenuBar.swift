@@ -681,6 +681,9 @@ public enum ZenitAppCommand: String, Sendable, CaseIterable {
     case reviewList = "zenit.app.reviewList"
     /// NL-COLLAB-06: draw every markup in its author's colour, display only.
     case tintByAuthor = "zenit.app.tintByAuthor"
+    /// Pages scroll as one continuous strip, or one at a time with the overscroll page turn.
+    /// An app-wide preference, also in Settings ▸ Canvas.
+    case continuousScroll = "zenit.app.continuousScroll"
     /// Opens the scoped batch apply sheet. Application-level for the same
     /// reason as the three above: `ZPDFUIShell`'s command table is frozen.
     case batchApply = "zenit.app.batchApply"
