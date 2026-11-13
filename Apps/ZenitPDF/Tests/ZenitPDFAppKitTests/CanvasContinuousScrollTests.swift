@@ -224,6 +224,76 @@ struct CanvasContinuousScrollTests {
         harness.core.measurement.cancelActiveMeasurement()
     }
 
+    @Test("An open text box holds the page")
+    func textEntryHoldsThePage() async throws {
+        let harness = try await make("CS text entry.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        harness.shell.perform(.textTool)
+        harness.canvas.refresh()
+        harness.canvas.handleClick(at: PDFPointValue(x: 120, y: 500), additive: false)
+        #expect(harness.canvas.activeTextEntry != nil)
+        try scroll(harness, toPage: 2)
+        #expect(harness.core.document.currentPageID == ids[0])
+        #expect(harness.canvas.activeTextEntry != nil, "the box being typed in survives")
+        harness.canvas.commitTextEntry()
+    }
+
+    @Test("A calibration point holds the page")
+    func calibrationPointHoldsThePage() async throws {
+        let harness = try await make("CS calibration.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        harness.canvas.beginCalibration()
+        harness.canvas.handleClick(at: PDFPointValue(x: 100, y: 100), additive: false)
+        await harness.canvas.settleCalibrationPlacements()
+        #expect(harness.canvas.calibrationPointsForTesting.count == 1)
+        try scroll(harness, toPage: 2)
+        #expect(harness.core.document.currentPageID == ids[0])
+        #expect(harness.canvas.calibrationPointsForTesting.count == 1, "the first point survives")
+        harness.canvas.endCalibration()
+    }
+
+    @Test("A Select drag (a marquee) holds the page until it is released")
+    func selectDragHoldsThePage() async throws {
+        let harness = try await make("CS marquee.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        let slot = try layout(harness).slotFrame(of: 0)
+        let pageView = harness.canvas.pageViewForTesting
+        let start = CGPoint(x: slot.minX + 30, y: slot.minY + 30)
+        pageView.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: start))
+        pageView.mouseDragged(with: harness.mouseEvent(.leftMouseDragged, atLocal: CGPoint(x: start.x + 60, y: start.y + 60)))
+        #expect(harness.canvas.isPageLocked)
+        try scroll(harness, toPage: 2)
+        #expect(harness.core.document.currentPageID == ids[0], "held while the button is down")
+        pageView.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: CGPoint(x: start.x + 60, y: start.y + 60)))
+        #expect(!harness.canvas.isPageLocked)
+        await waitOutRateLimit()
+        harness.canvas.reportVisibleRect()
+        #expect(harness.core.document.currentPageID == ids[2], "released, the view is followed again")
+    }
+
+    @Test("Work outside the canvas holds the page: a Scale Region's calibration destination, through the window's lock")
+    func externalLockHoldsThePage() async throws {
+        let harness = try await make("CS external.pdf", pages: 3)
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        harness.document.pendingScaleCalibration = .region(UUID())
+        defer { harness.document.pendingScaleCalibration = nil }
+        #expect(harness.canvas.isPageLocked)
+        try scroll(harness, toPage: 1)
+        #expect(harness.core.document.currentPageID == ids[0])
+        // A press on the other sheet is refused, and the status bar says why.
+        let slot = try layout(harness).slotFrame(of: 1)
+        let point = CGPoint(x: slot.midX, y: slot.minY + 40)
+        harness.canvas.pageViewForTesting.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: point))
+        harness.canvas.pageViewForTesting.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: point))
+        #expect(harness.core.document.currentPageID == ids[0])
+        #expect(harness.canvas.stripRefusedPressCountForTesting == 1)
+        #expect(harness.core.status.snapshot.activeToolNote?.contains("before using another page") == true)
+    }
+
     // MARK: - Press adoption
 
     @Test("A press on a neighbouring sheet makes it current before the press is interpreted")
@@ -529,6 +599,126 @@ struct CanvasContinuousScrollTests {
         #expect(!harness.canvas.passivePagesForTesting.isEmpty)
         harness.canvas.viewDidDisappear()
         #expect(harness.canvas.passivePagesForTesting.isEmpty)
+    }
+
+    // MARK: - Select Text in the strip
+
+    /// Five sheets: text on every one but the second, which is linework only.
+    private func makeTextStrip(_ name: String) async throws -> (Fix2Harness, ScratchMarkupPasteboard) {
+        let text = "BT /F1 24 Tf 72 700 Td (\(SelectTextFixture.firstLine)) Tj ET\nBT /F1 24 Tf 72 650 Td (\(SelectTextFixture.secondLine)) Tj ET\n"
+        let lines = "2 w 0 0 0 RG 72 72 m 300 300 l S\n"
+        let url = try AutomationFixtures.writePages(named: name, contents: [text, lines, text, text, text])
+        let harness = try await Fix2Harness.make(name, calibrate: false, fixture: url, pageLayout: .continuous)
+        let scratch = ScratchMarkupPasteboard()
+        harness.controller.markupPasteboard = scratch
+        harness.canvas.refresh()
+        await settle(harness)
+        harness.shell.perform(.selectTextTool)
+        harness.canvas.applyArmedTool()
+        await harness.canvas.settleTextSelection()
+        return (harness, scratch)
+    }
+
+    /// Page `index`'s transform in the document view, from the strip as laid out.
+    private func slotTransform(_ harness: Fix2Harness, _ index: Int) throws -> PageDisplayTransform {
+        let strip = try layout(harness)
+        let page = harness.core.document.pages[index]
+        return PageDisplayTransform(pageBox: page.viewBox, rotation: page.displayRotation,
+                                    zoom: strip.zoom, origin: strip.slotOrigin(of: index))
+    }
+
+    private func textDrag(_ harness: Fix2Harness, onPage index: Int, release: Bool = true) throws {
+        let transform = try slotTransform(harness, index)
+        let pageView = harness.canvas.pageViewForTesting
+        pageView.mouseDown(with: harness.mouseEvent(.leftMouseDown, atLocal: transform.viewPoint(from: SelectTextFixture.dragStart)))
+        pageView.mouseDragged(with: harness.mouseEvent(.leftMouseDragged, atLocal: transform.viewPoint(from: SelectTextFixture.onSecondLine)))
+        pageView.mouseDragged(with: harness.mouseEvent(.leftMouseDragged, atLocal: transform.viewPoint(from: SelectTextFixture.dragEnd)))
+        if release {
+            pageView.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: transform.viewPoint(from: SelectTextFixture.dragEnd)))
+        }
+    }
+
+    private static let copyItem = NSMenuItem(title: "Copy", action: #selector(PDFCanvasViewController.copy(_:)), keyEquivalent: "c")
+    private static let selectAllItem = NSMenuItem(
+        title: "Select All", action: #selector(PDFCanvasViewController.selectAll(_:)), keyEquivalent: "a"
+    )
+
+    @Test("Select Text: a press on another sheet adopts it first, then selects its words")
+    func textPressAdoptsThenSelects() async throws {
+        let (harness, _) = try await makeTextStrip("CS text press.pdf")
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        try textDrag(harness, onPage: 2)
+        #expect(harness.core.document.currentPageID == ids[2], "adopted at the press")
+        await harness.canvas.settleTextSelection()
+        let selected = try #require(harness.canvas.textSelectionForTesting)
+        #expect(selected.pageID == ids[2])
+        #expect(selected.text.contains(SelectTextFixture.firstLine) && selected.text.contains(SelectTextFixture.secondLine))
+        #expect(harness.canvas.pageViewForTesting.textSelectionHighlights == selected.lineRects)
+    }
+
+    @Test("Select Text: a text drag holds the page like any other drag")
+    func textDragLocksThePage() async throws {
+        let (harness, _) = try await makeTextStrip("CS text lock.pdf")
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        try textDrag(harness, onPage: 0, release: false)
+        #expect(harness.canvas.pageViewForTesting.isTrackingPress)
+        #expect(harness.canvas.isPageLocked)
+        try scroll(harness, toPage: 3)
+        #expect(harness.core.document.currentPageID == ids[0], "held while the text drag is under way")
+        let end = try slotTransform(harness, 0).viewPoint(from: SelectTextFixture.dragEnd)
+        harness.canvas.pageViewForTesting.mouseUp(with: harness.mouseEvent(.leftMouseUp, atLocal: end))
+        await harness.canvas.settleTextSelection()
+        #expect(!harness.canvas.isPageLocked)
+        #expect(harness.canvas.textSelectionForTesting?.pageID == ids[0])
+    }
+
+    @Test("Select Text: scrolling keeps a selection while its sheet is on screen — drawn there, copied — and lets go once it is not")
+    func textSelectionFollowsItsSheet() async throws {
+        let (harness, scratch) = try await makeTextStrip("CS text scroll.pdf")
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        try textDrag(harness, onPage: 0)
+        await harness.canvas.settleTextSelection()
+        let selected = try #require(harness.canvas.textSelectionForTesting)
+        #expect(selected.pageID == ids[0])
+
+        // The view follows to the linework sheet; the first sheet is still on screen above it.
+        try scroll(harness, toPage: 1)
+        #expect(harness.core.document.currentPageID == ids[1])
+        #expect(harness.canvas.textSelectionForTesting == selected, "a scroll does not wipe a selection still on screen")
+        #expect(harness.canvas.pageViewForTesting.textSelectionHighlights.isEmpty, "not drawn on the wrong sheet")
+        #expect(host(harness, page: ids[0])?.pageView.textSelectionHighlights == selected.lineRects, "drawn on its own sheet")
+        // Copy copies it; Select All and the note are the current page's — which has no text.
+        #expect(harness.canvas.validateMenuItem(Self.copyItem))
+        harness.canvas.copy(nil)
+        #expect(scratch.plainText == selected.text)
+        await harness.canvas.settleTextSelection()
+        #expect(harness.core.status.snapshot.activeToolNote == PDFCanvasViewController.noTextLayerNote)
+        #expect(!harness.canvas.validateMenuItem(Self.selectAllItem), "the current sheet has nothing to select")
+
+        // Further on, the first sheet leaves the screen and the selection goes with it.
+        await waitOutRateLimit()
+        try scroll(harness, toPage: 4)
+        #expect(harness.core.document.currentPageID == ids[4])
+        #expect(host(harness, page: ids[0]) == nil)
+        #expect(harness.canvas.textSelectionForTesting == nil)
+        #expect(!harness.canvas.validateMenuItem(Self.copyItem))
+    }
+
+    @Test("Select Text: Select All selects the current sheet's words")
+    func textSelectAllUsesTheCurrentPage() async throws {
+        let (harness, _) = try await makeTextStrip("CS text all.pdf")
+        defer { harness.tearDown() }
+        let ids = pageIDs(harness)
+        try scroll(harness, toPage: 2)
+        #expect(harness.core.document.currentPageID == ids[2])
+        await harness.canvas.settleTextSelection()
+        #expect(harness.canvas.validateMenuItem(Self.selectAllItem))
+        harness.canvas.selectAll(nil)
+        await harness.canvas.settleTextSelection()
+        #expect(harness.canvas.textSelectionForTesting?.pageID == ids[2])
     }
 
     // MARK: - The setting

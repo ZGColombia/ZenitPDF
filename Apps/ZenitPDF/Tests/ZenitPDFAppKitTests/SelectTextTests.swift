@@ -420,9 +420,13 @@ struct SelectTextModelTests {
 @Suite("Select Text: the canvas", .appTierSerialised, .serialized)
 struct SelectTextCanvasTests {
 
-    private func makeHarness(fixture: URL? = nil) async throws -> (Fix2Harness, ScratchMarkupPasteboard) {
+    /// `pageLayout` pins the canvas's page layout; the tests that turn the page pass
+    /// `.singlePage`, because the rule they assert — a page change lets go — is single-page mode's.
+    private func makeHarness(
+        fixture: URL? = nil, pageLayout: ZenitCanvasPreferences.PageLayout? = nil
+    ) async throws -> (Fix2Harness, ScratchMarkupPasteboard) {
         let harness = try await Fix2Harness.make(
-            "Select Text", calibrate: false, fixture: try fixture ?? SelectTextFixture.write()
+            "Select Text", calibrate: false, fixture: try fixture ?? SelectTextFixture.write(), pageLayout: pageLayout
         )
         let scratch = ScratchMarkupPasteboard()
         harness.controller.markupPasteboard = scratch
@@ -641,9 +645,12 @@ struct SelectTextCanvasTests {
         #expect(harness.core.status.snapshot.activeToolNote == PDFCanvasViewController.copyingNotAllowedNote)
     }
 
+    /// Pinned to single-page mode: it asserts that a page change lets go of the selection, which
+    /// is single-page mode's rule; continuous scrolling keeps a selection while its sheet is on
+    /// screen (`CanvasContinuousScrollTests`).
     @Test("A turned page and a cropped page select the right words and highlight them")
     func turnedAndCroppedPages() async throws {
-        let (harness, _) = try await makeHarness(fixture: SelectTextFixture.writeTurnedAndCropped())
+        let (harness, _) = try await makeHarness(fixture: SelectTextFixture.writeTurnedAndCropped(), pageLayout: .singlePage)
         defer { harness.tearDown() }
         arm(harness)
 
@@ -744,9 +751,12 @@ struct SelectTextCanvasTests {
         #expect(!harness.canvas.validateMenuItem(Self.copyItem), "Copy is back to markups, and none is selected")
     }
 
+    /// Pinned to single-page mode: it asserts that a page change lets go of the selection, which
+    /// is single-page mode's rule; continuous scrolling keeps a selection while its sheet is on
+    /// screen (`CanvasContinuousScrollTests`).
     @Test("An answer for a page the canvas has left is dropped")
     func staleAnswerIsDropped() async throws {
-        let (harness, _) = try await makeHarness()
+        let (harness, _) = try await makeHarness(pageLayout: .singlePage)
         defer { harness.tearDown() }
         arm(harness)
         await harness.canvas.settleTextSelection()
@@ -764,9 +774,12 @@ struct SelectTextCanvasTests {
         #expect(harness.canvas.pageViewForTesting.textSelectionHighlights.isEmpty)
     }
 
+    /// Pinned to single-page mode: it asserts that a page change lets go of the selection, which
+    /// is single-page mode's rule; continuous scrolling keeps a selection while its sheet is on
+    /// screen (`CanvasContinuousScrollTests`).
     @Test("Turning the page lets go; a page without text says so in the status bar, pointing at Read Text")
     func pageChangeClearsAndNotes() async throws {
-        let (harness, _) = try await makeHarness()
+        let (harness, _) = try await makeHarness(pageLayout: .singlePage)
         defer { harness.tearDown() }
         arm(harness)
         await harness.canvas.settleTextSelection()

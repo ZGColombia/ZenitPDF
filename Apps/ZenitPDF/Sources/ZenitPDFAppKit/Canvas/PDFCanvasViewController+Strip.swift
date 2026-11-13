@@ -523,6 +523,7 @@ extension PDFCanvasViewController {
         }
         enforcePassiveBaseBudget(order: wanted.map { pages[$0].id })
         requestPassiveRasters()
+        reconcileTextSelectionWithHosts()
     }
 
     private func materialise(_ page: ZPDFUIPresentation.PageDescriptor) -> CanvasPassivePage {
@@ -805,6 +806,43 @@ extension PDFCanvasViewController {
         guard strip.isActive else { return }
         let selection = core.canvas.selectedMarkupIDs
         for host in strip.hosts.values { host.pageView.selection = selection }
+    }
+
+    // MARK: - Select Text
+
+    /// Whether a page is a neighbouring sheet on screen now.
+    func isPassivePageShown(_ pageID: UUID) -> Bool {
+        strip.isActive && strip.hosts[pageID] != nil
+    }
+
+    /// Whether a change of the current page lets go of the drawing-text selection. One page at
+    /// a time, the page's own rule (``currentPageChangeClearsTextSelection(selectionPageID:currentPageID:)``);
+    /// in continuous scrolling the selection stays for as long as its sheet is on screen.
+    func textSelectionLetGoOnPageChange(selectionPageID: UUID, currentPageID: UUID?) -> Bool {
+        guard strip.isActive else {
+            return Self.currentPageChangeClearsTextSelection(selectionPageID: selectionPageID, currentPageID: currentPageID)
+        }
+        return selectionPageID != currentPageID && !isPassivePageShown(selectionPageID)
+    }
+
+    /// Lets go of a drawing-text selection whose sheet left the screen, and draws the one whose
+    /// sheet is a neighbour on that sheet.
+    private func reconcileTextSelectionWithHosts() {
+        guard textSelection.isEngaged else { return }
+        if let page = textSelection.selectionPageID, !textSelection.isTracking,
+           page != core.document.currentPageID, !isPassivePageShown(page) {
+            textSelection.clear()
+        }
+        applyPassiveTextSelectionHighlights()
+    }
+
+    /// The selection's boxes on the neighbouring sheet it was made on; none on the others.
+    func applyPassiveTextSelectionHighlights() {
+        guard strip.isActive else { return }
+        let selected = textSelection.selection
+        for host in strip.hosts.values {
+            host.pageView.textSelectionHighlights = selected?.pageID == host.pageID ? selected?.lineRects ?? [] : []
+        }
     }
 
     // MARK: - Search highlights

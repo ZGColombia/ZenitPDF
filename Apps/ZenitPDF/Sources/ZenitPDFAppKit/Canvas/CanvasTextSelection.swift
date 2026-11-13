@@ -377,7 +377,9 @@ extension PDFCanvasViewController {
 
     /// The page a press at `point` selects on (`nil` point: the page Select All selects). One
     /// page is shown, so it is that page; a multi-page canvas resolves the page under the point
-    /// here, and adopts it first.
+    /// here, and adopts it first. Continuous scrolling adopts the sheet under a press before the
+    /// press reaches the selection (``CanvasPageView/onWillBeginPress``), so the current page is
+    /// the pressed page here too.
     func textSelectionTarget(at point: PDFPointValue?) -> CanvasTextSelection.Target? {
         guard let page = core.document.currentPage, let source = rasterSource(for: page) else { return nil }
         let box = page.viewBox
@@ -414,7 +416,7 @@ extension PDFCanvasViewController {
         let current = core.document.currentPageID
         guard textSelection.follow(currentPage: current) else { return }
         if let page = textSelection.selectionPageID,
-           Self.currentPageChangeClearsTextSelection(selectionPageID: page, currentPageID: current) {
+           textSelectionLetGoOnPageChange(selectionPageID: page, currentPageID: current) {
             textSelection.clear()
         }
         applyTextSelectionHighlights()
@@ -429,8 +431,10 @@ extension PDFCanvasViewController {
         }
     }
 
-    /// Hands the page view the selection's boxes when the selection is on the page it draws.
-    private func applyTextSelectionHighlights() {
+    /// Hands the page view the selection's boxes when the selection is on the page it draws —
+    /// and, in continuous scrolling, a neighbouring sheet the boxes of a selection made on it.
+    func applyTextSelectionHighlights() {
+        applyPassiveTextSelectionHighlights()
         guard let selected = textSelection.selection, selected.pageID == textSelectionViewPageID else {
             pageView.textSelectionHighlights = []
             return
@@ -456,10 +460,11 @@ extension PDFCanvasViewController {
 
     // MARK: Copy, Select All, Escape
 
-    /// The selected drawing text, when it is on the page in view.
+    /// The selected drawing text, when it is on a page in view — the current page, or in
+    /// continuous scrolling a neighbouring sheet still on screen.
     private var visibleSelectedText: CanvasTextSelection.Selected? {
         guard let selected = textSelection.selection, !selected.text.isEmpty,
-              selected.pageID == textSelectionViewPageID else { return nil }
+              selected.pageID == textSelectionViewPageID || isPassivePageShown(selected.pageID) else { return nil }
         return selected
     }
 
@@ -592,16 +597,18 @@ extension CanvasPageView {
         path.fill()
     }
 
-    /// Repaints only the overlay under the old and the new highlight.
+    /// Repaints only the overlay under the old and the new highlight — or, on a passive sheet
+    /// of continuous scrolling, which draws the highlight with its ink, that part of the sheet.
     func textSelectionHighlightsChanged(from old: [PDFRectValue]) {
+        let target: NSView = isPassive ? self : liveOverlay
         guard let transform else {
-            liveOverlay.needsDisplay = true
+            target.needsDisplay = true
             return
         }
         let dirty = (old + textSelectionHighlights)
             .map { transform.viewRect(from: $0) }
             .reduce(CGRect.null) { $0.union($1) }
         guard !dirty.isNull else { return }
-        liveOverlay.setNeedsDisplay(dirty.insetBy(dx: -2, dy: -2))
+        target.setNeedsDisplay(dirty.insetBy(dx: -2, dy: -2))
     }
 }

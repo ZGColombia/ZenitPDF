@@ -91,6 +91,7 @@ final class CanvasPageView: NSView {
     var isTrackingPress: Bool {
         pendingSelectStart != nil || isSelectDragging || isMeasureDragging
             || pendingMeasureDragStart != nil || zoomDragStartView != nil
+            || textSelection?.isTracking == true
     }
 
     private func rasterModelChanged() {
@@ -1011,6 +1012,9 @@ final class CanvasPageView: NSView {
         drawTraceFences(transform: transform)   // NL-MEASURE-11
         drawSearchHighlights(transform: transform)
         drawAutomationOverlay(transform: transform)
+        // A passive sheet of continuous scrolling has no live overlay: the text selection made
+        // on it is drawn with its ink instead (ADR-0045).
+        if isPassive { drawTextSelection(transform: transform, dirtyRect: dirtyRect) }
     }
 
     /// The live layer, drawn by ``CanvasLiveOverlayView`` into the same flipped coordinates.
