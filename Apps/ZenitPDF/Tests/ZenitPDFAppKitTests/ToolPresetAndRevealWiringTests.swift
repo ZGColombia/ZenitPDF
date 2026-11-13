@@ -169,6 +169,10 @@ struct ToolPresetAndRevealWiringTests {
             presenter.runSearch()
             #expect(await wait(upTo: 20) { !presenter.isSearching && !presenter.hits.isEmpty })
 
+            // The list is published first and the leading hits' rectangles are resolved right
+            // after it, in a task of their own (IM-085). Reading the first hit as soon as the
+            // list arrived found it without its rectangle on a slow machine.
+            #expect(await wait(upTo: 60) { presenter.hits.first?.boundsInPageSpace != nil })
             let hit = try #require(presenter.hits.first)
             #expect(hit.markupID == nil, "this test is about the page-text branch")
             let bounds = try #require(hit.boundsInPageSpace)
