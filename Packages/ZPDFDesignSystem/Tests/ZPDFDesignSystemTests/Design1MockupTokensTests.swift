@@ -228,7 +228,7 @@ final class Design1MockupTokensTests: XCTestCase {
     }
 
     func testNewSymbolsResolveWithLabels() {
-        let added: [ZPDFSymbol] = [.zoomTool, .filter, .clear, .perSheet, .bulkEdit, .detach, .history, .person, .sliders, .textTool, .viewfinder]
+        let added: [ZPDFSymbol] = [.zoomTool, .filter, .clear, .perSheet, .bulkEdit, .detach, .history, .person, .sliders, .textTool, .viewfinder, .selectText]
         for symbol in added {
             XCTAssertFalse(symbol.accessibilityLabel.isEmpty, symbol.rawValue)
             XCTAssertNotNil(symbol.nsImage(), "\(symbol.rawValue) -> \(symbol.systemName) is not vended by this system")

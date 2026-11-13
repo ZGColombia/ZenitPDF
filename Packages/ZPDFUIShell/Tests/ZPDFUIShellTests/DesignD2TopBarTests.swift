@@ -40,8 +40,8 @@ struct DesignD2TopBarTests {
             ZenitToolbarBuilder.selectableItemIdentifiers.contains($0) || $0 == .zenitToolSeparator
         }
         #expect(tools == [
-            .zenitSelect, .zenitZoom, .zenitPan, .zenitCalibrate, .zenitLength, .zenitArea, .zenitMeasure,
-            .zenitToolSeparator,
+            .zenitSelect, .zenitSelectText, .zenitZoom, .zenitPan, .zenitCalibrate, .zenitLength, .zenitArea,
+            .zenitMeasure, .zenitToolSeparator,
             .zenitText, .zenitCallout, .zenitShapes, .zenitCount, .zenitCutout
         ])
         #expect(ZenitToolbarBuilder.defaultItemIdentifiers.filter { $0 == .zenitToolSeparator }.count == 1)
@@ -53,7 +53,7 @@ struct DesignD2TopBarTests {
     @Test("Every mockup tool maps to a real command: the tool chips arm the tool their caption names")
     func everyToolArmsItsTool() throws {
         let expectations: [(NSToolbarItem.Identifier, ZenitToolIdentifier)] = [
-            (.zenitSelect, .select), (.zenitZoom, .zoom), (.zenitPan, .pan),
+            (.zenitSelect, .select), (.zenitSelectText, .selectText), (.zenitZoom, .zoom), (.zenitPan, .pan),
             (.zenitCalibrate, .calibrate), (.zenitLength, .length), (.zenitArea, .area),
             (.zenitMeasure, .measure), (.zenitText, .text), (.zenitCallout, .callout),
             (.zenitShapes, .shapes), (.zenitCount, .count), (.zenitCutout, .cutout)

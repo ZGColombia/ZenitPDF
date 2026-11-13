@@ -45,19 +45,28 @@ public actor PageRasterSource {
 
     /// Whether the drawing is still locked behind its password.
     public var isLocked: Bool { encryption == .locked }
+    /// What the drawing's own security settings allow. Select Text reads ``allowsCopying``
+    /// before it puts a drawing's words on the clipboard (1.1.0).
+    public let permissions: DocumentPermissions
+
+    /// Whether the drawing lets its text be copied. A protected copy written with copying off
+    /// — `DocumentCopyTransform.allowsCopying` — answers `false`.
+    public nonisolated var allowsCopying: Bool { permissions.contains(.copying) }
 
     private init(
         provider: PDFKitDocumentProvider,
         handle: DocumentHandle,
         digest: FileDigest,
         pageCount: Int,
-        encryption: EncryptionState
+        encryption: EncryptionState,
+        permissions: DocumentPermissions
     ) {
         self.provider = provider
         self.handle = handle
         self.digest = digest
         self.pageCount = pageCount
         self.encryption = encryption
+        self.permissions = permissions
     }
 
     /// Opens a PDF and reads its page geometry.
@@ -89,7 +98,8 @@ public actor PageRasterSource {
             handle: opened.handle,
             digest: opened.descriptor.digest,
             pageCount: opened.descriptor.pageCount,
-            encryption: opened.descriptor.encryption
+            encryption: opened.descriptor.encryption,
+            permissions: opened.descriptor.permissions
         )
         return (source, pages)
     }
@@ -290,6 +300,23 @@ public actor PageRasterSource {
     public func pageTextLines(pageIndex: Int) async throws -> [PageTextLine] {
         guard let handle else { throw PDFBridgeError.renderFailed(reason: "source closed") }
         return try await provider.pageTextLines(of: handle, pageIndex: pageIndex)
+    }
+
+    /// The page's own text for a Select Text gesture (1.1.0), through the engine barrier, or
+    /// `nil` when the gesture selects nothing. See `CanvasTextSelection`.
+    public func textSelection(
+        pageIndex: Int,
+        gesture: TextSelectionGesture,
+        within visibleBox: CGRect? = nil
+    ) async throws -> TextSelection? {
+        guard let handle else { throw PDFBridgeError.renderFailed(reason: "source closed") }
+        return try await provider.textSelection(of: handle, pageIndex: pageIndex, gesture: gesture, within: visibleBox)
+    }
+
+    /// Whether one page carries a text layer Select Text can select from (1.1.0).
+    public func hasTextLayer(pageIndex: Int) async throws -> Bool {
+        guard let handle else { throw PDFBridgeError.renderFailed(reason: "source closed") }
+        return try await provider.hasTextLayer(of: handle, pageIndex: pageIndex)
     }
 
     /// The drawing's own link annotations on one page, as values (NL-DOCS-09). Read through

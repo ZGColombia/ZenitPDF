@@ -47,6 +47,10 @@ public enum ZPDFShellAutosaveName {
     /// arrangement and runs the customization sheet. A v4 autosave could carry a visible toolbar
     /// and the expanded-style arrangement of a few hours' build; v5 starts every install from
     /// the band's default arrangement once.
+    ///
+    /// 1.1.0 added Select Text beside Select *without* a bump, which would have thrown away
+    /// every customised arrangement: `ZenitToolbarBuilder.migrateStoredArrangement(in:)` inserts
+    /// the one new chip into the stored v5 arrangement instead.
     public static let toolbar = "Zenit.ProjectWindow.Toolbar.v5"
 
     /// Every name, for the uniqueness audit.

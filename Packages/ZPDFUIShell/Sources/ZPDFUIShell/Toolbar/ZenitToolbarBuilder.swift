@@ -16,6 +16,8 @@ public extension NSToolbarItem.Identifier {
     static let zenitAuthor = NSToolbarItem.Identifier("zenit.toolbar.author")
     /// Pointer tool.
     static let zenitSelect = NSToolbarItem.Identifier("zenit.toolbar.select")
+    /// Select Text: selects the drawing's own text for copying (1.1.0).
+    static let zenitSelectText = NSToolbarItem.Identifier("zenit.toolbar.selectText")
     /// Hand tool.
     static let zenitPan = NSToolbarItem.Identifier("zenit.toolbar.pan")
     /// Zoom tool: drag a marquee to zoom into it.
@@ -53,8 +55,8 @@ public extension NSToolbarItem.Identifier {
 /// Builds and owns the project window's `NSToolbar` — the top bar of the 2026-09-23
 /// main-window mockup.
 ///
-/// Left, the brand block. Centre, the tool group: `Select · Zoom · Pan · Calibrate · Length ·
-/// Area · Measure`, a hairline, then `Text · Callout · Shapes · Count · Cutout`. Right, the
+/// Left, the brand block. Centre, the tool group: `Select · Select Text · Zoom · Pan · Calibrate ·
+/// Length · Area · Measure`, a hairline, then `Text · Callout · Shapes · Count · Cutout`. Right, the
 /// rounded workspace group (`Tool Library · Search · Compare · Export`) and the author badge.
 /// One rule holds inside that order: `Calibrate`, `Length` and `Area` are
 /// always-visible first-class items right after `Pan`.
@@ -113,10 +115,13 @@ public final class ZenitToolbarBuilder: NSObject, NSToolbarDelegate, NSMenuDeleg
     /// Select and Measure closes the measuring run; the first-class rule is untouched (Calibrate,
     /// Length and Area still follow Pan directly). The workspace group is one rounded item and
     /// the author badge closes the bar.
+    ///
+    /// 1.1.0: Select Text sits directly after Select, the other pointer tool. It is not in the
+    /// mockup, which predates it; the first-class rule is untouched.
     public static let defaultItemIdentifiers: [NSToolbarItem.Identifier] = [
         .zenitBrand,
         .flexibleSpace,
-        .zenitSelect, .zenitZoom, .zenitPan,
+        .zenitSelect, .zenitSelectText, .zenitZoom, .zenitPan,
         .zenitCalibrate, .zenitLength, .zenitArea, .zenitMeasure,
         .zenitToolSeparator,
         .zenitText, .zenitCallout, .zenitShapes, .zenitCount, .zenitCutout,
@@ -127,7 +132,7 @@ public final class ZenitToolbarBuilder: NSObject, NSToolbarDelegate, NSMenuDeleg
     /// Every item a user can add in the customization sheet.
     public static let allowedItemIdentifiers: [NSToolbarItem.Identifier] = [
         .zenitBrand,
-        .zenitSelect, .zenitPan, .zenitZoom,
+        .zenitSelect, .zenitSelectText, .zenitPan, .zenitZoom,
         .zenitCalibrate, .zenitLength, .zenitArea,
         .zenitText, .zenitCallout, .zenitShapes,
         .zenitMeasure, .zenitCount, .zenitCutout,
@@ -145,8 +150,8 @@ public final class ZenitToolbarBuilder: NSObject, NSToolbarDelegate, NSMenuDeleg
     /// no longer handed to AppKit's selection ring — it is the vocabulary of
     /// ``selectionIdentifier(for:lastUsedMeasurement:)`` and of the tests that pin it.
     public static let selectableItemIdentifiers: [NSToolbarItem.Identifier] = [
-        .zenitSelect, .zenitPan, .zenitZoom, .zenitCalibrate, .zenitLength, .zenitArea,
-        .zenitText, .zenitCallout, .zenitShapes,
+        .zenitSelect, .zenitSelectText, .zenitPan, .zenitZoom, .zenitCalibrate, .zenitLength,
+        .zenitArea, .zenitText, .zenitCallout, .zenitShapes,
         .zenitMeasure, .zenitCount, .zenitCutout
     ]
 
@@ -166,10 +171,49 @@ public final class ZenitToolbarBuilder: NSObject, NSToolbarDelegate, NSMenuDeleg
         toolbar.allowsUserCustomization = true
         // The person's arrangement is autosaved in the assembled application only; a test process
         // must not write `NSToolbar Configuration …` into its runner's real defaults.
+        if ZPDFShellAutosaveName.appKitAutosavesEnabled {
+            // Before AppKit reads the stored arrangement: Select Text joins it once (1.1.0).
+            Self.migrateStoredArrangement(in: .standard)
+        }
         toolbar.autosavesConfiguration = ZPDFShellAutosaveName.appKitAutosavesEnabled
         toolbar.showsBaselineSeparator = true
         self.toolbar = toolbar
         return toolbar
+    }
+
+    // MARK: - 1.1.0: Select Text joins a stored arrangement
+
+    /// Where `NSToolbar` autosaves this toolbar's configuration, and the key of its item list.
+    static let storedConfigurationKey = "NSToolbar Configuration \(ZPDFShellAutosaveName.toolbar)"
+    static let storedItemIdentifiersKey = "TB Item Identifiers"
+    /// Set once the stored arrangement has been offered Select Text, so a person who then takes
+    /// the chip out in Customize Toolbar keeps it out.
+    static let selectTextMigrationKey = "Zenit.ProjectWindow.Toolbar.v5.selectTextOffered"
+
+    /// The stored arrangement with Select Text inserted right after Select, or `nil` when there
+    /// is nothing to change: Select Text is already there, or Select itself was taken out — then
+    /// the person arranged the pointer tools themselves, and Customize Toolbar offers the chip.
+    static func arrangementAddingSelectText(to identifiers: [String]) -> [String]? {
+        let selectText = NSToolbarItem.Identifier.zenitSelectText.rawValue
+        guard !identifiers.contains(selectText),
+              let select = identifiers.firstIndex(of: NSToolbarItem.Identifier.zenitSelect.rawValue)
+        else { return nil }
+        var migrated = identifiers
+        migrated.insert(selectText, at: select + 1)
+        return migrated
+    }
+
+    /// Adds Select Text to the arrangement AppKit autosaved, once, keeping everything else the
+    /// person customised. Bumping the autosave identity would have reset it all.
+    static func migrateStoredArrangement(in defaults: UserDefaults) {
+        guard !defaults.bool(forKey: selectTextMigrationKey) else { return }
+        defaults.set(true, forKey: selectTextMigrationKey)
+        guard var configuration = defaults.dictionary(forKey: storedConfigurationKey),
+              let identifiers = configuration[storedItemIdentifiersKey] as? [String],
+              let migrated = arrangementAddingSelectText(to: identifiers)
+        else { return }
+        configuration[storedItemIdentifiersKey] = migrated
+        defaults.set(configuration, forKey: storedConfigurationKey)
     }
 
     /// Re-evaluates every item's tooltip against the toolbar model as it is now.
@@ -202,6 +246,7 @@ public final class ZenitToolbarBuilder: NSObject, NSToolbarDelegate, NSMenuDeleg
     ) -> NSToolbarItem.Identifier {
         switch tool {
         case .select: return .zenitSelect
+        case .selectText: return .zenitSelectText
         case .pan: return .zenitPan
         case .zoom: return .zenitZoom
         case .calibrate: return .zenitCalibrate
@@ -255,6 +300,8 @@ public final class ZenitToolbarBuilder: NSObject, NSToolbarDelegate, NSMenuDeleg
             return authorItem()
         case .zenitSelect:
             return toolItem(itemIdentifier, tool: .select, command: .selectTool)
+        case .zenitSelectText:
+            return toolItem(itemIdentifier, tool: .selectText, command: .selectTextTool)
         case .zenitPan:
             return toolItem(itemIdentifier, tool: .pan, command: .panTool)
         case .zenitZoom:

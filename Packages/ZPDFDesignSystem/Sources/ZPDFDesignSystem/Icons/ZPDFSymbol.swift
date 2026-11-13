@@ -91,6 +91,9 @@ public enum ZPDFSymbol: String, CaseIterable, Sendable, Hashable {
     case textTool
     /// Four corner marks: fit the whole page into the view (the canvas bar's Fit Page).
     case viewfinder
+    /// An I-beam over a character: the Select Text tool, which selects the drawing's own text
+    /// (1.1.0). Distinct from ``text`` and ``textTool``, which add a text *markup*.
+    case selectText
 
     /// The SF Symbol name backing this action.
     public var systemName: String {
@@ -159,6 +162,7 @@ public enum ZPDFSymbol: String, CaseIterable, Sendable, Hashable {
         case .sliders: return "slider.horizontal.3"
         case .textTool: return "character"
         case .viewfinder: return "viewfinder"
+        case .selectText: return "character.cursor.ibeam"
         }
     }
 
@@ -231,6 +235,7 @@ public enum ZPDFSymbol: String, CaseIterable, Sendable, Hashable {
         case .sliders: return NSLocalizedString("Search Options", comment: "Glyph: sliders, the options of a search or list")
         case .textTool: return NSLocalizedString("Text", comment: "Tool: add a text markup")
         case .viewfinder: return NSLocalizedString("Fit Page", comment: "Action: fit the whole page")
+        case .selectText: return NSLocalizedString("Select Text", comment: "Tool: select the drawing's own text to copy it")
         }
     }
 

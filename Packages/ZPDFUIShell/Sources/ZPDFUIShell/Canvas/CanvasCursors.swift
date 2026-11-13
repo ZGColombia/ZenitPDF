@@ -37,6 +37,7 @@ public enum ZenitCanvasCursor {
     public static func cursor(for kind: CanvasCursorKind) -> NSCursor {
         switch kind {
         case .select: return .arrow
+        case .selectText: return .iBeam
         case .pan: return .openHand
         case .zoom: return .crosshair
         case .draw: return .crosshair

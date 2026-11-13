@@ -49,8 +49,8 @@ struct ToolbarConfigurationTests {
         // The tool group is one uninterrupted run between the two gaps, in the 2026-09-23
         // mockup's order, with the hairline separator between Measure and Text.
         let drawing: [NSToolbarItem.Identifier] = [
-            .zenitSelect, .zenitZoom, .zenitPan, .zenitCalibrate, .zenitLength, .zenitArea,
-            .zenitMeasure, .zenitToolSeparator,
+            .zenitSelect, .zenitSelectText, .zenitZoom, .zenitPan, .zenitCalibrate, .zenitLength,
+            .zenitArea, .zenitMeasure, .zenitToolSeparator,
             .zenitText, .zenitCallout, .zenitShapes, .zenitCount, .zenitCutout
         ]
         #expect(Array(defaults[(leading + 1)..<trailing]) == drawing)
@@ -97,10 +97,29 @@ struct ToolbarConfigurationTests {
     /// separator, the rounded workspace group and the author badge; without the bump every
     /// existing install would keep its autosaved v3 arrangement. v5 the same day: the window
     /// draws the top band itself and the toolbar is its hidden model (design d8 follow-up).
+    /// Still v5 in 1.1.0: Select Text reaches a stored arrangement by migration, not by a bump
+    /// that would reset every customised toolbar.
     @Test("The toolbar autosave identity is v5, so the window-drawn top band reaches existing installs once")
     func toolbarAutosaveIsVersioned() {
         #expect(ZPDFShellAutosaveName.toolbar == "Zenit.ProjectWindow.Toolbar.v5")
         #expect(ZPDFShellAutosaveName.all.contains(ZPDFShellAutosaveName.toolbar))
+    }
+
+    @Test("A stored arrangement gains Select Text right after Select and keeps the rest (1.1.0)")
+    func storedArrangementGainsSelectText() {
+        let customised = ["zenit.toolbar.brand", "zenit.toolbar.cutout", "zenit.toolbar.select",
+                          "zenit.toolbar.length", "zenit.toolbar.author"]
+        #expect(ZenitToolbarBuilder.arrangementAddingSelectText(to: customised) == [
+            "zenit.toolbar.brand", "zenit.toolbar.cutout", "zenit.toolbar.select",
+            NSToolbarItem.Identifier.zenitSelectText.rawValue,
+            "zenit.toolbar.length", "zenit.toolbar.author"
+        ])
+        // Already there, or Select taken out: the person's arrangement is left alone.
+        let migrated = ZenitToolbarBuilder.arrangementAddingSelectText(to: customised) ?? []
+        #expect(ZenitToolbarBuilder.arrangementAddingSelectText(to: migrated) == nil)
+        #expect(ZenitToolbarBuilder.arrangementAddingSelectText(to: ["zenit.toolbar.brand", "zenit.toolbar.length"]) == nil)
+        // The migration reads the arrangement where AppKit autosaves it.
+        #expect(ZenitToolbarBuilder.storedConfigurationKey == "NSToolbar Configuration Zenit.ProjectWindow.Toolbar.v5")
     }
 
     @Test("The brand block leads the default set and is not a selectable tool")
@@ -164,7 +183,8 @@ struct ToolbarConfigurationTests {
         let toolbar = builder.makeToolbar()
         #expect(builder.toolbarSelectableItemIdentifiers(toolbar).isEmpty)
         // The chip vocabulary is still complete.
-        #expect(ZenitToolbarBuilder.selectableItemIdentifiers.count == 12)
+        // Thirteen since 1.1.0: Select Text joined Select.
+        #expect(ZenitToolbarBuilder.selectableItemIdentifiers.count == 13)
     }
 
     @Test("The armed-tool fill lands on the first-class item for Length and Area")

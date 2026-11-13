@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.1.0
+
+### Features
+
+- Select Text: a new tool, beside Select in the toolbar, in the Tools menu and on ⇧T, selects
+  the drawing's own text so it can be copied. Drag across the text to select it in reading
+  order; double-click selects a word and triple-click a line. The selection is highlighted on
+  the sheet and stays on its words through zoom and pan. Edit ▸ Copy (⌘C) and the right-click
+  menu copy it as plain text, and Edit ▸ Select All selects all the text on the page while the
+  tool is armed. With no text selected, Copy copies selected markups as before. The selection
+  is let go on another page, another tool or Escape. On a page with no text layer — a scanned
+  sheet — the status bar says there is nothing to select and points at Read Text from Scanned
+  Pages. A drawing whose security settings forbid copying its text can still be selected, but
+  Copy is refused with a note. Under Select Text, Cut, Delete and the arrow keys never touch
+  markups. An existing toolbar gets the new chip right after Select and keeps the rest of its
+  arrangement; a toolbar without Select can add it in Customize Toolbar.
+
 ## 1.0.2
 
 ### Fixes

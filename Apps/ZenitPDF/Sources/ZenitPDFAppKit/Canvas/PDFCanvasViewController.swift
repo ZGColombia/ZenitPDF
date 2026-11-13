@@ -576,6 +576,9 @@ public final class PDFCanvasViewController: NSViewController {
     /// Round-2 markup state (in-place editing, the ⌘ modifier seam), in
     /// `Markup/PDFCanvasViewController+MarkupRound2.swift`.
     var markupRound2 = MarkupRound2CanvasState()
+    /// Select Text (1.1.0): the drawing's own text selected for copying. Idle, and touched by
+    /// nothing on the pointer path, unless the tool is armed (`CanvasTextSelection.swift`).
+    let textSelection = CanvasTextSelection()
 
     /// What the Select tool's press-drag-release is doing.
     ///
@@ -884,10 +887,14 @@ public final class PDFCanvasViewController: NSViewController {
     // responder is this controller, and the commands go where the shell would send them.
 
     public override func selectAll(_ sender: Any?) {
+        // With Select Text armed, Select All selects the page's text (1.1.0).
+        if selectAllTextIfArmed() { return }
         onShellCommand?(.selectAll)
     }
 
     @objc public func delete(_ sender: Any?) {
+        // Select Text deletes nothing: the drawing's words are not editable (1.1.0).
+        if holdsMarkupEdits { return }
         // A focused vertex is what Delete removes, not the whole markup (NL-MEASURE-06).
         if removeFocusedVertex() { return }
         onShellCommand?(.deleteSelection)
@@ -897,9 +904,10 @@ public final class PDFCanvasViewController: NSViewController {
         // nl-markup: Cut, Copy and Paste of markups (Markup/PDFCanvasViewController+Clipboard.swift).
         if let verdict = validateMarkupClipboardItem(item) { return verdict }
         if item.action == #selector(delete(_:)) {
-            return !core.canvas.selectedMarkupIDs.isEmpty
+            return !holdsMarkupEdits && !core.canvas.selectedMarkupIDs.isEmpty
         }
         if item.action == #selector(selectAll(_:)) {
+            if let verdict = validateSelectAllText() { return verdict }
             return !core.canvas.visibleMarkups.isEmpty
         }
         return true
@@ -1044,7 +1052,7 @@ public final class PDFCanvasViewController: NSViewController {
         }
         defer { if !toolChanged, activeTextEntry != nil { layoutTextEditor() } }
         switch selection.mode {
-        case .select, .pan, .zoom, .calibrate:
+        case .select, .selectText, .pan, .zoom, .calibrate:
             core.markup.deactivate()
             core.measurement.deactivate()
         case .measure(let kind):
@@ -1134,6 +1142,8 @@ public final class PDFCanvasViewController: NSViewController {
         pageView.usesDragGesture = gesture.usesDragGesture
         updateGestureHint(mode: mode, gesture: gesture)
         pageView.dragToolPlacesClicks = gesture.dragAlsoPlacesClicks
+        // Select Text arms, follows the page, or lets go (1.1.0); a no-op when it is not armed.
+        reconcileTextSelection(mode: mode)
         // The whole live overlay in one assignment: one equality check per group and one
         // dirty rectangle, instead of a repaint decision per property (IM-163).
         pageView.live = liveState(mode: mode, gesture: gesture)
@@ -4945,6 +4955,11 @@ public final class PDFCanvasViewController: NSViewController {
             return holdToolKey()
         case let .nudge(dx, dy, large, isRepeat):
             if moveKeyboardCursor(dx: dx, dy: dy, large: large) { return true }
+            if holdsMarkupEdits {
+                // Under Select Text the arrows pan, as they do with nothing selected (1.1.0).
+                scroll(by: CGSize(width: CGFloat(dx) * 40, height: CGFloat(dy) * 40))
+                return true
+            }
             return nudge(dx: dx, dy: dy, large: large, isRepeat: isRepeat)
         case .escape:
             // Escape lets go of a focused vertex (T-001), then falls through to whatever else it
@@ -4958,6 +4973,8 @@ public final class PDFCanvasViewController: NSViewController {
             if !pageView.searchHighlights.isEmpty {
                 clearSearchHighlights()
             }
+            // Selected drawing text is let go before the Select Text tool is put down (1.1.0).
+            if clearTextSelectionForEscape() { return true }
             if activeTextEntry != nil {
                 // Escape commits a text box that has text and discards one that does not —
                 // never leaves an invisible markup.
@@ -5050,7 +5067,7 @@ public final class PDFCanvasViewController: NSViewController {
                     return true
                 }
             }
-            guard !core.canvas.selectedMarkupIDs.isEmpty else { return false }
+            guard !holdsMarkupEdits, !core.canvas.selectedMarkupIDs.isEmpty else { return false }
             onShellCommand?(.deleteSelection)
             return true
         case .cycleSnap(let backward):
